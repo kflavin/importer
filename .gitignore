@@ -1,0 +1,4 @@
+data/*
+.env.*
+.serverless/*
+env.*

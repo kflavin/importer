@@ -1,0 +1,48 @@
+service: importer
+
+frameworkVersion: ">=1.9.0 <2.0.0"
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  sshKey: ${env:aws_key}
+  awsRegion: ${env:aws_region}
+  awsImageId: ${env:aws_image_id}
+  awsInstanceType: ${env:aws_instance_type}
+  awsSecurityGroups: ${env:aws_security_groups}
+
+provider:
+  name: aws
+  region: ${self:custom.awsRegion}
+  runtime: python3.6
+  environment:
+    aws_key: ${self:custom.sshKey}
+    aws_region: ${self:custom.awsRegion}
+    aws_image_id: ${self:custom.awsImageId}
+    aws_instance_type: ${self:custom.awsInstanceType}
+    aws_security_groups: ${self:custom.awsSecurityGroups}
+  iamRoleStatements:
+    - Effect: Allow
+      Action: "ec2:*"
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - "iam:PassRole"
+        - "ec2:DescribeSecurityGroups"
+        - "ec2:DescribeSubnets"
+        - "ec2:DescribeVpcs"
+      Resource: "*"
+
+functions:
+  import_csv:
+    handler: backend/import_csv.handler
+
+resources:
+  Resources:
+    ScriptBucket:
+      Type: "AWS::S3::Bucket"
+
+package:
+  exclude:
+    - importer/**
+    - importer_env/**
+    - data/**
