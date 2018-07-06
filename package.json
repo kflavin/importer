@@ -1,0 +1,22 @@
+{
+  "name": "importer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kflavin/importer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kflavin/importer/issues"
+  },
+  "homepage": "https://github.com/kflavin/importer#readme",
+  "dependencies": {
+    "serverless-python-requirements": "^4.1.0"
+  }
+}

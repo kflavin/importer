@@ -11,6 +11,10 @@ def start():
     print("Starting...")
 
 @click.command()
+def hello():
+    print("Say hello!")
+
+@click.command()
 @click.option('--infile', '-i', type=click.File('r'), help="CSV file with NPI data")
 @click.option('--batch-size', '-b', type=click.INT, help="Batch size")
 def npi(infile, batch_size):
@@ -61,6 +65,7 @@ def readCsv(infile):
 
 start.add_command(readCsv, name="csv")
 start.add_command(npi)
+start.add_command(hello)
 
 if __name__ == '__main__':
     start()

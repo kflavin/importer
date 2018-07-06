@@ -2,6 +2,9 @@ service: importer
 
 frameworkVersion: ">=1.9.0 <2.0.0"
 
+plugins:
+  - serverless-python-requirements
+
 custom:
   stage: ${opt:stage, self:provider.stage}
   sshKey: ${env:aws_key}
@@ -9,6 +12,8 @@ custom:
   awsImageId: ${env:aws_image_id}
   awsInstanceType: ${env:aws_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
+  pythonRequirements:
+    dockerizePip: false
 
 provider:
   name: aws
@@ -20,6 +25,10 @@ provider:
     aws_image_id: ${self:custom.awsImageId}
     aws_instance_type: ${self:custom.awsInstanceType}
     aws_security_groups: ${self:custom.awsSecurityGroups}
+    s3_bucket: {Ref: ScriptBucket}
+    db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+    db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
+    
   iamRoleStatements:
     - Effect: Allow
       Action: "ec2:*"
@@ -33,16 +42,40 @@ provider:
       Resource: "*"
 
 functions:
+  # Testing
   import_csv:
     handler: backend/import_csv.handler
+  # Import NPI data
+  npi_importer:
+    handler: backend/import_npi.handler
 
 resources:
   Resources:
     ScriptBucket:
       Type: "AWS::S3::Bucket"
+    RDS:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        # DBName: !Ref DBName
+        # VPCSecurityGroups:
+          # - sg-edd4e2a6
+        # - Fn::ImportValue: !Sub "${SgStackName}-RdsSG"
+        AllocatedStorage: 10
+        # DBInstanceClass: db.m1.medium
+        DBInstanceClass: db.t2.micro
+        Engine: MySQL
+        MasterUsername: myusername
+        MasterUserPassword: mylongpassword8888
+        PubliclyAccessible: false
+        # DBSubnetGroupName: !Ref SubnetGroup
+        StorageType: Standard
+        # DBInstanceIdentifier: !Ref DBName
+      DeletionPolicy: Delete
+      # DeletionPolicy: Snapshot
 
 package:
   exclude:
     - importer/**
     - importer_env/**
+    - env.python/**
     - data/**
