@@ -4,10 +4,19 @@ import click
 import _mysql
 import mysql.connector as connector
 import os
+from loaders.npi import NpiLoader
 
 @click.group()
 def start():
     print("Starting...")
+
+@click.command()
+@click.option('--infile', '-i', type=click.File('r'), help="CSV file with NPI data")
+def npi(infile):
+    print("Import NPI data")
+    npi_loader = NpiLoader(infile, table_name="kyle_npi")
+    # npi_loader.create_table()
+    npi_loader.load()
 
 @click.command()
 @click.argument('infile', type=click.File('r'))
@@ -50,6 +59,7 @@ def readCsv(infile):
     print("All done")
 
 start.add_command(readCsv, name="csv")
+start.add_command(npi)
 
 if __name__ == '__main__':
     start()
