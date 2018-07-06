@@ -12,9 +12,10 @@ def start():
 
 @click.command()
 @click.option('--infile', '-i', type=click.File('r'), help="CSV file with NPI data")
-def npi(infile):
+@click.option('--batch-size', '-b', type=click.INT, help="Batch size")
+def npi(infile, batch_size):
     print("Import NPI data")
-    npi_loader = NpiLoader(infile, table_name="kyle_npi")
+    npi_loader = NpiLoader(infile, table_name="kyle_npi", batch_size=batch_size)
     # npi_loader.create_table()
     npi_loader.load()
 

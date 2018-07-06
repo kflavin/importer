@@ -10,7 +10,7 @@ class NpiLoader(object):
     Load NPI data
     """
 
-    def __init__(self, infile, table_name="npi", batch_size="1000"):
+    def __init__(self, infile, table_name="npi", batch_size=1000):
         self.infile = infile
         self.table_name = table_name
         self.batch_size = batch_size
@@ -424,24 +424,43 @@ class NpiLoader(object):
         query += on_dupe_values
         return query
 
+    def __submit_batch(self, query, data):
+        # print("Execute query")
+        try:
+            # cursor.execute(sql, (arg1, arg2))
+            self.cursor.executemany(query, data)
+            # print("Commit query")
+            self.cnx.commit()
+        except:
+            # print(self.cursor._last_executed)
+            print(self.cursor.statement)
+            raise
+        # self.cursor.executemany(q, all_data)
+        # self.cnx.commit()
+
+
 
     def load(self):
-        print("NPI loader")
-
-
+        print("NPI loader, batch size = {}".format(self.batch_size))
         reader = csv.DictReader(self.infile)
         # headers = [ key for key in next(reader).keys() ]
         # q = self.insert_query(headers)
         q = self.insert_query(self.__clean_fields(reader.fieldnames))
 
-        all_data = []
-        count = 0
+        # all_data = []
+        row_count = 0
+        batch = []
+        batch_count = 1
+
         for row in reader:
-            # if count >= self.batch_size:
-            #     batch = []
-
-            
-
+            if row_count >= self.batch_size:
+                print("Submitting batch {}".format(batch_count))
+                self.__submit_batch(q, batch)
+                batch = []
+                row_count = 0
+                batch_count += 1
+            else:
+                row_count += 1
 
             columns, values = zip(*row.items())
 
@@ -450,22 +469,14 @@ class NpiLoader(object):
 
             # print(columns)
             # print(values)
+            # print(len(pickle.dumps(data)))
 
-            print(len(pickle.dumps(data)))
+            # all_data.append(data)
+            batch.append(data)
 
-            all_data.append(data)
-
-        print("Execute query")
-        try:
-            # cursor.execute(sql, (arg1, arg2))
-            self.cursor.executemany(q, all_data)
-            print("Commit query")
-            self.cnx.commit()
-        except:
-            # print(self.cursor._last_executed)
-            print(self.cursor.statement)
-            raise
-        # self.cursor.executemany(q, all_data)
-        # self.cnx.commit()
+        # Get any remaining rows
+        if batch:
+            print("Submitting batch {}".format(batch_count))
+            self.__submit_batch(q, batch)
 
         print("All done")
