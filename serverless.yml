@@ -12,6 +12,9 @@ custom:
   awsImageId: ${env:aws_image_id}
   awsInstanceType: ${env:aws_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
+  awsRdsSecurityGroup: ${env:aws_rds_security_group}
+  subnet1: ${env:aws_subnet_1}
+  subnet2: ${env:aws_subnet_2}
   pythonRequirements:
     dockerizePip: false
 
@@ -25,9 +28,30 @@ provider:
     aws_image_id: ${self:custom.awsImageId}
     aws_instance_type: ${self:custom.awsInstanceType}
     aws_security_groups: ${self:custom.awsSecurityGroups}
+    # aws_subnet_1: ${self:custom.subnet1}
+    # aws_subnet_2: ${self:custom.subnet2}
     s3_bucket: {Ref: ScriptBucket}
     db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
     db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
+    db_user: ${env:db_user}
+    db_password: ${env:db_password}
+    db_schema: ${env:db_schema}
+
+  vpc:
+    securityGroupIds:
+      - "sg-b6039cfd"
+    subnetIds:
+      - "subnet-7ba13b51"
+      - "subnet-f4cb9e82"
+  # vpc:
+  #   securityGroupIds:
+  #     # - "sg-b6039cfd"
+  #     - ${env:aws_security_groups}
+  #     #- ${self:custom.awsSecurityGroups}
+  #   # subnetIds:
+  #   #   # — ${env:aws_subnet_1}
+  #   #   — "subnet-7ba13b51"
+  #   #   - "subnet-f4cb9e82"
     
   iamRoleStatements:
     - Effect: Allow
@@ -40,6 +64,14 @@ provider:
         - "ec2:DescribeSubnets"
         - "ec2:DescribeVpcs"
       Resource: "*"
+    - Effect: Allow
+      Action: "s3:*"
+      Resource:
+        - "Fn::Join":
+            - ""
+            -
+              - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
+              - "/*"
 
 functions:
   # Testing
@@ -48,8 +80,19 @@ functions:
   # Import NPI data
   npi_importer:
     handler: backend/import_npi.handler
+    # vpc:
+    #   securityGroupIds:
+    #     # - "sg-b6039cfd"
+    #     - ${env:aws_security_groups}
+    #     #- ${self:custom.awsSecurityGroups}
+    #   subnetIds:
+    #     — ${env:aws_subnet_1}
+    #     # — ${env:aws_subnet_2}
 
 resources:
+  Outputs:
+    ScriptBucket:
+      Value: {Ref: ScriptBucket}
   Resources:
     ScriptBucket:
       Type: "AWS::S3::Bucket"
@@ -57,8 +100,8 @@ resources:
       Type: AWS::RDS::DBInstance
       Properties:
         # DBName: !Ref DBName
-        # VPCSecurityGroups:
-          # - sg-edd4e2a6
+        VPCSecurityGroups:
+          - ${self:custom.awsRdsSecurityGroup}
         # - Fn::ImportValue: !Sub "${SgStackName}-RdsSG"
         AllocatedStorage: 10
         # DBInstanceClass: db.m1.medium
