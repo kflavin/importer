@@ -4,18 +4,17 @@ from collections import OrderedDict
 import mysql.connector as connector
 import os
 import pickle
+import itertools
 
 class NpiLoader(object):
     """
     Load NPI data
     """
 
-    def __init__(self, infile, table_name="npi", batch_size=1000):
-        self.infile = infile
+    def __init__(self, user, host, password, database, table_name="npi"):
         self.table_name = table_name
-        self.batch_size = batch_size
 
-        self.cnx = connector.connect(user=os.environ['db_user'], host=os.environ['db_host'], database=os.environ['db_schema'])
+        self.cnx = connector.connect(user=user, password=password, host=host, database=database)
         self.cursor = self.cnx.cursor()
 
     def __clean_field(self, field):
@@ -37,25 +36,6 @@ class NpiLoader(object):
         return columns
 
     def create_table(self):
-
-        fields = csv.DictReader(self.infile).fieldnames
-        columns = self.__clean_fields(fields)
-        for col in columns:
-            print(col)
-        # from pprint import pprint
-        # pprint(columns)
-
-        # create_table_sql  = "CREATE TABLE IF NOT EXISTS `{table_name}` (".format(table_name=self.table_name)
-        # create_table_sql += table_columns
-        # create_table_sql += additional_table_columns
-        # create_table_sql += primary_key
-        # create_table_sql += keys
-
-
-        return
-
-
-
         create_table_sql = """
             CREATE TABLE IF NOT EXISTS `{table_name}` (
             `NPI` int(11) NOT NULL,
@@ -438,11 +418,70 @@ class NpiLoader(object):
         # self.cursor.executemany(q, all_data)
         # self.cnx.commit()
 
+    def step_load(self, infile, start, end):
+        """
+        For use with AWS step functions.  If your CSV has headers, start=0 will be your header.  It's
+        up to the user to skip this row when using this function.
+        """
+        print("NPI loader for step functions.  Start = {}, End = {}".format(start, end))
+
+        # Get the file headers first
+        with open(infile, 'r') as headerFile:
+            columnNames = csv.DictReader(headerFile).fieldnames
+
+        fileh = open(infile, 'r')
+        lines = [line for line in itertools.islice(fileh, start, end)]
+        reader = csv.DictReader(lines, fieldnames=columnNames)
+
+        # Our INSERT query
+        q = self.insert_query(self.__clean_fields(columnNames))
+
+        batch = []
+        for row in reader:
+            columns, values = zip(*row.items())
+            data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
+            batch.append(data)
+
+        self.__submit_batch(q, batch)
 
 
-    def load(self):
-        print("NPI loader, batch size = {}".format(self.batch_size))
-        reader = csv.DictReader(self.infile)
+
+    def step_load2(self, infile, position, batch_size):
+        print("NPI loader for step functions.  Batch size = {}".format(batch_size))
+
+        # Get the file headers first
+        with open(infile, 'r') as headerFile:
+            columnNames = csv.DictReader(headerFile).fieldnames
+
+        # Our INSERT query
+        q = self.insert_query(self.__clean_fields(columnNames))
+
+        # Now proceed with the data
+        fileh = open(infile, 'r')
+        fileh.seek(position)
+        
+        reader = csv.DictReader(fileh, fieldnames=columnNames)
+
+        batch = []
+        for i, row in enumerate(reader):
+            if not i < batch_size:
+                break
+
+            columns, values = zip(*row.items())
+            data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
+            batch.append(data)
+
+        self.__submit_batch(q, batch)
+
+        end_pos = fileh.tell()
+        print("End position is {}".format(end_pos))
+        return end_pos
+
+
+    def load(self, infile, batch_size=1000):
+        print("NPI loader, batch size = {}".format(batch_size))
+        # reader = csv.DictReader(open(infile, 'r'))
+        reader = csv.DictReader(infile)
         # headers = [ key for key in next(reader).keys() ]
         # q = self.insert_query(headers)
         q = self.insert_query(self.__clean_fields(reader.fieldnames))
@@ -453,7 +492,7 @@ class NpiLoader(object):
         batch_count = 1
 
         for row in reader:
-            if row_count >= self.batch_size:
+            if row_count >= batch_size:
                 print("Submitting batch {}".format(batch_count))
                 self.__submit_batch(q, batch)
                 batch = []

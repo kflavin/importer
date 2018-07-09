@@ -15,13 +15,18 @@ def hello():
     print("Say hello!")
 
 @click.command()
-@click.option('--infile', '-i', type=click.File('r'), help="CSV file with NPI data")
+@click.option('--infile', '-i', type=click.STRING, help="CSV file with NPI data")
 @click.option('--batch-size', '-b', type=click.INT, help="Batch size")
-def npi(infile, batch_size):
+@click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
+def npi(infile, batch_size, step_load):
     print("Import NPI data")
-    npi_loader = NpiLoader(infile, table_name="kyle_npi", batch_size=batch_size)
+    npi_loader = NpiLoader(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'], table_name="kyle_npi")
     # npi_loader.create_table()
-    npi_loader.load()
+    if step_load:
+        print("Using Step Loader")
+        npi_loader.step_load(infile, *step_load)
+    else:
+        npi_loader.load(open(infile, 'r'), batch_size=batch_size)
 
 @click.command()
 @click.argument('infile', type=click.File('r'))
