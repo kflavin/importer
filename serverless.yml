@@ -4,6 +4,7 @@ frameworkVersion: ">=1.9.0 <2.0.0"
 
 plugins:
   - serverless-python-requirements
+  - serverless-plugin-scripts
 
 custom:
   stage: ${opt:stage, self:provider.stage}
@@ -22,6 +23,9 @@ custom:
   db_schema: ${env:db_schema}
   pythonRequirements:
     dockerizePip: false
+  # scripts:
+  #   hooks:
+  #     'deploy:createDeploymentArtifacts': source .env.aws
 
 provider:
   name: aws
