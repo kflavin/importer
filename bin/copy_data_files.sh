@@ -3,10 +3,11 @@ set -eu
 
 DATA_FILE=$1
 STAGE="${2:-dev}"
+APP=importer
 
 BUCKET_NAME=$(aws \
     cloudformation describe-stacks \
-    --stack-name "importer-${STAGE}" \
+    --stack-name "${APP}-${STAGE}" \
     --query "Stacks[0].Outputs[?OutputKey=='ScriptBucket'] | [0].OutputValue" \
     --output text)
 
