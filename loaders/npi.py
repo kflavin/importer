@@ -418,7 +418,7 @@ class NpiLoader(object):
         # self.cursor.executemany(q, all_data)
         # self.cnx.commit()
 
-    def step_load(self, infile, start, end):
+    def step_load(self, infile, start, end=None):
         """
         For use with AWS step functions.  If your CSV has headers, start=0 will be your header.  It's
         up to the user to skip this row when using this function.
@@ -447,6 +447,10 @@ class NpiLoader(object):
 
 
     def step_load2(self, infile, position, batch_size):
+        """
+        This attempts to use file byte locations to split the file.  It is not working, because tell()
+        can't be used in conjunction with the CSV module, which call next().
+        """
         print("NPI loader for step functions.  Batch size = {}".format(batch_size))
 
         # Get the file headers first
