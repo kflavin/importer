@@ -16,7 +16,7 @@ def hello():
 
 @click.command()
 @click.option('--infile', '-i', type=click.STRING, help="CSV file with NPI data")
-@click.option('--batch-size', '-b', type=click.INT, help="Batch size")
+@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size")
 @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 def npi(infile, batch_size, step_load):
     print("Import NPI data")

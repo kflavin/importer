@@ -1,10 +1,7 @@
 import os
 import boto3
 import botocore
-from pprint import pprint
 from loaders.npi import NpiLoader
-from pprint import pprint
-
 
 def handler(event, context):
     print("Import NPI data")

@@ -1,10 +1,9 @@
 
 import csv
+import itertools
+import textwrap
 from collections import OrderedDict
 import mysql.connector as connector
-import os
-import pickle
-import itertools
 
 class NpiLoader(object):
     """
@@ -396,12 +395,25 @@ class NpiLoader(object):
         values = values.rstrip().rstrip(",")
         on_dupe_values = on_dupe_values.rstrip().rstrip(",")
 
-        query  = "INSERT INTO {} (".format(self.table_name)
-        query += cols
-        query += ") VALUES ("
-        query += values
-        query += ") ON DUPLICATE KEY UPDATE "
-        query += on_dupe_values
+
+        query = f"""
+            INSERT INTO {self.table_name}
+            ({cols})
+            VALUES ({values})
+            ON DUPLICATE KEY UPDATE
+            {on_dupe_values}
+        """
+
+        print(textwrap.dedent(query))
+
+        # query  = "INSERT INTO {} (".format(self.table_name)
+        # query += cols
+        # query += ") VALUES ("
+        # query += values
+        # query += ") ON DUPLICATE KEY UPDATE "
+        # query += on_dupe_values
+
+
         return query
 
     def __submit_batch(self, query, data):
@@ -509,10 +521,6 @@ class NpiLoader(object):
 
             # data = {key: value for key, value in row.items() }
             data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
-
-            # print(columns)
-            # print(values)
-            # print(len(pickle.dumps(data)))
 
             # all_data.append(data)
             batch.append(data)
