@@ -15,6 +15,11 @@ custom:
   awsRdsSecurityGroup: ${env:aws_rds_security_group}
   subnet1: ${env:aws_subnet_1}
   subnet2: ${env:aws_subnet_2}
+  db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+  db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
+  db_user: ${env:db_user}
+  db_password: ${env:db_password}
+  db_schema: ${env:db_schema}
   pythonRequirements:
     dockerizePip: false
 
@@ -31,11 +36,11 @@ provider:
     # aws_subnet_1: ${self:custom.subnet1}
     # aws_subnet_2: ${self:custom.subnet2}
     s3_bucket: {Ref: ScriptBucket}
-    db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
-    db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
-    db_user: ${env:db_user}
-    db_password: ${env:db_password}
-    db_schema: ${env:db_schema}
+    db_host: ${self:custom.db_host}
+    db_port: ${self:custom.db_port}
+    db_user: ${self:custom.db_user}
+    db_password: ${self:custom.db_password}
+    db_schema: ${self:custom.db_schema}
 
   vpc:
     securityGroupIds:
@@ -88,6 +93,8 @@ functions:
     #   subnetIds:
     #     — ${env:aws_subnet_1}
     #     # — ${env:aws_subnet_2}
+  npi_step_importer:
+    handler: backend/import_npi_step.handler
 
 resources:
   Outputs:
@@ -107,14 +114,13 @@ resources:
         # DBInstanceClass: db.m1.medium
         DBInstanceClass: db.t2.micro
         Engine: MySQL
-        MasterUsername: myusername
-        MasterUserPassword: mylongpassword8888
+        MasterUsername: ${self:custom.db_user}
+        MasterUserPassword: ${self:custom.db_password}
         PubliclyAccessible: false
         # DBSubnetGroupName: !Ref SubnetGroup
         StorageType: Standard
         # DBInstanceIdentifier: !Ref DBName
       DeletionPolicy: Delete
-      # DeletionPolicy: Snapshot
 
 package:
   exclude:
