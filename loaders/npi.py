@@ -1,4 +1,3 @@
-
 import csv
 import itertools
 import textwrap
@@ -412,7 +411,6 @@ class NpiLoader(object):
         # query += values
         # query += ") ON DUPLICATE KEY UPDATE "
         # query += on_dupe_values
-
 
         return query
 

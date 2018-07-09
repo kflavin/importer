@@ -1,4 +1,3 @@
-
 import csv
 import click
 import _mysql

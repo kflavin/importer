@@ -99,6 +99,8 @@ functions:
     #     # — ${env:aws_subnet_2}
   npi_step_importer:
     handler: backend/import_npi_step.handler
+    timeout: 300
+    memory: 1024
 
 resources:
   Outputs:
