@@ -9,10 +9,14 @@ class NpiLoader(object):
     Load NPI data
     """
 
-    def __init__(self, user, host, password, database, table_name="npi"):
+    def __init__(self, user, host, password, database, table_name="npi", set_db=True):
         self.table_name = table_name
+        self.database = database
 
-        self.cnx = connector.connect(user=user, password=password, host=host, database=database)
+        self.cnx = connector.connect(user=user, password=password, host=host)
+        if set_db:
+            self.cnx.database = database
+
         self.cursor = self.cnx.cursor()
 
     def __clean_field(self, field):
@@ -32,6 +36,18 @@ class NpiLoader(object):
             columns.append(self.__clean_field(field))
 
         return columns
+    
+    def create_database(self, set_db=True):
+        """
+        Helper method for the class, for my testing purposes.
+        """
+        create_database_sql = f"create database {self.database}"
+        self.cursor.execute(create_database_sql)
+        self.cnx.commit()
+        
+        # Set as the active db
+        if set_db:
+            self.cnx.database = self.database
 
     def create_table(self):
         create_table_sql = """
