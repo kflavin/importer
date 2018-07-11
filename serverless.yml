@@ -83,6 +83,9 @@ provider:
               - "/*"
 
 functions:
+  # Create the initial database
+  create_db:
+    handler: backend/create_db.handler
   # Testing
   import_csv:
     handler: backend/import_csv.handler
@@ -118,13 +121,15 @@ resources:
         # - Fn::ImportValue: !Sub "${SgStackName}-RdsSG"
         AllocatedStorage: 10
         # DBInstanceClass: db.m1.medium
-        DBInstanceClass: db.t2.micro
+        DBInstanceClass: db.m4.large
+        # DBInstanceClass: db.t2.micro
         Engine: MySQL
         MasterUsername: ${self:custom.db_user}
         MasterUserPassword: ${self:custom.db_password}
         PubliclyAccessible: false
         # DBSubnetGroupName: !Ref SubnetGroup
-        StorageType: Standard
+        # StorageType: Standard
+        StorageType: gp2
         # DBInstanceIdentifier: !Ref DBName
       DeletionPolicy: Delete
 
