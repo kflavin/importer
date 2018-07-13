@@ -24,7 +24,7 @@ This template creates RDS and S3 resources.
 The step function isn't automatically created through the resources yet.  You will need to create the step function
 manually with __resources/npi_state_machine.json__ and set the ARN to point to the __npi_step_importer__ function.
 
-## Step Importer
+### Step Importer
 
 Lambda + Step functions to import
 
@@ -41,7 +41,7 @@ Call step function inside the AWS console with the following:
 
 TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem limit and cannot download the full file at once.
 
-## EC2 Importer
+### EC2 Importer
 
 Deploys an ephemeral EC2 instance to handle data import.
 
