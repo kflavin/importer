@@ -14,12 +14,17 @@ class NpiLoader(object):
         self.database = database
 
         self.cnx = connector.connect(user=user, password=password, host=host)
+
+        # When creating the database for the first time, set to False
         if set_db:
             self.cnx.database = database
 
         self.cursor = self.cnx.cursor()
 
     def __clean_field(self, field):
+        """
+        Sanitize NPI data
+        """
         field_clean = ' '.join(field.split())   # replace multiple whitespace characters with one space
         field_clean = field_clean.replace("(", "")
         field_clean = field_clean.replace(")", "")
@@ -50,6 +55,9 @@ class NpiLoader(object):
             self.cnx.database = self.database
 
     def create_table(self):
+        """
+        Create the NPI table
+        """
         create_table_sql = """
             CREATE TABLE IF NOT EXISTS `{table_name}` (
             `NPI` int(11) NOT NULL,
@@ -397,6 +405,9 @@ class NpiLoader(object):
 
 
     def insert_query(self, columns):
+        """
+        Construct the NPI INSERT query
+        """
         cols = ""
         values = ""
         on_dupe_values = ""
@@ -509,6 +520,10 @@ class NpiLoader(object):
 
 
     def load(self, infile, batch_size=1000):
+        """
+        cli loader which accepts a batch size.  This won't work in lambda for large datasets due to the
+        5 min maximum timeout.
+        """
         print("NPI loader, batch size = {}".format(batch_size))
         # reader = csv.DictReader(open(infile, 'r'))
         reader = csv.DictReader(infile)
