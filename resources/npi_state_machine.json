@@ -1,0 +1,46 @@
+{
+  "Comment": "Imports contacts from CSV file.",
+  "StartAt": "Import",
+  "States": {
+    "Import": {
+      "Type": "Task",
+      "Resource": "<LAMBDA ARN GOES HERE>",
+      "Next": "CheckResults"
+    },
+    "CheckResults" : {
+      "Type": "Choice",
+      "Choices":[ {
+        "And": [
+            {  
+              	"Variable": "$.code",
+             	"NumericEquals": 0
+            },
+            { 	
+                "Variable": "$.results.finished",
+                "BooleanEquals": false
+            }
+      	], 
+        "Next": "Import" },    
+        {
+        "And": [
+            {  
+              	"Variable": "$.code",
+             	"NumericEquals": 0
+            },
+            { 	
+                "Variable": "$.results.finished",
+                "BooleanEquals": true
+            }
+      	], 
+        "Next": "SuccessState" }],
+      	"Default": "FailState" 
+    },
+    "SuccessState": {
+      "Type": "Succeed"
+    },
+    "FailState": {
+      "Type": "Fail",
+      "Cause": "$.results.errors"
+    }
+  }
+}
