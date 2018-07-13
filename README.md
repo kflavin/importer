@@ -39,7 +39,7 @@ Call step function inside the AWS console with the following:
 }
 ```
 
-TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem limit and cannot download the full file at once.
+___TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem limit and cannot download the full file at once.___
 
 ### EC2 Importer
 
