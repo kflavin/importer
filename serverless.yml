@@ -21,11 +21,12 @@ custom:
   db_user: ${env:db_user}
   db_password: ${env:db_password}
   db_schema: ${env:db_schema}
+  instance_profile: ${env:instance_profile}
   pythonRequirements:
     dockerizePip: false
-  # scripts:
-  #   hooks:
-  #     'deploy:createDeploymentArtifacts': source .env.aws
+  scripts:
+    hooks:
+      'deploy:finalize': bash bin/stage_runner_to_s3.sh
 
 provider:
   name: aws
@@ -45,22 +46,15 @@ provider:
     db_user: ${self:custom.db_user}
     db_password: ${self:custom.db_password}
     db_schema: ${self:custom.db_schema}
-
+    instance_profile: ${self:custom.instance_profile}
   vpc:
     securityGroupIds:
-      - "sg-b6039cfd"
+      - ${self:custom.awsSecurityGroups}
     subnetIds:
-      - "subnet-7ba13b51"
-      - "subnet-f4cb9e82"
-  # vpc:
-  #   securityGroupIds:
-  #     # - "sg-b6039cfd"
-  #     - ${env:aws_security_groups}
-  #     #- ${self:custom.awsSecurityGroups}
-  #   # subnetIds:
-  #   #   # — ${env:aws_subnet_1}
-  #   #   — "subnet-7ba13b51"
-  #   #   - "subnet-f4cb9e82"
+      - ${self:custom.subnet1}
+      - ${self:custom.subnet2}
+      # - "subnet-7ba13b51"
+      # - "subnet-f4cb9e82"
     
   iamRoleStatements:
     - Effect: Allow
@@ -87,19 +81,12 @@ functions:
   create_db:
     handler: backend/create_db.handler
   # Testing
-  import_csv:
-    handler: backend/import_csv.handler
+  import_npi_ec2:
+    handler: backend/import_npi_ec2.handler
   # Import NPI data
   npi_importer:
     handler: backend/import_npi.handler
-    # vpc:
-    #   securityGroupIds:
-    #     # - "sg-b6039cfd"
-    #     - ${env:aws_security_groups}
-    #     #- ${self:custom.awsSecurityGroups}
-    #   subnetIds:
-    #     — ${env:aws_subnet_1}
-    #     # — ${env:aws_subnet_2}
+  # Import NPI data with step function
   npi_step_importer:
     handler: backend/import_npi_step.handler
     timeout: 300
@@ -115,22 +102,17 @@ resources:
     RDS:
       Type: AWS::RDS::DBInstance
       Properties:
-        # DBName: !Ref DBName
         VPCSecurityGroups:
           - ${self:custom.awsRdsSecurityGroup}
-        # - Fn::ImportValue: !Sub "${SgStackName}-RdsSG"
         AllocatedStorage: 10
-        # DBInstanceClass: db.m1.medium
-        DBInstanceClass: db.m4.large
         # DBInstanceClass: db.t2.micro
+        DBInstanceClass: db.m4.large
         Engine: MySQL
         MasterUsername: ${self:custom.db_user}
         MasterUserPassword: ${self:custom.db_password}
         PubliclyAccessible: false
-        # DBSubnetGroupName: !Ref SubnetGroup
-        # StorageType: Standard
         StorageType: gp2
-        # DBInstanceIdentifier: !Ref DBName
+        # StorageType: Standard
       DeletionPolicy: Delete
 
 package:
