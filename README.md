@@ -4,7 +4,9 @@
 
 ```bash
 cp env.template .env.aws
+vim .env.aws
 # < edit values >
+source .env.aws
 sls deploy --stage=dev
 
 # Create initial database
@@ -25,7 +27,7 @@ Lambda + Step functions to import
 
 Function name: npi_step_importer
 
-Call from step function with the following:
+Call step function inside the AWS console with the following:
 
 ```json
 {
@@ -34,6 +36,7 @@ Call from step function with the following:
 }
 ```
 
+TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem limit and cannot download the full file at once.
 
 ## EC2 Importer
 
