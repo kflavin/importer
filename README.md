@@ -3,10 +3,13 @@
 ## Install
 
 ```bash
+# Configure environment
 cp env.template .env.aws
 vim .env.aws
 # < edit values >
 source .env.aws
+
+# Deploy stack (RDS, Lambda, S3)
 sls deploy --stage=dev
 
 # Create initial database
@@ -43,3 +46,14 @@ TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem lim
 Deploys an ephemeral EC2 instance to handle data import.
 
 ** Not yet functional **
+
+
+## Destroy
+
+```bash
+# S3 files must be removed, or Cloudformation cannot delete the bucket
+bin/delete_bucket_files.sh
+
+# Tear down stack
+sls remove --stage=dev
+```
