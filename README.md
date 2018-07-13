@@ -6,7 +6,7 @@
 # Configure environment
 cp env.template .env.aws
 vim .env.aws
-# < edit values >
+# < edit values, see below >
 source .env.aws
 
 # Deploy stack (RDS, Lambda, S3)
@@ -23,6 +23,25 @@ This template creates RDS and S3 resources.
 
 The step function isn't automatically created through the resources yet.  You will need to create the step function
 manually with __resources/npi_state_machine.json__ and set the ARN to point to the __npi_step_importer__ function.
+
+#### Environment values
+
+```bash
+export db_user='your db user'
+export db_password='your db password'
+export db_host='RDS endpoint'
+export db_schema='database name'
+export aws_region='us-east-1'
+export aws_key='Your AWS SSH key'
+export aws_security_groups='Security group for EC2 and Lambda'
+export aws_subnet_1='Subnet1 for EC2 and Lambda'
+export aws_subnet_2='Subnet2 for EC2 and Lambda'
+export aws_rds_security_group='Security group for RDS'
+# The following are for the EC2 function only, not needed for Step function
+export instance_profile='IAM role with S3 access must be preconfigured'
+export aws_image_id='ami-14c5486b'
+export aws_instance_type='t2.small'
+```
 
 ### Step Importer
 
