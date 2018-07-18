@@ -3,12 +3,22 @@ import boto3
 from pprint import pprint
 
 user_data_tmpl = """#!/bin/bash
-echo "Hello World" >> /tmp/data.txt
-sudo yum install -y awscli python3 python3-devel gcc mysql-devel
-aws s3 cp s3://{s3_bucket}/importer importer/ --recursive
-aws s3 cp s3://{s3_bucket}/npidata_pfile_10k.csv data/
-cd importer
-pip3 install -r requirements.txt
+env >> /tmp/myenvironment
+pwd >> /tmp/pwd
+whoami >> /tmp/whoami
+sudo yum install -y awscli python3 python3-devel python36-pip gcc mysql-devel
+# aws s3 cp s3://{s3_bucket}/lib /opt/ --recursive
+# aws s3 cp s3://{s3_bucket}/npidata_pfile_10k.csv data/
+aws s3 cp s3://{s3_bucket}/importer.tar.gz /opt
+cd /opt
+tar xzvf importer.tar.gz
+cd importer*
+sudo pip-3.6 install -r requirements.txt
+export db_user=$(aws ssm get-parameters --names "db_user" --region us-east-1 --with-decryption)
+export db_password=$(aws ssm get-parameters --names "db_password" --region us-east-1 --with-decryption)
+export db_host=$(aws ssm get-parameters --names "db_host" --region us-east-1 --with-decryption)
+env >> /tmp/myenvironment2
+./runner-import.py npi create
 """
 
 def handler(event, context):
@@ -19,6 +29,7 @@ def handler(event, context):
     imageId = os.environ.get('aws_image_id')
     instanceType = os.environ.get('aws_instance_type')
     securityGroups = os.environ.get('aws_security_groups').split(",")
+    subnetId = os.environ.get('aws_subnet_id')
     s3_bucket = os.environ.get('s3_bucket')
     instance_profile = os.environ.get('instance_profile')
 
@@ -26,12 +37,20 @@ def handler(event, context):
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
-        NetworkInterfaces=[{
+        # NetworkInterfaces=[{
+        #         # 'DeviceIndex': 0,
+        #         # 'AssociatePublicIpAddress': True,
+        #         # 'AssociatePublicIpAddress': False,
+        #         'Groups': securityGroups
+        #     }],
+        NetworkInterfaces=[
+            {
                 'DeviceIndex': 0,
-                # 'AssociatePublicIpAddress': True,
+                'SubnetId': subnetId,
                 'AssociatePublicIpAddress': False,
                 'Groups': securityGroups
-            }],
+            },
+        ],
         TagSpecifications=[{
                 'ResourceType': 'instance',
                 'Tags': [

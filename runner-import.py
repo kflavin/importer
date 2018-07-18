@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 import csv
 import click
 import _mysql
 import mysql.connector as connector
 import os
-from loaders.npi import NpiLoader
+from importer.loaders.npi import NpiLoader #, preprocess
 
 @click.group()
 def start():
@@ -13,19 +14,53 @@ def start():
 def hello():
     print("Say hello!")
 
+@click.group()
+def npi():
+    pass
+
+@click.command()
+@click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table to create")
+def create(table_name):
+    """
+    Create the initial NPI table.
+    """
+    print(f"Create NPI Table: {table_name}")
+    npi_loader = NpiLoader(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'], table_name=table_name)
+    npi_loader.create_table()
+
 @click.command()
 @click.option('--infile', '-i', type=click.STRING, help="CSV file with NPI data")
 @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size")
 @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
-def npi(infile, batch_size, step_load):
-    print("Import NPI data")
-    npi_loader = NpiLoader(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'], table_name="kyle_npi")
+@click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table name to load.")
+def load(infile, batch_size, step_load, table_name):
+    """
+    The NPI importer
+    """
+    print("Import NPI data...")
+    npi_loader = NpiLoader(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'], table_name=table_name)
     # npi_loader.create_table()
     if step_load:
         print("Using Step Loader")
         npi_loader.step_load(infile, *step_load)
     else:
         npi_loader.load(open(infile, 'r'), batch_size=batch_size)
+    print(f"Data loaded to table: {table_name}")
+
+# @click.command()
+# @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
+# @click.option('--outfile', '-o', type=click.STRING, help="Filename to write out")
+# def npi_preprocess(infile, outfile):
+#     """
+#     Preprocess NPI csv file to do things like remove extraneous columns
+#     """
+#     print("Clean NPI CSV...")
+
+#     if not outfile:
+#         outfile = infile[:infile.rindex(".")] + ".clean.csv"
+
+#     preprocess(infile, outfile)
+#     print(f"New file written to {outfile}")
 
 @click.command()
 @click.argument('infile', type=click.File('r'))
@@ -70,6 +105,9 @@ def readCsv(infile):
 start.add_command(readCsv, name="csv")
 start.add_command(npi)
 start.add_command(hello)
+npi.add_command(load)
+npi.add_command(create)
+# npi.add_command(npi_preprocess, name="preprocess")
 
 if __name__ == '__main__':
     start()

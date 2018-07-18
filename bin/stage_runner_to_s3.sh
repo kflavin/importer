@@ -1,6 +1,8 @@
 #!/bin/bash
 set -eu
 
+echo $(pwd)
+
 STAGE="${1:-dev}"
 APP=importer
 
@@ -12,6 +14,7 @@ BUCKET_NAME=$(aws \
 
 echo "${BUCKET_NAME}"
 
-aws s3 cp requirements.txt s3://${BUCKET_NAME}/importer/
-aws s3 cp runner-import.py s3://${BUCKET_NAME}/importer/
-aws s3 cp loaders s3://${BUCKET_NAME}/importer/loaders/ --recursive
+# aws s3 cp requirements.txt s3://${BUCKET_NAME}/lib/
+# aws s3 cp runner-import.py s3://${BUCKET_NAME}/lib/
+# aws s3 cp importer s3://${BUCKET_NAME}/lib/importer/ --recursive
+aws s3 cp dist/*.tar.gz s3://${BUCKET_NAME}/importer.tar.gz

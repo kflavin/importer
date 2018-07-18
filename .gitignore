@@ -3,3 +3,6 @@ data/*
 .serverless/*
 env.*
 *.pyc
+dist/*
+node_modules
+test*.py
