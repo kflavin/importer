@@ -17,6 +17,7 @@ custom:
   # subnet1: ${env:aws_subnet_1}
   # subnet2: ${env:aws_subnet_2}
   subnet_id: ${env:aws_subnet_id}
+  vpc_id: ${env:aws_vpc_id}
   db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
   db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
   db_user: ${env:db_user}
@@ -40,6 +41,7 @@ provider:
     aws_instance_type: ${self:custom.awsInstanceType}
     aws_security_groups: ${self:custom.awsSecurityGroups}
     aws_subnet_id: ${self:custom.subnet_id}
+    aws_vpc_id: ${self:custom.vpc_id}
     # aws_subnet_1: ${self:custom.subnet1}
     # aws_subnet_2: ${self:custom.subnet2}
     s3_bucket: {Ref: ScriptBucket}
@@ -109,6 +111,12 @@ resources:
   Resources:
     ScriptBucket:
       Type: "AWS::S3::Bucket"
+    VpcEndpointEc2: ${file(resources/vpc_endpoint_ec2.yml)}
+    VpcEndpointEc2Msg: ${file(resources/vpc_endpoint_ec2messages.yml)}
+    VpcEndpointSsm: ${file(resources/vpc_endpoint_ssm.yml)}
+    VpcEndpointS3: ${file(resources/vpc_endpoint_s3.yml)}
+    NatGateway: ${file(resources/nat_gateway.yml)}
+    ElasticIP: ${file(resources/elastic_ip.yml)}
     RDS:
       Type: AWS::RDS::DBInstance
       Properties:

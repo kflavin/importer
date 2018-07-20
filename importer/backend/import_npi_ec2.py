@@ -1,26 +1,6 @@
 import os
 import boto3
-from pprint import pprint
-
-user_data_tmpl = """#!/bin/bash
-env >> /tmp/myenvironment
-pwd >> /tmp/pwd
-whoami >> /tmp/whoami
-sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel
-# aws s3 cp s3://{s3_bucket}/lib /opt/ --recursive
-# aws s3 cp s3://{s3_bucket}/npidata_pfile_10k.csv data/
-aws s3 cp s3://{s3_bucket}/importer.tar.gz /opt
-cd /opt
-tar xzvf importer.tar.gz
-cd importer*
-sudo pip-3.6 install -r requirements.txt
-export db_user=$(aws ssm get-parameters --names "db_user" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_password=$(aws ssm get-parameters --names "db_password" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_host=$(aws ssm get-parameters --names "db_host" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_schema=$(aws ssm get-parameters --names "db_schema" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-env >> /tmp/myenvironment2
-./runner-import.py npi create
-"""
+from importer.resources.userdata import user_data_tmpl
 
 def handler(event, context):
     print("Starting instance...")
@@ -34,16 +14,15 @@ def handler(event, context):
     s3_bucket = os.environ.get('s3_bucket')
     instance_profile = os.environ.get('instance_profile')
 
-    user_data = user_data_tmpl.format(s3_bucket=s3_bucket)
+    if not event.get('infile'):
+        raise Exception("Must specify an infile parameter to load.  None given.")
+
+    user_data = user_data_tmpl.format(s3_bucket=s3_bucket, 
+                                    infile=event.get('infile'), 
+                                    table_name=event.get('table_name', 'npi'))
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
-        # NetworkInterfaces=[{
-        #         # 'DeviceIndex': 0,
-        #         # 'AssociatePublicIpAddress': True,
-        #         # 'AssociatePublicIpAddress': False,
-        #         'Groups': securityGroups
-        #     }],
         NetworkInterfaces=[
             {
                 'DeviceIndex': 0,
@@ -73,9 +52,11 @@ def handler(event, context):
     # not yet implemented:
     #  instance will run batch script and terminate on completion
 
+# For testing from the cli
 if __name__ == '__main__':
     class Object(object):
         pass
+
     o = Object()
-    o.function_name="CLI"
+    o.function_name="importer ec2 from cli"
     handler(None, o)

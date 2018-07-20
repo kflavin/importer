@@ -3,41 +3,29 @@ import itertools
 import textwrap
 from collections import OrderedDict
 import mysql.connector as connector
-from importer.sql.create import CREATE_TABLE_SQL
-# import pandas as pd
-
-# def preprocess(infile, outfile):
-#     """
-#     Preprocess the CSV file before import
-#     """
-
-#     # Remove all the "Other Provider" columns
-#     # df = df[df.columns.drop(list(df.filter(regex='Test')))]
-#     df = pd.read_csv(infile)
-
-#     df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
-    
-#     # regex=re.compile("^other provider", re.IGNORECASE)
-#     # df.filter(regex='Test').columns
-
-#     df.to_csv(outfile, sep=',', encoding='utf-8')
+from importer.sql.npi_create_clean import CREATE_TABLE_SQL
+import pandas as pd
 
 class NpiLoader(object):
     """
     Load NPI data
     """
 
-    def __init__(self, user, host, password, database, table_name, set_db=True):
-        self.table_name = table_name
-        self.database = database
+    def __init__(self):
+        pass
 
+    def connect(self, user, host, password, database=None):
         self.cnx = connector.connect(user=user, password=password, host=host)
 
         # When creating the database for the first time, set to False
-        if set_db:
+        if database:
+            self.database = database
             self.cnx.database = database
 
         self.cursor = self.cnx.cursor()
+
+    def set_db(self, database):
+        self.database = database
 
     def __clean_field(self, field):
         """
@@ -51,6 +39,23 @@ class NpiLoader(object):
         field_clean = field_clean.replace(" If outside US", "")
         field_clean = field_clean.replace(" ", "_")
         return field_clean
+
+    def preprocess(self, infile, outfile):
+        """
+        Preprocess the CSV file before import
+        """
+
+        # Remove all the "Other Provider" columns
+        # df = df[df.columns.drop(list(df.filter(regex='Test')))]
+        df = pd.read_csv(infile)
+
+        df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
+        df.columns = [ self.__clean_field(col) for col in df.columns]
+        
+        # regex=re.compile("^other provider", re.IGNORECASE)
+        # df.filter(regex='Test').columns
+
+        df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
 
     def __clean_fields(self, fields):
         columns = []
@@ -70,18 +75,18 @@ class NpiLoader(object):
         
         # Set as the active db
         if set_db:
-            self.cnx.database = self.database
+            self.cnx.database = database
 
-    def create_table(self):
+    def create_table(self, table_name):
         """
         Create the NPI table
         """
-        create_table_sql = CREATE_TABLE_SQL.format(table_name=self.table_name)
+        create_table_sql = CREATE_TABLE_SQL.format(table_name=table_name)
         self.cursor.execute(create_table_sql)
         self.cnx.commit()
 
 
-    def insert_query(self, columns):
+    def insert_query(self, columns, table_name):
         """
         Construct the NPI INSERT query
         """
@@ -100,7 +105,7 @@ class NpiLoader(object):
 
 
         query = f"""
-            INSERT INTO {self.table_name}
+            INSERT INTO {table_name}
             ({cols})
             VALUES ({values})
             ON DUPLICATE KEY UPDATE
@@ -108,13 +113,6 @@ class NpiLoader(object):
         """
 
         print(textwrap.dedent(query))
-
-        # query  = "INSERT INTO {} (".format(self.table_name)
-        # query += cols
-        # query += ") VALUES ("
-        # query += values
-        # query += ") ON DUPLICATE KEY UPDATE "
-        # query += on_dupe_values
 
         return query
 
@@ -132,7 +130,7 @@ class NpiLoader(object):
         # self.cursor.executemany(q, all_data)
         # self.cnx.commit()
 
-    def step_load(self, infile, start, end=None):
+    def step_load(self, table_name, infile, start, end=None):
         """
         For use with AWS step functions.  If your CSV has headers, start=0 will be your header.  It's
         up to the user to skip this row when using this function.
@@ -148,7 +146,7 @@ class NpiLoader(object):
         reader = csv.DictReader(lines, fieldnames=columnNames)
 
         # Our INSERT query
-        q = self.insert_query(self.__clean_fields(columnNames))
+        q = self.insert_query(self.__clean_fields(columnNames), table_name)
 
         batch = []
         for row in reader:
@@ -160,7 +158,7 @@ class NpiLoader(object):
 
 
 
-    def step_load2(self, infile, position, batch_size):
+    def step_load2(self, table_name, infile, position, batch_size):
         """
         This attempts to use file byte locations to split the file.  It is not working, because tell()
         can't be used in conjunction with the CSV module, which call next().
@@ -172,7 +170,7 @@ class NpiLoader(object):
             columnNames = csv.DictReader(headerFile).fieldnames
 
         # Our INSERT query
-        q = self.insert_query(self.__clean_fields(columnNames))
+        q = self.insert_query(self.__clean_fields(columnNames), table_name)
 
         # Now proceed with the data
         fileh = open(infile, 'r')
@@ -195,7 +193,7 @@ class NpiLoader(object):
         print("End position is {}".format(end_pos))
         return end_pos
 
-    def step_load3(self, infile, position=0, batch_size=1000):
+    def step_load3(self, table_name, infile, position=0, batch_size=1000):
         """
         Use byte locations, and read line by line
         """
@@ -219,10 +217,7 @@ class NpiLoader(object):
         # print(csv_line.parseString(cStr).asList())
 
 
-
-
-
-    def load(self, infile, batch_size=1000):
+    def load(self, table_name, infile, batch_size=1000):
         """
         cli loader which accepts a batch size.  This won't work in lambda for large datasets due to the
         5 min maximum timeout.
@@ -232,7 +227,7 @@ class NpiLoader(object):
         reader = csv.DictReader(infile)
         # headers = [ key for key in next(reader).keys() ]
         # q = self.insert_query(headers)
-        q = self.insert_query(self.__clean_fields(reader.fieldnames))
+        q = self.insert_query(self.__clean_fields(reader.fieldnames), table_name)
         columnNames = reader.fieldnames
 
         # all_data = []
