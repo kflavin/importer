@@ -14,12 +14,15 @@ class NpiLoader(object):
     def __init__(self):
         pass
 
-    def connect(self, user, host, password, database=None):
+    def connect(self, user, host, password, database=None, set_db=True):
         self.cnx = connector.connect(user=user, password=password, host=host)
 
         # When creating the database for the first time, set to False
         if database:
             self.database = database
+
+        # Select the database
+        if set_db:
             self.cnx.database = database
 
         self.cursor = self.cnx.cursor()

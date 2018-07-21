@@ -1,9 +1,7 @@
 import os
 import boto3
 import botocore
-from pprint import pprint
 from importer.loaders.npi import NpiLoader
-from pprint import pprint
 
 
 def handler(event, context):

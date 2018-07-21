@@ -1,6 +1,5 @@
 import os
 import boto3
-import botocore
 from importer.loaders.npi import NpiLoader
 import io
 

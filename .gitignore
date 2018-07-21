@@ -6,3 +6,5 @@ env.*
 dist/*
 node_modules
 test*.py
+sandbox/*
+*egg-info*
