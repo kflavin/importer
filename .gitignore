@@ -1,10 +1,17 @@
+# environment specific files
 data/*
 .env.*
 .serverless/*
 env.*
+
+# Python artifacts
 *.pyc
 dist/*
-node_modules
 test*.py
-sandbox/*
 *egg-info*
+
+# Node artifacts
+node_modules
+
+# Sandbox area
+sandbox/*
