@@ -43,5 +43,5 @@ CLEAN_CSV_FILE=$(./runner-import.py npi preprocess -i $CSV_FILE)
 ./runner-import.py npi load -i /data/NPPES/$CLEAN_CSV_FILE -t {table_name}
 
 # Terminate the instance
-# halt -p
+halt -p
 """
