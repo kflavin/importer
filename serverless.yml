@@ -23,6 +23,7 @@ custom:
   db_user: ${env:db_user}
   db_password: ${env:db_password}
   db_schema: ${env:db_schema}
+  npi_table_name: ${env:npi_table_name}
   instance_profile: ${env:instance_profile}
   pythonRequirements:
     dockerizePip: false
@@ -51,6 +52,7 @@ provider:
     db_user: ${self:custom.db_user}
     db_password: ${self:custom.db_password}
     db_schema: ${self:custom.db_schema}
+    npi_table_name: ${self:custom.npi_table_name}
     instance_profile: ${self:custom.instance_profile}
   vpc:
     securityGroupIds:
@@ -88,6 +90,16 @@ functions:
   # Testing
   import_npi_ec2:
     handler: importer/backend/import_npi_ec2.handler
+    # Events don't work with Ref.
+    # Issue https://github.com/serverless/serverless/issues/3034
+    # events:
+    #   - s3:
+    #       bucket:
+    #         Ref: ScriptBucket
+    #       event: s3:ObjectCreated:*
+    #       rules:
+    #         - prefix: npi-out/
+    #         - suffix: .csv
   # Import NPI data
   npi_importer:
     handler: importer/backend/import_npi.handler
@@ -112,12 +124,14 @@ resources:
   Resources:
     ScriptBucket:
       Type: "AWS::S3::Bucket"
+    # Using a NAT gateway instead of VPC endpoints.  Only needed for my local testing.
     # VpcEndpointEc2: ${file(resources/vpc_endpoint_ec2.yml)}
     # VpcEndpointEc2Msg: ${file(resources/vpc_endpoint_ec2messages.yml)}
     # VpcEndpointSsm: ${file(resources/vpc_endpoint_ssm.yml)}
     # VpcEndpointS3: ${file(resources/vpc_endpoint_s3.yml)}
     NatGateway: ${file(resources/nat_gateway.yml)}
     ElasticIP: ${file(resources/elastic_ip.yml)}
+    # Spin up a database.  Only needed for my local testing.
     RDS:
       Type: AWS::RDS::DBInstance
       Properties:

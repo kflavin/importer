@@ -61,7 +61,8 @@ def npi_preprocess(infile, outfile):
 
     npi_loader = NpiLoader()
     npi_loader.preprocess(infile, outfile)
-    print(f"{outfile.split('/')[-1]}")
+    # print(f"{outfile.split('/')[-1]}")
+    print(outfile)
 
 @click.command()
 @click.argument('infile', type=click.File('r'))
