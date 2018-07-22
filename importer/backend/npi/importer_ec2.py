@@ -23,7 +23,7 @@ def handler(event, context):
     instanceType = os.environ.get('aws_instance_type')
     securityGroups = os.environ.get('aws_security_groups').split(",")
     subnetId = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first subnet
-    instance_profile = os.environ.get('instance_profile')
+    instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name', 'npi')
 
     if not filename:
