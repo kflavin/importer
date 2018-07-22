@@ -16,7 +16,7 @@ class S3ObjectInterator(io.RawIOBase):
 def handler(event, context):
     print("Print streaming data")
 
-    obj_stream = S3ObjectInterator(os.environ.get('s3_bucket'), event.get('filename'))
+    obj_stream = S3ObjectInterator(os.environ.get('aws_s3_bucket'), event.get('filename'))
     for line in obj_stream:
         print(line)
 

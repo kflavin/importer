@@ -1,0 +1,19 @@
+---
+  - Effect: Allow
+    Action: "ec2:*"
+    Resource: "*"
+  - Effect: Allow
+    Action:
+      - "iam:PassRole"
+      - "ec2:DescribeSecurityGroups"
+      - "ec2:DescribeSubnets"
+      - "ec2:DescribeVpcs"
+    Resource: "*"
+  - Effect: Allow
+    Action: "s3:*"
+    Resource:
+      - "Fn::Join":
+          - ""
+          -
+            - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
+            - "/*"

@@ -10,7 +10,7 @@ def handler(event, context):
         bucket_name = event['Records'][0]['s3']['bucket']['name']
         bucket_key = event['Records'][0]['s3']['object']['key']
     except:
-        bucket_name = os.environ.get('s3_bucket')
+        bucket_name = os.environ.get('aws_s3_bucket')
         bucket_key = event.get('infile')
 
     # filepath = f"{bucket_name}/{bucket_key}"
@@ -22,15 +22,14 @@ def handler(event, context):
     imageId = os.environ.get('aws_image_id')
     instanceType = os.environ.get('aws_instance_type')
     securityGroups = os.environ.get('aws_security_groups').split(",")
-    subnetId = os.environ.get('aws_subnet_id')
-    s3_bucket = os.environ.get('s3_bucket')
+    subnetId = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first subnet
     instance_profile = os.environ.get('instance_profile')
     table_name = os.environ.get('npi_table_name', 'npi')
 
     if not filename:
         raise Exception("Must specify an filename parameter to load.  None given.")
 
-    user_data = user_data_tmpl.format(s3_bucket=s3_bucket,
+    user_data = user_data_tmpl.format(s3_bucket=bucket_name,
                                     # filepath=event.get('filepath'), 
                                     # filepath=filepath, 
                                     filename=filename,

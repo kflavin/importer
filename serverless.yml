@@ -14,17 +14,16 @@ custom:
   awsInstanceType: ${env:aws_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
   awsRdsSecurityGroup: ${env:aws_rds_security_group}
-  # subnet1: ${env:aws_subnet_1}
-  # subnet2: ${env:aws_subnet_2}
-  subnet_id: ${env:aws_subnet_id}
-  vpc_id: ${env:aws_vpc_id}
+  awsInstanceProfile: ${env:aws_instance_profile}
+  awsPrivateSubnets: ${env:aws_private_subnets}
+  awsPublicSubnets: ${env:aws_public_subnets}
+  vpcId: ${env:aws_vpc_id}
   db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
   db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
   db_user: ${env:db_user}
   db_password: ${env:db_password}
   db_schema: ${env:db_schema}
   npi_table_name: ${env:npi_table_name}
-  instance_profile: ${env:instance_profile}
   pythonRequirements:
     dockerizePip: false
     slim: true
@@ -42,46 +41,45 @@ provider:
     aws_image_id: ${self:custom.awsImageId}
     aws_instance_type: ${self:custom.awsInstanceType}
     aws_security_groups: ${self:custom.awsSecurityGroups}
-    aws_subnet_id: ${self:custom.subnet_id}
-    aws_vpc_id: ${self:custom.vpc_id}
-    # aws_subnet_1: ${self:custom.subnet1}
-    # aws_subnet_2: ${self:custom.subnet2}
-    s3_bucket: {Ref: ScriptBucket}
+    aws_vpc_id: ${self:custom.vpcId}
+    aws_private_subnets: ${self:custom.awsPrivateSubnets}
+    aws_public_subnets: ${self:custom.awsPublicSubnets}
+    aws_instance_profile: ${self:custom.awsInstanceProfile}
+    aws_s3_bucket: {Ref: ScriptBucket}
     db_host: ${self:custom.db_host}
     db_port: ${self:custom.db_port}
     db_user: ${self:custom.db_user}
     db_password: ${self:custom.db_password}
     db_schema: ${self:custom.db_schema}
     npi_table_name: ${self:custom.npi_table_name}
-    instance_profile: ${self:custom.instance_profile}
   vpc:
     securityGroupIds:
       - ${self:custom.awsSecurityGroups}
     subnetIds:
-      - ${self:custom.subnet_id}
-      # - ${self:custom.subnet2}
-      # - "subnet-7ba13b51"
-      # - "subnet-f4cb9e82"
+      "Fn::Split":
+       - ","
+       - ${env:aws_private_subnets}
     
-  iamRoleStatements:
-    - Effect: Allow
-      Action: "ec2:*"
-      Resource: "*"
-    - Effect: Allow
-      Action:
-        - "iam:PassRole"
-        - "ec2:DescribeSecurityGroups"
-        - "ec2:DescribeSubnets"
-        - "ec2:DescribeVpcs"
-      Resource: "*"
-    - Effect: Allow
-      Action: "s3:*"
-      Resource:
-        - "Fn::Join":
-            - ""
-            -
-              - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
-              - "/*"
+  iamRoleStatements: ${file(resources/iam.yml)}
+  # iamRoleStatements:
+  #   - Effect: Allow
+  #     Action: "ec2:*"
+  #     Resource: "*"
+  #   - Effect: Allow
+  #     Action:
+  #       - "iam:PassRole"
+  #       - "ec2:DescribeSecurityGroups"
+  #       - "ec2:DescribeSubnets"
+  #       - "ec2:DescribeVpcs"
+  #     Resource: "*"
+  #   - Effect: Allow
+  #     Action: "s3:*"
+  #     Resource:
+  #       - "Fn::Join":
+  #           - ""
+  #           -
+  #             - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
+  #             - "/*"
 
 functions:
   # Create the initial database
@@ -89,7 +87,7 @@ functions:
     handler: importer/backend/create_db.handler
   # Testing
   import_npi_ec2:
-    handler: importer/backend/import_npi_ec2.handler
+    handler: importer/backend/npi/importer_ec2.handler
     # Events don't work with Ref.
     # Issue https://github.com/serverless/serverless/issues/3034
     # events:
@@ -102,18 +100,18 @@ functions:
     #         - suffix: .csv
   # Import NPI data
   npi_importer:
-    handler: importer/backend/import_npi.handler
+    handler: importer/backend/npi/importer_test.handler
   # Import NPI data with step function
   npi_step_importer:
-    handler: importer/backend/import_npi_step.handler
+    handler: importer/backend/npi/importer_step.handler
     timeout: 300
     memory: 1024
   npi_stream_importer:
-    handler: importer/backend/import_npi_stream.handler
+    handler: importer/backend/npi/importer_stream.handler
   npi_unzip:
-    handler: importer/backend/npi_unzip.handler
+    handler: importer/backend/npi/unzip.handler
   npi_downloader:
-    handler: importer/backend/npi_downloader.handler
+    handler: importer/backend/npi/downloader.handler
 
 resources:
   Outputs:
@@ -142,12 +140,12 @@ resources:
         MasterUserPassword: ${self:custom.db_password}
         PubliclyAccessible: false
         #
-        # Big settings
+        ## Big settings
         # StorageType: gp2
         # DBInstanceClass: db.m4.large
         # AllocatedStorage: 100
         #
-        # Small settings
+        ## Small settings
         StorageType: Standard
         AllocatedStorage: 10
         DBInstanceClass: db.t2.micro
