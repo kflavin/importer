@@ -1,5 +1,4 @@
 ---
 Type: "AWS::EC2::EIP"
 Properties:
-  # InstanceId: String
   Domain: vpc

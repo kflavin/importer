@@ -1,6 +1,12 @@
 user_data_tmpl = """#!/bin/bash
 set -vxe
 
+# Halt on failure
+function cleanup {{
+  halt -p
+}}
+trap cleanup EXIT
+
 # Configure server
 sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel awslogs
 sleep 1
@@ -40,7 +46,7 @@ export db_schema=$(aws ssm get-parameters --names "db_schema" --region us-east-1
 CLEAN_CSV_FILE=$(./runner-import.py npi preprocess -i $CSV_FILE)
 
 # Load CSV file into database
-./runner-import.py npi load -i /data/NPPES/$CLEAN_CSV_FILE -t {table_name}
+./runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name}
 
 # Terminate the instance
 halt -p

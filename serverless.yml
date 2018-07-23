@@ -61,25 +61,6 @@ provider:
        - ${env:aws_private_subnets}
     
   iamRoleStatements: ${file(resources/iam.yml)}
-  # iamRoleStatements:
-  #   - Effect: Allow
-  #     Action: "ec2:*"
-  #     Resource: "*"
-  #   - Effect: Allow
-  #     Action:
-  #       - "iam:PassRole"
-  #       - "ec2:DescribeSecurityGroups"
-  #       - "ec2:DescribeSubnets"
-  #       - "ec2:DescribeVpcs"
-  #     Resource: "*"
-  #   - Effect: Allow
-  #     Action: "s3:*"
-  #     Resource:
-  #       - "Fn::Join":
-  #           - ""
-  #           -
-  #             - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
-  #             - "/*"
 
 functions:
   # Create the initial database
@@ -112,6 +93,7 @@ functions:
     handler: importer/backend/npi/unzip.handler
   npi_downloader:
     handler: importer/backend/npi/downloader.handler
+    timeout: 300
 
 resources:
   Outputs:

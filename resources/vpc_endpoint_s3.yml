@@ -1,0 +1,8 @@
+---
+Type: "AWS::EC2::VPCEndpoint"
+Properties: 
+  VpcId: ${self:custom.vpcId}
+  RouteTableIds: 
+    - rtb-3045f14f
+  ServiceName: com.amazonaws.us-east-1.s3
+  VpcEndpointType: Gateway

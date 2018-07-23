@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/bash -e
 
 sls deploy --stage=dev
 sls invoke --function create_db
-bin/set_ssm_params.sh
+#bin/set_ssm_params.sh
 
 bin/copy_data_files.sh data/npidata_pfile_1k.csv
 bin/copy_data_files.sh data/npidata_pfile_10k.csv

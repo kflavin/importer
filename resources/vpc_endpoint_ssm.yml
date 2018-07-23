@@ -1,0 +1,15 @@
+---
+Type: "AWS::EC2::VPCEndpoint"
+Properties: 
+  VpcId: ${self:custom.vpcId}
+  ServiceName: com.amazonaws.us-east-1.ssm
+  VpcEndpointType: Interface
+  PrivateDnsEnabled: true
+  SubnetIds:
+    "Fn::Split":
+      - ","
+      - "${env:aws_private_subnets}"
+  SecurityGroupIds: 
+    "Fn::Split":
+      - ","
+      - "${env:aws_security_groups}"
