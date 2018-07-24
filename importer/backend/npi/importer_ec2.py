@@ -1,9 +1,11 @@
 import os
 import boto3
 from importer.resources.userdata import user_data_tmpl
+from pprint import pprint
 
 def handler(event, context):
     print("Starting instance...")
+    pprint(event)
 
     # Handle events from buckets and those manually invoked
     try:
@@ -29,6 +31,7 @@ def handler(event, context):
     if not filename:
         raise Exception("Must specify an filename parameter to load.  None given.")
 
+    print(f"bucket: {bucket_name} key: {bucket_key} table: {table_name}")
     user_data = user_data_tmpl.format(s3_bucket=bucket_name,
                                     # filepath=event.get('filepath'), 
                                     # filepath=filepath, 
@@ -36,6 +39,9 @@ def handler(event, context):
                                     bucket_name=bucket_name,
                                     bucket_key=bucket_key,
                                     table_name=table_name)
+
+    print("User data")
+    print(user_data)
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
@@ -64,6 +70,8 @@ def handler(event, context):
         MinCount=1, MaxCount=1,
         UserData = user_data,
         IamInstanceProfile={ 'Name': instance_profile })
+
+    print(f"Instance: {instance}")
     
     # not yet implemented:
     #  instance will run batch script and terminate on completion

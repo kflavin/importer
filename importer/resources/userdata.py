@@ -2,10 +2,10 @@ user_data_tmpl = """#!/bin/bash
 set -vxe
 
 # Halt on failure
-function cleanup {{
-  halt -p
-}}
-trap cleanup EXIT
+# function cleanup {{
+#   halt -p
+# }}
+# trap cleanup EXIT
 
 # Configure server
 sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel awslogs
@@ -23,10 +23,10 @@ log_group_name = /data/importer.log
 EOF
 
 # Copy packages and data
-aws s3 cp s3://{bucket_name}/npi-in/NPPES_Data_Dissemination_070218_070818_Weekly.zip /data/
 aws s3 cp s3://{bucket_name}/{bucket_key} /data/
 aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
-unzip /data/NPPES_Data_Dissemination_070218_070818_Weekly.zip -d /data/NPPES
+ZIP_FILE=$(ls -1 /data/)
+unzip /data/$ZIP_FILE -d /data/NPPES
 CSV_FILE=$(ls -1 /data/NPPES/npidata_pfile_* | grep -v FileHeader)
 
 # Install package
@@ -49,5 +49,5 @@ CLEAN_CSV_FILE=$(./runner-import.py npi preprocess -i $CSV_FILE)
 ./runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name}
 
 # Terminate the instance
-halt -p
+# halt -p
 """

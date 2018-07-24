@@ -1,1 +1,2 @@
 mysql-connector==2.1.6
+beautifulsoup4==4.6.0

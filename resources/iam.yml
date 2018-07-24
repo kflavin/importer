@@ -12,6 +12,7 @@
   - Effect: Allow
     Action: "s3:*"
     Resource:
+      - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
       - "Fn::Join":
           - ""
           -
