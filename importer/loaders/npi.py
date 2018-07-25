@@ -123,8 +123,9 @@ class NpiLoader(object):
         # print("Execute query")
         try:
             # cursor.execute(sql, (arg1, arg2))
+            # Deadlock error here when too many processes run at once.  Implement back off timer.
+            # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
             self.cursor.executemany(query, data)
-            # print("Commit query")
             self.cnx.commit()
         except:
             # print(self.cursor._last_executed)
