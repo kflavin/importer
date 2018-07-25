@@ -13,12 +13,15 @@ weekly_dir = "npi-in/weekly"
 full_dir = "npi-in/full"
 
 def handler(event, context):
-    print("start")
-    urls = find_zip_urls()
+    print("Downloading zip files")
+    urls = event.get('infile') if event.get('infile', '') else find_zip_urls()
+
+    # urls = find_zip_urls()
     bucket = os.environ.get('aws_s3_bucket')
     for url in urls:
         print(f"Loading {url}")
         url_to_s3(url, bucket)
+        
     print("Done!")
 
 def url_to_s3(url, bucket):
