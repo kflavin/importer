@@ -1,20 +1,23 @@
 user_data_tmpl = """#!/bin/bash
 set -vxe
 
-# Halt on failure
+# Ensure we halt if something goes wrong
 # function cleanup {{
 #   logger "Halting instance"
 #   halt -p
 # }}
 # trap cleanup EXIT
 
-log() {
+function log {{
     echo "$@" >> /data/importer.log
-}
+}}
+
+mkdir /data
 
 # Configure server
 log "Configure server"
 sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel awslogs
+/etc/init.d/awslogs start
 sleep 1
 aws sts get-caller-identity
 
@@ -26,14 +29,20 @@ buffer_duration = 5000
 log_stream_name = {{instance_id}}
 initial_position = start_of_file
 log_group_name = /data/importer.log
+[/var/log/cloud-init-output.log]
+file = /var/log/cloud-init-output.log
+buffer_duration = 5000
+log_stream_name = {{instance_id}}
+initial_position = start_of_file
+log_group_name = /var/log/cloud-init-output.log
 EOF
 
-# Copy packages and data
+# Copy packages and data from s3
 log "Copy packages"
 aws s3 cp s3://{bucket_name}/{bucket_key} /data/
 aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
-ZIP_FILE=$(ls -1 /data/)
-unzip /data/$ZIP_FILE -d /data/NPPES
+ZIP_FILE=$(ls -1 /data/*.zip)
+unzip $ZIP_FILE -d /data/NPPES
 CSV_FILE=$(ls -1 /data/NPPES/npidata_pfile_* | grep -v FileHeader)
 
 # Install package
@@ -57,7 +66,7 @@ CLEAN_CSV_FILE=$(./runner-import.py npi preprocess -i $CSV_FILE)
 
 # Load CSV file into database
 log "Load the CSV file"
-./runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name}
+time ./runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name}
 
 # Terminate the instance
 # halt -p

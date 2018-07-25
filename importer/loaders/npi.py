@@ -115,7 +115,7 @@ class NpiLoader(object):
             {on_dupe_values}
         """
 
-        print(textwrap.dedent(query))
+        # print(textwrap.dedent(query))
 
         return query
 
@@ -212,10 +212,10 @@ class NpiLoader(object):
             csv_line = pp.commaSeparatedList.copy().addParseAction(pp.tokenMap(lambda s: s.strip('"')))
             batch.append(csv_line)
 
-        print(batch)
+        # print(batch)
 
 
-        print(f"File position is {fileh.tell()}")
+        # print(f"File position is {fileh.tell()}")
 
 
         # print(csv_line.parseString(cStr).asList())

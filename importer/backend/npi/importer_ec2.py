@@ -1,11 +1,9 @@
 import os
 import boto3
 from importer.resources.userdata import user_data_tmpl
-from pprint import pprint
 
 def handler(event, context):
     print("Starting instance...")
-    pprint(event)
 
     # Handle events from buckets and those manually invoked
     try:
@@ -40,8 +38,8 @@ def handler(event, context):
                                     bucket_key=bucket_key,
                                     table_name=table_name)
 
-    print("User data")
-    print(user_data)
+    # print("User data")
+    # print(user_data)
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
@@ -60,6 +58,10 @@ def handler(event, context):
                         'Key': 'Name',
                         'Value': context.function_name
                     },
+                    {
+                        'Key': 'file',
+                        'Value': filename
+                    }
                 ]
             },
         ],

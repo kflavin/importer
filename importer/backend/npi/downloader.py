@@ -13,25 +13,27 @@ weekly_dir = "npi-in/weekly"
 full_dir = "npi-in/full"
 
 def handler(event, context):
+    """
+    Download zip files.  Don't download if they already exist in s3.
+    """
     print("Downloading zip files")
-    urls = event.get('infile') if event.get('infile', '') else find_zip_urls()
+    urls = [event.get('infile')] if event.get('infile', '') else find_zip_urls()
 
     # urls = find_zip_urls()
     bucket = os.environ.get('aws_s3_bucket')
     for url in urls:
         print(f"Loading {url}")
         url_to_s3(url, bucket)
-        
+
     print("Done!")
 
 def url_to_s3(url, bucket):
-    # zip = urlopen("http://download.cms.gov/nppes/NPPES_Deactivated_NPI_Report_071018.zip")
-    # zippedFile = urlopen("http://download.cms.gov/nppes/NPPES_Data_Dissemination_070218_070818_Weekly.zip")
+    """
+    Download the zip file to S3
+    """
     zippedFile = urlopen(url)
     fileName = url.split("/")[-1]
-    # outfile = "npi-in/NPPES_Data_Dissemination_070218_070818_Weekly.zip"
-
-    s3_upload = boto3.client('s3')
+    client = boto3.client('s3')
 
     if "weekly" in fileName.lower():
         key = f"{weekly_dir}/{fileName}"
@@ -40,8 +42,22 @@ def url_to_s3(url, bucket):
 
     # If it's already in our bucket, skip it.
     if not exists(bucket, key):
-        print(f"uploading...")
-        s3_upload.upload_fileobj(zippedFile, bucket, key)
+        print(f"Uploading {bucket}/{key}...")
+        client.upload_fileobj(zippedFile, bucket, key)
+
+        # Tag the object
+        client.put_object_tagging(
+            Bucket=bucket,
+            Key=key,
+            # VersionId='string',
+            # ContentMD5='string',
+            Tagging={
+                'TagSet': [
+                    {
+                        'Key': 'imported',
+                        'Value': 'false'
+                    },
+                ] } )
 
 # def s3_to_s3(event):
 #     """
@@ -53,32 +69,10 @@ def url_to_s3(url, bucket):
 #     s3_upload = boto3.client('s3')
 #     s3_upload.upload_fileobj(body, os.environ.get('aws_s3_bucket'), event.get('outfile'))
 
-# if __name__ == "__main__":
-#     output = "output"
-
-#     # zip = urlopen("http://download.cms.gov/nppes/NPPES_Deactivated_NPI_Report_071018.zip")
-#     # zip = urlopen("http://download.cms.gov/nppes/NPPES_Data_Dissemination_070218_070818_Weekly.zip")
-#     fileName = "NPPES_Data_Dissemination_070218_070818_Weekly.zip"
-
-#     try:
-#         shutil.rmtree(output)
-#     except:
-#         pass
-#     finally:
-#         os.mkdir(output)
-
-#     # http://download.cms.gov/nppes/NPPES_Data_Dissemination_070218_070818_Weekly.zip
-#     zip = urlopen(f"http://download.cms.gov/nppes/{fileName}")
-#     with open(f"./{output}/{fileName}", "wb") as f:
-#         f.write(zip.read())
-
-#     zipFile = ZipFile(f"{output}/{fileName}")
-#     # import pdb; pdb.set_trace()
-
-#     # zipFile = ZipFile(zip.read())
-#     zipFile.extractall(f"./{output}")
-
 def exists(bucket, key):
+    """
+    Check if the object exists in s3
+    """
     s3 = boto3.resource('s3')
     print(f"check if {bucket}/{key} exists in s3")
 
@@ -95,9 +89,11 @@ def exists(bucket, key):
 
 
 def find_zip_urls():
+    """
+    Locate any zip files on the site and return them.
+    """
     html = urlopen(url).read()
     soup = BeautifulSoup(html, 'html.parser')
-    # links = soup.find_all('a', href=True)
     links = soup.select("a[href*=.zip]")
 
     urls = []
@@ -110,7 +106,9 @@ def find_zip_urls():
     return urls
 
 if __name__ == "__main__":
-    from bs4 import BeautifulSoup
+    """
+    Test from the CLI
+    """
     html = urlopen(url).read()
     soup = BeautifulSoup(html, 'html.parser')
     # links = soup.find_all('a', href=True)
@@ -118,6 +116,5 @@ if __name__ == "__main__":
     print(len(links))
 
     for link in links:
-        # print(link)
         print(link)
 
