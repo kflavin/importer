@@ -1,7 +1,5 @@
 # serverless importer
 
-[](https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9RjsrSxSYUovuIqw&interactive=true&embed=true)
-
 ## Install
 
 ```bash
