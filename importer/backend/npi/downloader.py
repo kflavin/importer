@@ -10,14 +10,14 @@ from bs4 import BeautifulSoup
 url = "http://download.cms.gov/nppes/NPI_Files.html"
 base_url = "http://download.cms.gov/nppes/"
 weekly_dir = "npi-in/weekly"
-full_dir = "npi-in/full"
+monthly_dir = "npi-in/monthly"
 
 def handler(event, context):
     """
     Download zip files.  Don't download if they already exist in s3.
     """
     print("Downloading zip files")
-    urls = [event.get('infile')] if event.get('infile', '') else find_zip_urls()
+    urls = [event.get('file_url')] if event.get('file_url', '') else find_zip_urls()
 
     # urls = find_zip_urls()
     bucket = os.environ.get('aws_s3_bucket')
@@ -38,7 +38,7 @@ def url_to_s3(url, bucket):
     if "weekly" in fileName.lower():
         key = f"{weekly_dir}/{fileName}"
     else:
-        key = f"{full_dir}/{fileName}"
+        key = f"{monthly_dir}/{fileName}"
 
     # If it's already in our bucket, skip it.
     if not exists(bucket, key):

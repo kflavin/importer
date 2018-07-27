@@ -11,35 +11,29 @@ def handler(event, context):
         bucket_key = event['Records'][0]['s3']['object']['key']
     except:
         bucket_name = os.environ.get('aws_s3_bucket')
-        bucket_key = event.get('infile')
+        bucket_key = event.get('bucket_key')
 
-    # filepath = f"{bucket_name}/{bucket_key}"
+    period = "monthly"
     filename = bucket_key.split("/")[-1]
-    print(f"Fetching {bucket_key}")
-
     region = os.environ.get('aws_region', 'us-east-1')
     keyName = os.environ.get('aws_key')
     imageId = os.environ.get('aws_image_id')
     instanceType = os.environ.get('aws_instance_type')
     securityGroups = os.environ.get('aws_security_groups').split(",")
-    subnetId = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first subnet
+    subnetId = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first private subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name', 'npi')
 
     if not filename:
         raise Exception("Must specify an filename parameter to load.  None given.")
 
-    print(f"bucket: {bucket_name} key: {bucket_key} table: {table_name}")
+    print(f"bucket: {bucket_name} key: {bucket_key} table: {table_name} period: {period}")
     user_data = user_data_tmpl.format(s3_bucket=bucket_name,
-                                    # filepath=event.get('filepath'), 
-                                    # filepath=filepath, 
                                     filename=filename,
                                     bucket_name=bucket_name,
                                     bucket_key=bucket_key,
-                                    table_name=table_name)
-
-    # print("User data")
-    # print(user_data)
+                                    table_name=table_name,
+                                    period=period)
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
@@ -61,6 +55,10 @@ def handler(event, context):
                     {
                         'Key': 'file',
                         'Value': filename
+                    },
+                    {
+                        'Key': 'type',
+                        'Value': "npi-full"
                     }
                 ]
             },
@@ -71,13 +69,18 @@ def handler(event, context):
         InstanceInitiatedShutdownBehavior='terminate',
         MinCount=1, MaxCount=1,
         UserData = user_data,
+        BlockDeviceMappings=[{
+            "DeviceName": "/dev/xvda",
+            "Ebs" : { 
+                "VolumeSize" : 20,
+                "DeleteOnTermination": True 
+                }
+            }],
         IamInstanceProfile={ 'Name': instance_profile })
 
     print(f"Instance: {instance}")
-    
-    # not yet implemented:
-    #  instance will run batch script and terminate on completion
 
+    
 # For testing from the cli
 if __name__ == '__main__':
     class Object(object):

@@ -3,7 +3,9 @@ import itertools
 import textwrap
 from collections import OrderedDict
 import mysql.connector as connector
+from mysql.connector.constants import ClientFlag
 from importer.sql.npi_create_clean import CREATE_TABLE_SQL
+from importer.sql.npi_insert import INSERT_WEEKLY_QUERY, INSERT_MONTHLY_QUERY
 import pandas as pd
 
 class NpiLoader(object):
@@ -12,23 +14,26 @@ class NpiLoader(object):
     """
 
     def __init__(self):
+        """
+        Blank constructor, b/c preprocess does not need a db connection.
+        """
         pass
 
-    def connect(self, user, host, password, database=None, set_db=True):
-        self.cnx = connector.connect(user=user, password=password, host=host)
+    def connect(self, user, host, password, database, clientFlags=False, debug=True):
+        self.debug = debug
 
-        # When creating the database for the first time, set to False
-        if database:
-            self.database = database
+        config = {
+            'user': user,
+            'password': password,
+            'host': host,
+            'database': database
+        }
 
-        # Select the database
-        if set_db:
-            self.cnx.database = database
+        if clientFlags:
+            config['client_flags'] = [ClientFlag.LOCAL_FILES]
 
+        self.cnx = connector.connect(**config)
         self.cursor = self.cnx.cursor()
-
-    def set_db(self, database):
-        self.database = database
 
     def __clean_field(self, field):
         """
@@ -42,6 +47,43 @@ class NpiLoader(object):
         field_clean = field_clean.replace(" If outside US", "")
         field_clean = field_clean.replace(" ", "_")
         return field_clean
+
+    def __clean_fields(self, fields):
+        columns = []
+
+        for field in fields:
+            columns.append(self.__clean_field(field))
+
+        return columns
+
+    def __submit_batch(self, query, data):
+        if self.debug:
+            print(query)
+
+        try:
+            # cursor.execute(sql, (arg1, arg2))
+            # Deadlock error here when too many processes run at once.  Implement back off timer.
+            # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
+            self.cursor.executemany(query, data)
+            self.cnx.commit()
+        except:
+            # print(self.cursor._last_executed)
+            print(self.cursor.statement)
+            raise
+        # self.cursor.executemany(q, all_data)
+        # self.cnx.commit()
+    
+    # def create_database(self, set_db=True):
+    #     """
+    #     Helper method for the class, for my testing purposes.
+    #     """
+    #     create_database_sql = f"create database {self.database}"
+    #     self.cursor.execute(create_database_sql)
+    #     self.cnx.commit()
+        
+    #     # Set as the active db
+    #     if set_db:
+    #         self.cnx.database = database
 
     def preprocess(self, infile, outfile):
         """
@@ -60,38 +102,17 @@ class NpiLoader(object):
 
         df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
 
-    def __clean_fields(self, fields):
-        columns = []
+    # def create_table(self, table_name):
+    #     """
+    #     Create the NPI table
+    #     """
+    #     create_table_sql = CREATE_TABLE_SQL.format(table_name=table_name)
+    #     self.cursor.execute(create_table_sql)
+    #     self.cnx.commit()
 
-        for field in fields:
-            columns.append(self.__clean_field(field))
-
-        return columns
-    
-    def create_database(self, set_db=True):
+    def build_weekly_query(self, columns, table_name):
         """
-        Helper method for the class, for my testing purposes.
-        """
-        create_database_sql = f"create database {self.database}"
-        self.cursor.execute(create_database_sql)
-        self.cnx.commit()
-        
-        # Set as the active db
-        if set_db:
-            self.cnx.database = database
-
-    def create_table(self, table_name):
-        """
-        Create the NPI table
-        """
-        create_table_sql = CREATE_TABLE_SQL.format(table_name=table_name)
-        self.cursor.execute(create_table_sql)
-        self.cnx.commit()
-
-
-    def insert_query(self, columns, table_name):
-        """
-        Construct the NPI INSERT query
+        Construct the NPI INSERT query with all values
         """
         cols = ""
         values = ""
@@ -106,132 +127,30 @@ class NpiLoader(object):
         values = values.rstrip().rstrip(",")
         on_dupe_values = on_dupe_values.rstrip().rstrip(",")
 
-
-        query = f"""
-            INSERT INTO {table_name}
-            ({cols})
-            VALUES ({values})
-            ON DUPLICATE KEY UPDATE
-            {on_dupe_values}
-        """
-
-        # print(textwrap.dedent(query))
-
+        query = INSERT_WEEKLY_QUERY.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
 
-    def __submit_batch(self, query, data):
-        # print("Execute query")
-        try:
-            # cursor.execute(sql, (arg1, arg2))
-            # Deadlock error here when too many processes run at once.  Implement back off timer.
-            # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
-            self.cursor.executemany(query, data)
-            self.cnx.commit()
-        except:
-            # print(self.cursor._last_executed)
-            print(self.cursor.statement)
-            raise
-        # self.cursor.executemany(q, all_data)
-        # self.cnx.commit()
-
-    def step_load(self, table_name, infile, start, end=None):
+    def load_monthly(self, table_name, infile):
         """
-        For use with AWS step functions.  If your CSV has headers, start=0 will be your header.  It's
-        up to the user to skip this row when using this function.
+        Load monthly data (larger) file
         """
-        print("NPI loader for step functions.  Start = {}, End = {}".format(start, end))
-
-        # Get the file headers first
-        with open(infile, 'r') as headerFile:
-            columnNames = csv.DictReader(headerFile).fieldnames
-
-        fileh = open(infile, 'r')
-        lines = [line for line in itertools.islice(fileh, start, end)]
-        reader = csv.DictReader(lines, fieldnames=columnNames)
-
-        # Our INSERT query
-        q = self.insert_query(self.__clean_fields(columnNames), table_name)
-
-        batch = []
-        for row in reader:
-            columns, values = zip(*row.items())
-            data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
-            batch.append(data)
-
-        self.__submit_batch(q, batch)
-
-
-
-    def step_load2(self, table_name, infile, position, batch_size):
-        """
-        This attempts to use file byte locations to split the file.  It is not working, because tell()
-        can't be used in conjunction with the CSV module, which call next().
-        """
-        print("NPI loader2 for step functions.  Batch size = {}".format(batch_size))
-
-        # Get the file headers first
-        with open(infile, 'r') as headerFile:
-            columnNames = csv.DictReader(headerFile).fieldnames
-
-        # Our INSERT query
-        q = self.insert_query(self.__clean_fields(columnNames), table_name)
-
-        # Now proceed with the data
-        fileh = open(infile, 'r')
-        fileh.seek(position)
+        print("NPI monthly loader importing from {}".format(infile))
+        q = INSERT_MONTHLY_QUERY.format(infile=infile, table_name=table_name)
         
-        reader = csv.DictReader(fileh, fieldnames=columnNames)
+        if self.debug:
+            print(repr(q))
 
-        batch = []
-        for i, row in enumerate(reader):
-            if not i < batch_size:
-                break
+        self.cursor.execute(q)
+        self.cnx.commit()
 
-            columns, values = zip(*row.items())
-            data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
-            batch.append(data)
-
-        self.__submit_batch(q, batch)
-
-        end_pos = fileh.tell()
-        print("End position is {}".format(end_pos))
-        return end_pos
-
-    def step_load3(self, table_name, infile, position=0, batch_size=1000):
-        """
-        Use byte locations, and read line by line
-        """
-        print("NPI loader3 for step functions.  Batch size = {}".format(batch_size))
-
-        fileh = open(infile, 'r')
-        fileh.seek(position)
-
-        batch = []
-        count = 0
-        for line in fileh:
-            csv_line = pp.commaSeparatedList.copy().addParseAction(pp.tokenMap(lambda s: s.strip('"')))
-            batch.append(csv_line)
-
-        # print(batch)
-
-
-        # print(f"File position is {fileh.tell()}")
-
-
-        # print(csv_line.parseString(cStr).asList())
-
-
-    def load(self, table_name, infile, batch_size=1000):
+    def load_weekly(self, table_name, infile, batch_size=1000):
         """
         cli loader which accepts a batch size.  This won't work in lambda for large datasets due to the
         5 min maximum timeout.
         """
-        print("NPI loader, batch size = {}".format(batch_size))
-        # reader = csv.DictReader(open(infile, 'r'))
-        reader = csv.DictReader(infile)
-        # headers = [ key for key in next(reader).keys() ]
-        # q = self.insert_query(headers)
-        q = self.insert_query(self.__clean_fields(reader.fieldnames), table_name)
+        print("NPI weekly loader importing from {}, batch size = {}".format(infile, batch_size))
+        reader = csv.DictReader(open(infile, 'r'))
+        q = self.build_weekly_query(self.__clean_fields(reader.fieldnames), table_name)
         columnNames = reader.fieldnames
 
         # all_data = []

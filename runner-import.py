@@ -31,22 +31,32 @@ def create(table_name):
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
-@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size")
-@click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
+@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
+# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table name to load.")
-def load(infile, batch_size, step_load, table_name):
+@click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
+def load(infile, batch_size, table_name, period):
     """
-    The NPI importer
+    NPI importer
     """
-    print("Import NPI data...")
-    npi_loader = NpiLoader()
-    npi_loader.connect(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'])
 
-    if step_load:
-        print("Using Step Loader")
-        npi_loader.step_load(table_name, infile, *step_load)
+    args = {
+        'user': os.environ['db_user'],
+        'password': os.environ['db_password'],
+        'host': os.environ['db_host'],
+        'database': os.environ['db_schema']
+    }
+
+    npi_loader = NpiLoader()
+    if period.lower() == "weekly":
+        print("Loading weekly NPI file")
+        npi_loader.connect(**args)
+        npi_loader.load_weekly(table_name, infile, batch_size)
     else:
-        npi_loader.load(table_name, open(infile, 'r'), batch_size=batch_size)
+        print("Loading monthly NPI file")
+        npi_loader.connect(**args, clientFlags=True)
+        npi_loader.load_monthly(table_name, infile)
+
     print(f"Data loaded to table: {table_name}")
 
 @click.command()

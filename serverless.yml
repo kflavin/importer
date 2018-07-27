@@ -11,7 +11,8 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
-  awsInstanceType: ${env:aws_instance_type}
+  awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
+  awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
   awsRdsSecurityGroup: ${env:aws_rds_security_group}
   awsInstanceProfile: ${env:aws_instance_profile}
@@ -39,7 +40,7 @@ provider:
     aws_key: ${self:custom.sshKey}
     aws_region: ${self:custom.awsRegion}
     aws_image_id: ${self:custom.awsImageId}
-    aws_instance_type: ${self:custom.awsInstanceType}
+    # aws_instance_type: ${self:custom.awsInstanceType}
     aws_security_groups: ${self:custom.awsSecurityGroups}
     aws_vpc_id: ${self:custom.vpcId}
     aws_private_subnets: ${self:custom.awsPrivateSubnets}
@@ -66,9 +67,10 @@ functions:
   # Create the initial database
   create_db:
     handler: importer/backend/create_db.handler
-  # Testing
-  import_npi_ec2:
-    handler: importer/backend/npi/importer_ec2.handler
+  import_npi_weekly:
+    handler: importer/backend/npi/importer_ec2_weekly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsWeeklyInstanceType}
     # Events don't work with Ref.
     # Issue https://github.com/serverless/serverless/issues/3034
     # events:
@@ -79,18 +81,11 @@ functions:
     #       rules:
     #         - prefix: npi-out/
     #         - suffix: .csv
-  # Import NPI data
-  npi_importer:
-    handler: importer/backend/npi/importer_test.handler
-  # Import NPI data with step function
-  npi_step_importer:
-    handler: importer/backend/npi/importer_step.handler
-    timeout: 300
-    memory: 1024
-  npi_stream_importer:
-    handler: importer/backend/npi/importer_stream.handler
-  npi_unzip:
-    handler: importer/backend/npi/unzip.handler
+  import_npi_monthly:
+    handler: importer/backend/npi/importer_ec2_monthly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+
   npi_downloader:
     handler: importer/backend/npi/downloader.handler
     timeout: 300
@@ -123,14 +118,14 @@ resources:
         PubliclyAccessible: false
         #
         ## Big settings
-        # StorageType: gp2
-        # DBInstanceClass: db.m4.large
-        # AllocatedStorage: 100
+        StorageType: gp2
+        DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
+        AllocatedStorage: 100
         #
         ## Small settings
-        StorageType: Standard
-        AllocatedStorage: 10
-        DBInstanceClass: db.t2.micro
+        # StorageType: Standard
+        # AllocatedStorage: 10
+        # DBInstanceClass: db.t2.micro
       DeletionPolicy: Delete
 
 package:
@@ -140,7 +135,6 @@ package:
     - importer.*/**
     - data/**
     - dist/**
-    # - importer.*
     - "**/**/*.pyc"
     - ".env.*"
     - output/**
