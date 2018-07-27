@@ -1,7 +1,9 @@
 import csv
+import sys
 import itertools
 import textwrap
 from collections import OrderedDict
+from zipfile import ZipFile
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 from importer.sql.npi_create_clean import CREATE_TABLE_SQL
@@ -84,6 +86,26 @@ class NpiLoader(object):
     #     # Set as the active db
     #     if set_db:
     #         self.cnx.database = database
+
+    def unzip(self, infile, path):
+        zip = ZipFile(infile)
+        names = zip.namelist()
+
+        extractions = []
+        for name in names:
+            if name.startswith("npidata_pfile_") and \
+               name.endswith(".csv") and \
+               not "FileHeader" in name:
+                extractions.append(name)
+
+        if len(extractions) != 1:
+            print("Did not find exactly one file in {infile}.  Exiting.")
+            sys.exit(1)
+
+        csv_file = extractions[0]
+        zip.extract(csv_file, path)
+        return csv_file
+
 
     def preprocess(self, infile, outfile):
         """

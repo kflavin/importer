@@ -40,18 +40,17 @@ provider:
     aws_key: ${self:custom.sshKey}
     aws_region: ${self:custom.awsRegion}
     aws_image_id: ${self:custom.awsImageId}
-    # aws_instance_type: ${self:custom.awsInstanceType}
     aws_security_groups: ${self:custom.awsSecurityGroups}
     aws_vpc_id: ${self:custom.vpcId}
     aws_private_subnets: ${self:custom.awsPrivateSubnets}
     aws_public_subnets: ${self:custom.awsPublicSubnets}
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
-    db_host: ${self:custom.db_host}
-    db_port: ${self:custom.db_port}
-    db_user: ${self:custom.db_user}
-    db_password: ${self:custom.db_password}
-    db_schema: ${self:custom.db_schema}
+    # db_host: ${self:custom.db_host}
+    # db_port: ${self:custom.db_port}
+    # db_user: ${self:custom.db_user}
+    # db_password: ${self:custom.db_password}
+    # db_schema: ${self:custom.db_schema}
     npi_table_name: ${self:custom.npi_table_name}
   vpc:
     securityGroupIds:

@@ -1,6 +1,6 @@
 import os
 import boto3
-from importer.resources.userdata import user_data_tmpl
+from importer.backend.resources.userdata import user_data_tmpl
 
 def handler(event, context):
     print("Starting instance...")
@@ -58,7 +58,7 @@ def handler(event, context):
                     },
                     {
                         'Key': 'type',
-                        'Value': "npi-full"
+                        'Value': "npi-monthly"
                     }
                 ]
             },

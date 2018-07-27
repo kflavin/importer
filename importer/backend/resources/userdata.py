@@ -30,8 +30,8 @@ EOF
 aws s3 cp s3://{bucket_name}/{bucket_key} /data/
 aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
 ZIP_FILE=$(ls -1 /data/*.zip)
-time unzip $ZIP_FILE -d /data/NPPES
-CSV_FILE=$(ls -1 /data/NPPES/npidata_pfile_* | grep -v FileHeader)
+# time unzip $ZIP_FILE -d /data/NPPES
+# CSV_FILE=$(ls -1 /data/NPPES/npidata_pfile_* | grep -v FileHeader)
 
 # Install package
 cd /opt
@@ -45,12 +45,14 @@ export db_password=$(aws ssm get-parameters --names "db_password" --region us-ea
 export db_host=$(aws ssm get-parameters --names "db_host" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
 export db_schema=$(aws ssm get-parameters --names "db_schema" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
 
-# Clean CSV file
+# Clean and load CSV file
+CSV_FILE=$(./runner-import.py npi unzip -i $ZIP_FILE -p /data/NPPES)
 CLEAN_CSV_FILE=$(./runner-import.py npi preprocess -i $CSV_FILE)
-
-# Load CSV file into database
 time ./runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name} -p {period}
 
+# Mark the object as imported
+aws s3api put-object-tagging --bucket {bucket_name} --key {bucket_key} --tagging 'TagSet=[{{Key=imported,Value=true}}]'
+
 # Terminate the instance
-# halt -p
+halt -p
 """
