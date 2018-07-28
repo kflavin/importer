@@ -1,6 +1,6 @@
 import os
 import boto3
-from importer.backend.resources.userdata import user_data_tmpl
+from backend.resources.userdata import user_data_tmpl
 
 def handler(event, context):
     print("Starting instance...")
