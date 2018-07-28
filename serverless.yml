@@ -18,6 +18,7 @@ custom:
   awsInstanceProfile: ${env:aws_instance_profile}
   awsPrivateSubnets: ${env:aws_private_subnets}
   awsPublicSubnets: ${env:aws_public_subnets}
+  awsRdsParameterGroup: ${env:aws_rds_parameter_group}
   vpcId: ${env:aws_vpc_id}
   db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
   db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
@@ -115,6 +116,7 @@ resources:
         MasterUsername: ${self:custom.db_user}
         MasterUserPassword: ${self:custom.db_password}
         PubliclyAccessible: false
+        DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
         #
         ## Big settings
         StorageType: gp2
