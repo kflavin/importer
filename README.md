@@ -52,18 +52,9 @@ export aws_instance_type='t2.small'
 
 ### Step Importer
 
-Lambda + Step functions to import
+_Removed_
 
-Function name: npi_step_importer
-
-Call step function inside the AWS console with the following:
-
-```json
-{
-  "filename": "npidata_pfile_50k.csv",
-  "chunk_size": 2500
-}
-```
+See branch: __step_functions__
 
 ___TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem limit and cannot download the full file at once.___
 
@@ -71,8 +62,9 @@ ___TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem 
 
 Deploys an ephemeral EC2 instance to handle data import.
 
-** Not yet functional **
+See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9RjsrSxSYUovuIqw
 
+_Fill out later_
 
 ## Destroy
 
