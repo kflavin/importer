@@ -19,6 +19,7 @@ custom:
   awsPrivateSubnets: ${env:aws_private_subnets}
   awsPublicSubnets: ${env:aws_public_subnets}
   awsRdsParameterGroup: ${env:aws_rds_parameter_group}
+  npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
   vpcId: ${env:aws_vpc_id}
   db_host: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
   db_port: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
@@ -47,6 +48,7 @@ provider:
     aws_public_subnets: ${self:custom.awsPublicSubnets}
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
+    npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
     # db_host: ${self:custom.db_host}
     # db_port: ${self:custom.db_port}
     # db_user: ${self:custom.db_user}
@@ -66,9 +68,9 @@ provider:
 functions:
   # Create the initial database
   create_db:
-    handler: importer/backend/create_db.handler
+    handler: backend/create_db.handler
   import_npi_weekly:
-    handler: importer/backend/npi/importer_ec2_weekly.handler
+    handler: backend/npi/importer_ec2_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
     # Events don't work with Ref.
@@ -82,12 +84,12 @@ functions:
     #         - prefix: npi-out/
     #         - suffix: .csv
   import_npi_monthly:
-    handler: importer/backend/npi/importer_ec2_monthly.handler
+    handler: backend/npi/importer_ec2_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
 
   npi_downloader:
-    handler: importer/backend/npi/downloader.handler
+    handler: backend/npi/downloader.handler
     timeout: 300
 
 resources:

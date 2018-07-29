@@ -1,20 +1,14 @@
 import os
 import boto3
 from backend.resources.userdata import user_data_tmpl
+from backend.helpers.s3 import next_bucket_key, is_imported
+from backend.helpers.ec2 import active_import
+from backend.periods import MONTHLY
 
 def handler(event, context):
-    print("Starting instance...")
+    print(f"Starting instance for {MONTHLY} import...")
+    print(event)
 
-    # Handle events from buckets and those manually invoked
-    try:
-        bucket_name = event['Records'][0]['s3']['bucket']['name']
-        bucket_key = event['Records'][0]['s3']['object']['key']
-    except:
-        bucket_name = os.environ.get('aws_s3_bucket')
-        bucket_key = event.get('bucket_key')
-
-    period = "monthly"
-    filename = bucket_key.split("/")[-1]
     region = os.environ.get('aws_region', 'us-east-1')
     keyName = os.environ.get('aws_key')
     imageId = os.environ.get('aws_image_id')
@@ -24,16 +18,31 @@ def handler(event, context):
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name', 'npi')
 
-    if not filename:
-        raise Exception("Must specify an filename parameter to load.  None given.")
+    if "Records" in event:
+        print("Processing from S3 trigger")
+        bucket_name = event['Records'][0]['s3']['bucket']['name']
+        bucket_key = event['Records'][0]['s3']['object']['key']
+    else:
+        # Handle events from a Cron
+        print("Processing from cron")
+        bucket_name = os.environ.get("aws_s3_bucket")
+        bucket_key = next_bucket_key(bucket_name, f"npi-in/{MONTHLY}")
 
-    print(f"bucket: {bucket_name} key: {bucket_key} table: {table_name} period: {period}")
-    user_data = user_data_tmpl.format(s3_bucket=bucket_name,
-                                    filename=filename,
-                                    bucket_name=bucket_name,
+    filename = bucket_key.split("/")[-1]
+    print(f"bucket: {bucket_name} key: {bucket_key} table: {table_name} period: {MONTHLY}")
+
+    if is_imported(bucket_name, bucket_key):
+        print(f"Skipping {bucket_name}/{bucket_key}, file has already been imported.")
+        return
+
+    if active_imports(table_name, MONTHLY) > 0:
+        print(f"Skipping {bucket_name}/{bucket_key}, there is a {MONTHLY} import EC2 running.")
+        return
+
+    user_data = user_data_tmpl.format(bucket_name=bucket_name,
                                     bucket_key=bucket_key,
                                     table_name=table_name,
-                                    period=period)
+                                    period=MONTHLY)
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
@@ -57,8 +66,12 @@ def handler(event, context):
                         'Value': filename
                     },
                     {
-                        'Key': 'type',
-                        'Value': "npi-monthly"
+                        'Key': 'table_name',
+                        'Value': table_name
+                    },
+                    {
+                        'Key': 'period',
+                        'Value': MONTHLY
                     }
                 ]
             },
@@ -79,7 +92,6 @@ def handler(event, context):
         IamInstanceProfile={ 'Name': instance_profile })
 
     print(f"Instance: {instance}")
-
     
 # For testing from the cli
 if __name__ == '__main__':
