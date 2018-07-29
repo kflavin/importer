@@ -11,7 +11,7 @@ setup(name='importer',
       description='Importer',
       scripts=['./runner-import.py',],
       packages=['importer.loaders', 'importer.sql'],
-      data_files=[('./', ['importer/requirements.npi.txt'])],
+      # data_files=[('./', ['importer/requirements.npi.txt'])],
       #packages=['importer'],
       install_requires=[
         "boto3==1.7.45",

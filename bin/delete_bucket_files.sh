@@ -17,7 +17,7 @@ read
 
 echo "Deleting static assets from ${BUCKET_NAME}..."
 
-mkdir /tmp/empty
+mkdir -p /tmp/empty
 
 aws s3 sync --delete /tmp/empty/ "s3://${BUCKET_NAME}/"
 

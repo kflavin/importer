@@ -1,6 +1,5 @@
 user_data_tmpl = """#!/bin/bash
 set -vxe
-
 sleep 1
 
 # Ensure we halt if something goes wrong
@@ -15,11 +14,11 @@ sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc
 
 # Load our environment
 aws sts get-caller-identity
-export db_user=$(aws ssm get-parameters --names "db_user" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_password=$(aws ssm get-parameters --names "db_password" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_host=$(aws ssm get-parameters --names "db_host" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_schema=$(aws ssm get-parameters --names "db_schema" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-
+export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
+# export db_user=$(aws ssm get-parameters --names "db_user" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+# export db_password=$(aws ssm get-parameters --names "db_password" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+# export db_host=$(aws ssm get-parameters --names "db_host" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+# export db_schema=$(aws ssm get-parameters --names "db_schema" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
 
 # Send cloud-init log to Cloudwatch
 cat <<EOF >> /etc/awslogs/awslogs.conf
@@ -37,18 +36,18 @@ aws s3 cp s3://{bucket_name}/{bucket_key} /data/
 aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
 
 # Install package
-cd /opt
-tar xzvf importer.tar.gz
-cd importer*
-sudo pip-3.6 install -r requirements.npi.txt
+# cd /opt
+# tar xzvf importer.tar.gz
+# cd importer*
+# sudo pip-3.6 install -r requirements.npi.txt
+pip-3.6 install /opt/importer.tar.gz
+PATH=/usr/local/bin:$PATH
 
-# Clean and load CSV file
+# Clean and load CSV file, then mark the object as imported
 ZIP_FILE=$(ls -1 /data/*.zip)
-CSV_FILE=$(./runner-import.py npi unzip -i $ZIP_FILE -p /data/NPPES)
-CLEAN_CSV_FILE=$(./runner-import.py npi preprocess -i $CSV_FILE)
-time ./runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name} -p {period}
-
-# Mark the object as imported
+CSV_FILE=$(runner-import.py npi unzip -i $ZIP_FILE -p /data/NPPES)
+CLEAN_CSV_FILE=$(runner-import.py npi preprocess -i $CSV_FILE)
+time runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name} -p {period}
 aws s3api put-object-tagging --bucket {bucket_name} --key {bucket_key} --tagging 'TagSet=[{{Key=imported,Value=true}}]'
 
 # Terminate the instance

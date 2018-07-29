@@ -2,14 +2,14 @@ import os
 import boto3
 from backend.resources.userdata import user_data_tmpl
 from backend.helpers.s3 import next_bucket_key, is_imported
-from backend.helpers.ec2 import active_import
+from backend.helpers.ec2 import active_imports
 from backend.periods import MONTHLY
 
 def handler(event, context):
     print(f"Starting instance for {MONTHLY} import...")
     print(event)
 
-    region = os.environ.get('aws_region', 'us-east-1')
+    region = os.environ.get('aws_region')
     keyName = os.environ.get('aws_key')
     imageId = os.environ.get('aws_image_id')
     instanceType = os.environ.get('aws_instance_type')
@@ -34,6 +34,8 @@ def handler(event, context):
     if is_imported(bucket_name, bucket_key):
         print(f"Skipping {bucket_name}/{bucket_key}, file has already been imported.")
         return
+
+    print(f"Current number of tasks are {active_imports(table_name, MONTHLY)}, max instances are 1")
 
     if active_imports(table_name, MONTHLY) > 0:
         print(f"Skipping {bucket_name}/{bucket_key}, there is a {MONTHLY} import EC2 running.")

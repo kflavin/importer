@@ -1,6 +1,6 @@
 # serverless importer
 
-## Install
+## Use
 
 ```bash
 # Configure environment
@@ -12,10 +12,16 @@ source .env.aws
 # Deploy stack (RDS, Lambda, S3)
 sls deploy --stage=dev
 
+# Build the Python script
+python setup.py sdist
+
+# Push script to the s3 bucket
+./bin/stage_runner_to_s3.sh
+
 # Create initial database
 sls invoke --function create_db
 
-# Upload a (partial) data file to s3
+# Upload a (partial) CSV file to s3
 bin/copy_data_files.sh npidata_pfile_50k.csv
 ```
 

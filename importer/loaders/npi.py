@@ -119,10 +119,10 @@ class NpiLoader(object):
         includes removing extra rows and renaming columns.  Returns the full path of the new CSV.
         """
 
-        # Remove all the "Other Provider" columns
         # df = df[df.columns.drop(list(df.filter(regex='Test')))]
         df = pd.read_csv(infile, low_memory=False)
 
+        # Drop/clean columns.
         df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
         df.columns = [ self.__clean_field(col) for col in df.columns]
         
@@ -153,7 +153,7 @@ class NpiLoader(object):
 
     def load_monthly(self, table_name, infile):
         """
-        Load monthly data (larger) file
+        Load monthly data (larger) file.  Return the number of rows inserted.
         """
         print("NPI monthly loader importing from {}".format(infile))
         q = INSERT_MONTHLY_QUERY.format(infile=infile, table_name=table_name)
@@ -162,13 +162,14 @@ class NpiLoader(object):
             print(repr(q))
 
         self.cursor.execute(q)
-        print(f"{self.cursor.rowcount} rows inserted")
         self.cnx.commit()
+        return self.cursor.rowcount
 
 
     def load_weekly(self, table_name, infile, batch_size=1000):
         """
-        Load weekly data (smaller) file.  Size of INSERT can be broken up into batches (batch_size)
+        Load weekly data (smaller) file.  Size of INSERT can be broken up into batches (batch_size).  Return the
+        number of rows inserted.
         """
         print("NPI weekly loader importing from {}, batch size = {}".format(infile, batch_size))
         reader = csv.DictReader(open(infile, 'r'))
@@ -202,4 +203,4 @@ class NpiLoader(object):
             print("Submitting batch {}".format(batch_count))
             total_rows_inserted += self.__submit_batch(q, batch)
 
-        print(f"{total_rows_inserted} rows inserted")
+        return total_rows_inserted

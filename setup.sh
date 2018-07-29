@@ -7,6 +7,7 @@ sed -i -e 's/^export db_host.*/export db_host="'$(./bin/get_rds_endpoint.sh)'"/'
 source .env.aws
 bin/set_ssm_params.sh
 sls invoke --function create_db
+sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
 
 # Copy sample data
 bin/copy_data_files.sh data/npidata_pfile_1k.csv

@@ -9,7 +9,7 @@ def handler(event, context):
     print(f"Starting instance for {WEEKLY} import...")
     print(event)
 
-    region = os.environ.get('aws_region', 'us-east-1')
+    region = os.environ.get('aws_region')
     keyName = os.environ.get('aws_key')
     imageId = os.environ.get('aws_image_id')
     instanceType = os.environ.get('aws_instance_type')
@@ -34,6 +34,8 @@ def handler(event, context):
     if is_imported(bucket_name, bucket_key):
         print(f"Skipping {bucket_name}/{bucket_key}, already imported.")
         return
+
+    print(f"Current number of tasks are {active_imports(table_name, WEEKLY)}, max instances are {max_concurrent_instances}")
 
     if active_imports(table_name, WEEKLY) >= max_concurrent_instances:
         print(f"Skipping {bucket_name}/{bucket_key}, there is a {WEEKLY} import running.")

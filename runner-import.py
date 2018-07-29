@@ -4,6 +4,7 @@ import click
 import _mysql
 import mysql.connector as connector
 import os
+import boto3
 from importer.loaders.npi import NpiLoader
 
 @click.group()
@@ -36,11 +37,13 @@ def load(infile, batch_size, table_name, period):
     NPI importer
     """
 
+    client = boto3.client('ssm', region_name=os.environ['aws_region'])
+    # Environment params will override SSM params
     args = {
-        'user': os.environ['db_user'],
-        'password': os.environ['db_password'],
-        'host': os.environ['db_host'],
-        'database': os.environ['db_schema']
+        'user': os.environ.get('db_user', client.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value']),
+        'password': os.environ.get('db_password', client.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value']),
+        'host': os.environ.get('db_host', client.get_parameter(Name='db_host')['Parameter']['Value']),
+        'database': os.environ.get('db_schema', client.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value'])
     }
 
     npi_loader = NpiLoader()

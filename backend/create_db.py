@@ -1,28 +1,21 @@
 import os
-# from importer.loaders.npi import NpiLoader
 import mysql.connector as connector
+import boto3
 from importer.sql.npi_create_clean import CREATE_TABLE_SQL
 
 
 def handler(event, context):
     table_name = event.get('table_name', 'npi')
     database = event.get('database')
+    client = boto3.client('ssm')
 
-    # print("Creating database '{os.environ['db_schema']}' and table '{table_name}'...")
-    # npi_loader = NpiLoader()
-    # npi_loader.connect(user=os.environ['db_user'],
-    #                 host=os.environ['db_host'], 
-    #                 password=os.environ['db_password'], 
-    #                 database=os.environ['db_schema'],
-    #                 set_db=False)
-    # npi_loader.create_database()
-    # npi_loader.create_table(table_name)
+    args = {
+        'user': client.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value'],
+        'password': client.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value'],
+        'host': client.get_parameter(Name='db_host')['Parameter']['Value']
+    }
 
-
-
-    cnx = connector.connect(user=os.environ['db_user'], 
-                            password=os.environ['db_password'], 
-                            host=os.environ['db_host'])
+    cnx = connector.connect(**args)
     cursor = cnx.cursor()
 
 

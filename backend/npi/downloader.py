@@ -17,12 +17,11 @@ def handler(event, context):
     Download zip files.  Don't download if they already exist in s3.
     """
     print("Downloading zip files")
+    # If a file is not passed as a param, then crawl the page for zip files.
     urls = [event.get('file_url')] if event.get('file_url', '') else find_zip_urls()
-
-    # urls = find_zip_urls()
     bucket = os.environ.get('aws_s3_bucket')
+
     for url in urls:
-        print(f"Loading {url}")
         url_to_s3(url, bucket)
 
     print("Done!")
@@ -42,7 +41,7 @@ def url_to_s3(url, bucket):
 
     # If it's already in our bucket, skip it.
     if not exists(bucket, key):
-        print(f"Uploading {bucket}/{key}...")
+        print(f"Uploading {bucket}/{key}")
         client.upload_fileobj(zippedFile, bucket, key)
 
         # Tag the object
@@ -58,6 +57,8 @@ def url_to_s3(url, bucket):
                         'Value': 'false'
                     },
                 ] } )
+    else:
+        print(f"Skipping {bucket}/{key}, exists.")
 
 # def s3_to_s3(event):
 #     """
@@ -74,7 +75,7 @@ def exists(bucket, key):
     Check if the object exists in s3
     """
     s3 = boto3.resource('s3')
-    print(f"check if {bucket}/{key} exists in s3")
+    # print(f"check if {bucket}/{key} exists in s3")
 
     try:
         s3.Object(bucket, key).load()
@@ -99,8 +100,9 @@ def find_zip_urls():
     urls = []
     for l in links:
         link = l['href']
-        print(f"Checking link {link}")
+
         if "nppes_data_dissemination" in link.lower():
+            print(f"Adding link {link}")
             urls.append(urljoin(base_url, link))
 
     return urls
