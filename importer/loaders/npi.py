@@ -8,6 +8,7 @@ import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 from importer.sql.npi_create_clean import CREATE_TABLE_SQL
 from importer.sql.npi_insert import INSERT_WEEKLY_QUERY, INSERT_MONTHLY_QUERY
+from importer.sql.checks import DISABLE, ENABLE
 import pandas as pd
 
 class NpiLoader(object):
@@ -112,12 +113,14 @@ class NpiLoader(object):
         zip.extract(csv_file, path)
         return f"{path}/{csv_file}"
 
-
-    def preprocess(self, infile, outfile):
+    def preprocess(self, infile, outfile=None):
         """
         Given a CSV file to process (infile) and a file to write out (outfile), perform preprocessing on file.  This
         includes removing extra rows and renaming columns.  Returns the full path of the new CSV.
         """
+
+        if not outfile:
+            outfile = infile[:infile.rindex(".")] + ".clean.csv"
 
         # df = df[df.columns.drop(list(df.filter(regex='Test')))]
         df = pd.read_csv(infile, low_memory=False)
@@ -130,6 +133,8 @@ class NpiLoader(object):
         # df.filter(regex='Test').columns
 
         df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
+
+        return outfile
 
     def build_weekly_query(self, columns, table_name):
         """
@@ -164,7 +169,6 @@ class NpiLoader(object):
         self.cursor.execute(q)
         self.cnx.commit()
         return self.cursor.rowcount
-
 
     def load_weekly(self, table_name, infile, batch_size=1000):
         """
@@ -204,3 +208,27 @@ class NpiLoader(object):
             total_rows_inserted += self.__submit_batch(q, batch)
 
         return total_rows_inserted
+
+    def disable_checks(self):
+        self.cursor.execute(DISABLE, multi=True)
+
+    def enable_checks(self):
+        self.cursor.execute(ENABLE, multi=True)
+
+    def mark_imported(bucket, key):
+        client = boto3.client('s3')
+
+        response = client.put_object_tagging(
+            Bucket=bucket,
+            Key=key,
+            Tagging={
+                'TagSet': [
+                    {
+                        'Key': 'imported',
+                        'Value': 'true'
+                    },
+                ]
+            }
+        )
+
+        # 'TagSet=[{{Key=imported,Value=true}}]'
