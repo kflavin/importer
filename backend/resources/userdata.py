@@ -13,7 +13,7 @@ sleep 1
 sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel awslogs
 
 # Load our environment
-export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
+# export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
 
 # Send cloud-init log to Cloudwatch
 cat <<EOF >> /etc/awslogs/awslogs.conf
@@ -27,7 +27,7 @@ EOF
 /etc/init.d/awslogs start
 
 # Copy packages and data from s3
-aws s3 cp s3://{bucket_name}/{bucket_key} /data/
+aws s3 cp s3://{bucket_name}/{bucket_key} /tmp/npi/
 aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
 
 # Install package
@@ -35,11 +35,10 @@ pip-3.6 install /opt/importer.tar.gz
 PATH=/usr/local/bin:$PATH
 
 # Clean and load CSV file, then mark the object as imported
-ZIP_FILE=$(ls -1 /data/*.zip)
-CSV_FILE=$(runner-import.py npi unzip -i $ZIP_FILE -p /data/NPPES)
-CLEAN_CSV_FILE=$(runner-import.py npi preprocess -i $CSV_FILE)
-time runner-import.py npi load -i $CLEAN_CSV_FILE -t {table_name} -p {period}
-aws s3api put-object-tagging --bucket {bucket_name} --key {bucket_key} --tagging 'TagSet=[{{Key=imported,Value=true}}]'
+ZIP_FILE=$(ls -1 /tmp/npi/*.zip)
+time runner-import.py npi all -i $ZIP_FILE -p {period} -t {table_name} -u /tmp/npi/NPPES -b {bucket_name} -k {bucket_key}
+
+# aws s3api put-object-tagging --bucket {bucket_name} --key {bucket_key} --tagging 'TagSet=[{{Key=imported,Value=true}}]'
 
 # Terminate the instance
 halt -p
