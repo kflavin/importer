@@ -1,6 +1,6 @@
 # serverless importer
 
-## Use
+## Install
 
 ```bash
 # Configure environment
@@ -19,7 +19,7 @@ python setup.py sdist
 ./bin/stage_runner_to_s3.sh
 
 # Create initial database
-sls invoke --function create_db
+sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
 
 # Upload a (partial) CSV file to s3
 bin/copy_data_files.sh npidata_pfile_50k.csv
@@ -27,36 +27,28 @@ bin/copy_data_files.sh npidata_pfile_50k.csv
 
 This template creates RDS and S3 resources.
 
-The step function isn't automatically created through the resources yet.  You will need to create the step function
-manually with __resources/npi_state_machine.json__ and set the ARN to point to the __npi_step_importer__ function.
-
 #### Environment values
 
 ```bash
-export db_user='your db user'
-export db_password='your db password'
-export db_host='RDS endpoint'
-export db_schema='database name'
-export table_name='tablename'
-export aws_region='us-east-1'
-export aws_key='Your AWS SSH key'
-export aws_security_groups='Security group for EC2 and Lambda'
-export aws_private_subnets='sub1,sub2'
-export aws_public_subets='sub1,sub2'
-export aws_rds_security_group='Security group for RDS'
-# The following are for the EC2 function only, not needed for Step function
-export aws_instance_profile='IAM role with S3 access must be preconfigured'
+export db_user=''
+export db_password=''
+export db_host=''
+export db_schema=''
+export npi_table_name=''
+export aws_region=''
+export aws_key=''
 export aws_image_id='ami-14c5486b'
-export aws_instance_type='t2.small'
+export aws_weekly_instance_type='t2.small'
+export aws_monthly_instance_type='m5.4xlarge'
+export aws_private_subnets='subnet1,subnet2'
+export aws_public_subnets='subnet1,subnet2'
+export aws_vpc_id=''
+export aws_rds_security_group=''
+export aws_security_groups=''
+export aws_instance_profile=''  # Needs access to S3 and SSM
+export aws_rds_parameter_group=''
+export npi_max_weekly_instances='3'
 ```
-
-### Step Importer
-
-_Removed_
-
-See branch: __step_functions__
-
-___TODO: Split the full file into smaller files.  Lambda has a 512MB filesystem limit and cannot download the full file at once.___
 
 ### EC2 Importer
 
@@ -65,6 +57,12 @@ Deploys an ephemeral EC2 instance to handle data import.
 See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9RjsrSxSYUovuIqw
 
 _Fill out later_
+
+### Step Importer
+
+_Removed_
+
+See branch: __step_functions__
 
 ## Destroy
 
