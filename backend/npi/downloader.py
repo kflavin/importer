@@ -102,7 +102,6 @@ def find_zip_urls():
         link = l['href']
 
         if "nppes_data_dissemination" in link.lower():
-            print(f"Adding link {link}")
             urls.append(urljoin(base_url, link))
 
     return urls
