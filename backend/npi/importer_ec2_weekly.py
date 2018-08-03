@@ -17,7 +17,8 @@ def handler(event, context):
     subnetId = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first private subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name', 'npi')
-    max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 3))
+    timeout = os.environ.get('weekly_import_timeout', '10')             # Default, 30 minutes
+    max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 1))
 
     if "Records" in event:
         print("Processing from S3 trigger")
@@ -33,18 +34,19 @@ def handler(event, context):
 
     if is_imported(bucket_name, bucket_key):
         print(f"Skipping {bucket_name}/{bucket_key}, already imported.")
-        return
+        return False
 
     print(f"Current number of tasks are {active_imports(table_name, WEEKLY)}, max instances are {max_concurrent_instances}")
 
     if active_imports(table_name, WEEKLY) >= max_concurrent_instances:
         print(f"Skipping {bucket_name}/{bucket_key}, there is a {WEEKLY} import running.")
-        return
+        return False
 
     user_data = user_data_tmpl.format(bucket_name=bucket_name,
                                     bucket_key=bucket_key,
                                     table_name=table_name,
-                                    period=WEEKLY)
+                                    period=WEEKLY,
+                                    timeout=timeout)
 
     ec2 = boto3.resource('ec2', region_name=region)
     instance = ec2.create_instances(
@@ -87,6 +89,7 @@ def handler(event, context):
         IamInstanceProfile={ 'Name': instance_profile })
 
     print(f"Instance: {instance}")
+    return True
 
 
 if __name__ == '__main__':
