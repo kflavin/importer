@@ -1,7 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 import time
-from pprint import pprint
+
 
 class CloudWatchLogger(object):
     def __init__(self, group, stream, region):
@@ -65,7 +65,6 @@ class CloudWatchLogger(object):
         self.response = self.logger.put_log_events(**args)
 
         if self.response:
-            pprint(self.response)
             self.token = self.response['nextSequenceToken']
 
 
