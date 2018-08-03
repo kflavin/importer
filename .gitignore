@@ -15,3 +15,7 @@ node_modules
 
 # Sandbox area
 sandbox/*
+
+# Editors
+*.swp
+*.vscode
