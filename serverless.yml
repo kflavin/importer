@@ -32,7 +32,7 @@ custom:
     slim: true
   scripts:
     hooks:
-      'deploy:finalize': bash bin/stage_runner_to_s3.sh
+      'deploy:finalize': bash bin/stage_all.sh
 
 provider:
   name: aws

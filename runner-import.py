@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-import csv
 import click
-import _mysql
-import mysql.connector as connector
 import os
 import boto3
 from importer.loaders.npi import NpiLoader
+from importer.loggers.cw_logger import CloudWatchLogger
 
 @click.group()
 def start():
@@ -86,50 +84,52 @@ def npi_unzip(infile, unzip_path):
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
 @click.option('--bucket-name', type=click.STRING, help="")
 @click.option('--bucket-key', type=click.STRING, help="")
-def all(infile, unzip_path, outfile, batch_size, table_name, period):
+def all(infile, unzip_path, outfile, batch_size, table_name, period, bucket_name, bucket_key):
     """
-    Perform all steps
+    Perform all steps.  Assumes we are loading to AWS.
     """
+    # Trying to keep AWS imports isolated here for now...
+    from importer.loggers.cw_logger import CloudWatchLogger
+    from importer.loaders.npi import NpiLoader
+    import boto3
+    logger.info(f"Processing {period} file")
+
+    region = os.environ.get('aws_region')
+    logger = CloudWatchLogger("importer-npi", os.environ.get('instance_id'), region=region)
 
     npi_loader = NpiLoader()
-    print("Unzipping file")
+
+    logger.info("Unzipping file")
     csv_file = npi_loader.unzip(infile, unzip_path)
-    print("Preprocessing file")
+
+    logger.info("Preprocessing file")
     cleaned_file = npi_loader.preprocess(csv_file, outfile)
 
-    client = boto3.client('ssm', region_name=os.environ['aws_region'])
+    ssm = boto3.client('ssm', region_name=region)
+
     args = {
-        'user': os.environ.get('db_user', client.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value']),
-        'password': os.environ.get('db_password', client.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value']),
-        'host': os.environ.get('db_host', client.get_parameter(Name='db_host')['Parameter']['Value']),
-        'database': os.environ.get('db_schema', client.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value'])
+        'user': os.environ.get('db_user', ssm.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value']),
+        'password': os.environ.get('db_password', ssm.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value']),
+        'host': os.environ.get('db_host', ssm.get_parameter(Name='db_host')['Parameter']['Value']),
+        'database': os.environ.get('db_schema', ssm.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value'])
     }
 
+    npi_loader.connect(**args)
+    
     if period.lower() == "weekly":
-        print("Loading weekly NPI file")
-        npi_loader.connect(**args)
+        logger.info("Loading weekly NPI file into database")
         npi_loader.load_weekly(table_name, cleaned_file, batch_size)
     else:
-        print("Loading monthly NPI file")
-        npi_loader.connect(**args, clientFlags=True)
+        logger.info("Loading monthly NPI file into database")
+        # npi_loader.disable_checks()
         npi_loader.load_monthly(table_name, cleaned_file)
+        # npi_loader.enable_checks()
 
+    logger.info("Mark file as imported in S3")
     npi_loader.mark_imported(bucket_name, bucket_key)
-    print(f"Data loaded to table: {table_name}")
+    
+    logger.info(f"Data loaded to table: {table_name}")
 
-@click.command()
-def disable():
-    print("Disable stuff")
-    npi_loader = NpiLoader()
-    client = boto3.client('ssm', region_name=os.environ['aws_region'])
-    args = {
-        'user': os.environ.get('db_user', client.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value']),
-        'password': os.environ.get('db_password', client.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value']),
-        'host': os.environ.get('db_host', client.get_parameter(Name='db_host')['Parameter']['Value']),
-        'database': os.environ.get('db_schema', client.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value'])
-    }
-    npi_loader.connect(**args)
-    npi_loader.disable_checks()
 
 start.add_command(npi)
 npi.add_command(load)
@@ -137,7 +137,6 @@ npi.add_command(create)
 npi.add_command(npi_unzip, name="unzip")
 npi.add_command(npi_preprocess, name="preprocess")
 npi.add_command(all)
-npi.add_command(disable)
 
 if __name__ == '__main__':
     start()
