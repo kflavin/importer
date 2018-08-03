@@ -10,6 +10,7 @@ from importer.sql.npi_create_clean import CREATE_TABLE_SQL
 from importer.sql.npi_insert import INSERT_WEEKLY_QUERY, INSERT_MONTHLY_QUERY
 from importer.sql.checks import DISABLE, ENABLE
 import pandas as pd
+import boto3
 
 class NpiLoader(object):
     """
@@ -210,12 +211,18 @@ class NpiLoader(object):
         return total_rows_inserted
 
     def disable_checks(self):
+        """
+        Temporarily disable DB checks while loading large data sets
+        """
         self.cursor.execute(DISABLE, multi=True)
 
     def enable_checks(self):
         self.cursor.execute(ENABLE, multi=True)
 
-    def mark_imported(bucket, key):
+    def mark_imported(self, bucket, key):
+        """
+        Marks the s3 object as imported.
+        """
         client = boto3.client('s3')
 
         response = client.put_object_tagging(
@@ -230,5 +237,3 @@ class NpiLoader(object):
                 ]
             }
         )
-
-        # 'TagSet=[{{Key=imported,Value=true}}]'

@@ -2,31 +2,25 @@ user_data_tmpl = """#!/bin/bash
 set -vxe
 sleep 1
 
-# Ensure we halt if something goes wrong
+# # Ensure we halt if something goes wrong
 # function cleanup {{
-#   logger "Halting instance"
+#   logger "Halting instance due to a failure"
 #   halt -p
 # }}
 # trap cleanup EXIT
 
-# Configure server
-sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel awslogs
+# Load our environment.  Used by runner.
+export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
+export instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 
-# Load our environment
-# export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
+# Install dependencies
+sudo yum install -y awscli python3 python3-devel python36-devel python36-pip gcc mysql-devel awslogs || ( echo "Failed to install packages." && exit 1 )
 
-# Send cloud-init log to Cloudwatch
-cat <<EOF >> /etc/awslogs/awslogs.conf
-[/var/log/cloud-init-output.log]
-file = /var/log/cloud-init-output.log
-buffer_duration = 5000
-log_stream_name = {{instance_id}}
-initial_position = start_of_file
-log_group_name = /var/log/cloud-init-output.log
-EOF
+# Send logs to CloudWatch
+aws s3 cp s3://{bucket_name}/config/awslogs.conf /etc/awslogs/awslogs.conf
 /etc/init.d/awslogs start
 
-# Copy packages and data from s3
+# Copy data package and runner package
 aws s3 cp s3://{bucket_name}/{bucket_key} /tmp/npi/
 aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
 
@@ -36,9 +30,7 @@ PATH=/usr/local/bin:$PATH
 
 # Clean and load CSV file, then mark the object as imported
 ZIP_FILE=$(ls -1 /tmp/npi/*.zip)
-time runner-import.py npi all -i $ZIP_FILE -p {period} -t {table_name} -u /tmp/npi/NPPES -b {bucket_name} -k {bucket_key}
-
-# aws s3api put-object-tagging --bucket {bucket_name} --key {bucket_key} --tagging 'TagSet=[{{Key=imported,Value=true}}]'
+timeout {timeout}m runner-import.py npi all -i $ZIP_FILE -p {period} -t {table_name} -u /tmp/npi/NPPES --bucket-name {bucket_name} --bucket-key {bucket_key}
 
 # Terminate the instance
 halt -p
