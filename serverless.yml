@@ -115,6 +115,7 @@ resources:
         VPCSecurityGroups:
           - ${self:custom.awsRdsSecurityGroup}
         Engine: MySQL
+        EngineVersion: 5.6.29
         MasterUsername: ${self:custom.db_user}
         MasterUserPassword: ${self:custom.db_password}
         PubliclyAccessible: false

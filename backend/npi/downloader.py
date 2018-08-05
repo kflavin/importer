@@ -1,26 +1,28 @@
 import boto3
 import botocore
-import shutil
 import os
 from urllib.request import urlopen
 from urllib.parse import urljoin
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
 
-url = "http://download.cms.gov/nppes/NPI_Files.html"
+download_url = "http://download.cms.gov/nppes/NPI_Files.html"
 base_url = "http://download.cms.gov/nppes/"
 weekly_dir = "npi-in/weekly"
 monthly_dir = "npi-in/monthly"
+max_links = 8  # If we find more zip files than this, exit.  The NPPES site may have changed.
 
 def handler(event, context):
     """
-    Download zip files.  Don't download if they already exist in s3.
+    Download zip files and put them into the appropriate s3 locations
     """
     print("Downloading zip files")
-    # If a file is not passed as a param, then crawl the page for zip files.
+    # Enumerate the zip files on the page.  If a file is not passed as a param, then
+    # crawl the page for zip files.
     urls = [event.get('file_url')] if event.get('file_url', '') else find_zip_urls()
     bucket = os.environ.get('aws_s3_bucket')
 
+    # Add each file into bucket
     for url in urls:
         url_to_s3(url, bucket)
 
@@ -28,7 +30,7 @@ def handler(event, context):
 
 def url_to_s3(url, bucket):
     """
-    Download the zip file to S3
+    Download the zip file to the appropriate S3 folder, and tag them as unimported.  Skip files that already exist.
     """
     zippedFile = urlopen(url)
     fileName = url.split("/")[-1]
@@ -48,8 +50,6 @@ def url_to_s3(url, bucket):
         client.put_object_tagging(
             Bucket=bucket,
             Key=key,
-            # VersionId='string',
-            # ContentMD5='string',
             Tagging={
                 'TagSet': [
                     {
@@ -62,7 +62,7 @@ def url_to_s3(url, bucket):
 
 # def s3_to_s3(event):
 #     """
-#     Testing...
+#     Testing a multipart upload...
 #     """
 #     s3 = boto3.resource('s3')
 #     obj = s3.Object(os.environ.get('aws_s3_bucket'), event.get('infile'))
@@ -91,17 +91,25 @@ def exists(bucket, key):
 
 def find_zip_urls():
     """
-    Locate any zip files on the site and return them.
+    Locate any zip files we want and return them.  This finds only the dissemination files,
+    not deactivation.
     """
-    html = urlopen(url).read()
+    html = urlopen(download_url).read()
     soup = BeautifulSoup(html, 'html.parser')
-    links = soup.select("a[href*=.zip]")
-
+    links = soup.select("a[href$=.zip]")
     urls = []
+
+    print(f"Found {len(links)} links")
+    # Sanity check to ensure the page hasn't changed to something unexpected.
+    if len(links) > max_links:
+        print("Number of links exceeds MAX of {max_links}, exit and check site for changes.")
+        return urls
+
     for l in links:
         link = l['href']
 
-        if "nppes_data_dissemination" in link.lower():
+        # Only grab dissemination links, not deactivation.
+        if "/nppes_data_dissemination" in link.lower():
             urls.append(urljoin(base_url, link))
 
     return urls
@@ -110,10 +118,10 @@ if __name__ == "__main__":
     """
     Test from the CLI
     """
-    html = urlopen(url).read()
+    html = urlopen(download_url).read()
     soup = BeautifulSoup(html, 'html.parser')
     # links = soup.find_all('a', href=True)
-    links = soup.select("a[href*=.zip]")
+    links = soup.select("a[href$=.zip]")
     print(len(links))
 
     for link in links:

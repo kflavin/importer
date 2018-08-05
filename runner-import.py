@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import click
 import os
-import boto3
+# import boto3
 from importer.loaders.npi import NpiLoader
-from importer.loggers.cw_logger import CloudWatchLogger
+from importer.loggers.cloudwatch import CloudWatchLogger
 
 @click.group()
 def start():
@@ -35,13 +35,11 @@ def load(infile, batch_size, table_name, period):
     NPI importer
     """
 
-    client = boto3.client('ssm', region_name=os.environ['aws_region'])
-    # Environment params will override SSM params
     args = {
-        'user': os.environ.get('db_user', client.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value']),
-        'password': os.environ.get('db_password', client.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value']),
-        'host': os.environ.get('db_host', client.get_parameter(Name='db_host')['Parameter']['Value']),
-        'database': os.environ.get('db_schema', client.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value'])
+        'user': os.environ.get('db_user'),
+        'password': os.environ.get('db_password'),
+        'host': os.environ.get('db_host'),
+        'database': os.environ.get('db_schema')
     }
 
     npi_loader = NpiLoader()
@@ -78,24 +76,17 @@ def npi_unzip(infile, unzip_path):
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
 @click.option('--unzip-path', '-u', default="/data/NPPES", type=click.STRING, help="Directory to extract zip")
-@click.option('--outfile', '-o', type=click.STRING, help="Filename to write for cleaned file")
+@click.option('--outfile', '-o', type=click.STRING, help="Name to use for cleaned CSV file")
 @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
 @click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table name to load.")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
-@click.option('--bucket-name', type=click.STRING, help="")
-@click.option('--bucket-key', type=click.STRING, help="")
-def all(infile, unzip_path, outfile, batch_size, table_name, period, bucket_name, bucket_key):
+def all(infile, unzip_path, outfile, batch_size, table_name, period):
     """
-    Perform all steps.  Assumes we are loading to AWS.
+    Perform all load steps.
     """
-    # Trying to keep AWS imports isolated here for now...
-    from importer.loggers.cw_logger import CloudWatchLogger
-    from importer.loaders.npi import NpiLoader
-    import boto3
-    logger.info(f"Processing {period} file")
-
     region = os.environ.get('aws_region')
     logger = CloudWatchLogger("importer-npi", os.environ.get('instance_id'), region=region)
+    logger.info(f"Start: {period} file")
 
     npi_loader = NpiLoader()
 
@@ -105,13 +96,11 @@ def all(infile, unzip_path, outfile, batch_size, table_name, period, bucket_name
     logger.info("Preprocessing file")
     cleaned_file = npi_loader.preprocess(csv_file, outfile)
 
-    ssm = boto3.client('ssm', region_name=region)
-
     args = {
-        'user': os.environ.get('db_user', ssm.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value']),
-        'password': os.environ.get('db_password', ssm.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value']),
-        'host': os.environ.get('db_host', ssm.get_parameter(Name='db_host')['Parameter']['Value']),
-        'database': os.environ.get('db_schema', ssm.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value'])
+        'user': os.environ.get('db_user'),
+        'password': os.environ.get('db_password'),
+        'host': os.environ.get('db_host'),
+        'database': os.environ.get('db_schema')
     }
 
     npi_loader.connect(**args)
@@ -121,12 +110,12 @@ def all(infile, unzip_path, outfile, batch_size, table_name, period, bucket_name
         npi_loader.load_weekly(table_name, cleaned_file, batch_size)
     else:
         logger.info("Loading monthly NPI file into database")
-        # npi_loader.disable_checks()
+        npi_loader.disable_checks()
         npi_loader.load_monthly(table_name, cleaned_file)
-        # npi_loader.enable_checks()
+        npi_loader.enable_checks()
 
-    logger.info("Mark file as imported in S3")
-    npi_loader.mark_imported(bucket_name, bucket_key)
+    # logger.info("Mark file as imported in S3")
+    # npi_loader.mark_imported(bucket_name, bucket_key)
     
     logger.info(f"Data loaded to table: {table_name}")
 

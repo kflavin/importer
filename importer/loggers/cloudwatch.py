@@ -21,7 +21,7 @@ class CloudWatchLogger(object):
             self.logger.create_log_stream(logGroupName=self.log_group, logStreamName=self.log_stream)
         except ClientError as e:
             if e.response['Error']['Code'] == 'ResourceAlreadyExistsException':
-                print("Steam already exists, skip creating.")
+                print("Stream already exists, skip creating.")
 
         response = self.logger.describe_log_streams(
             logGroupName=self.log_group,
@@ -39,13 +39,12 @@ class CloudWatchLogger(object):
         if response and "logStreams" in response:
             if len(response.get('logStreams')) > 0:
                 if "uploadSequenceToken" in response['logStreams'][0]:
-                    print("We have a token!")
                     self.token = response['logStreams'][0]['uploadSequenceToken']
 
     def info(self, message):
         timestamp = int(round(time.time() * 1000))
 
-        print(f"group name is {self.log_group}")
+        # print(f"group name is {self.log_group}")
 
         args = {
             "logGroupName": self.log_group,
