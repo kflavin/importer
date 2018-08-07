@@ -2,12 +2,13 @@ user_data_tmpl = """#!/bin/bash
 set -vxe
 sleep 1
 
-# # Ensure we halt if something goes wrong
-# function cleanup {{
-#   logger "Halting instance due to a failure"
-#   halt -p
-# }}
-# trap cleanup EXIT
+# Ensure we halt if something goes wrong
+function cleanup {{
+  logger "Halting instance due to a failure"
+  sleep 10  # give some extra time to get all logs to CW
+  halt -p
+}}
+trap cleanup EXIT
 
 # Load our environment.  Used by runner.
 export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
@@ -40,7 +41,7 @@ PATH=/usr/local/bin:$PATH
 
 # Clean and load CSV file, then mark the object as imported
 ZIP_FILE=$(ls -1 /tmp/npi/*.zip)
-timeout {timeout}m runner-import.py npi all -i $ZIP_FILE -p {period} -t {table_name} -u /tmp/npi/NPPES --bucket-name {bucket_name} --bucket-key {bucket_key}
+timeout {timeout}m runner-import.py npi all -i $ZIP_FILE -p {period} -t {table_name} -u /tmp/npi/NPPES
 aws s3api put-object-tagging --bucket {bucket_name} --key {bucket_key} --tagging 'TagSet=[{{Key=imported,Value=true}}]'
 
 # Terminate the instance
