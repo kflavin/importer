@@ -1,7 +1,7 @@
 import boto3
 from pprint import pprint
 
-def active_imports(table_name, period):
+def active_imports(table_name):
     client = boto3.client('ec2')
 
     filters = [
@@ -9,10 +9,10 @@ def active_imports(table_name, period):
             'Name':'tag:table_name', 
             'Values': [table_name]
         },
-        {
-            'Name':'tag:period', 
-            'Values': [period]
-        },
+        # {
+        #     'Name':'tag:period', 
+        #     'Values': [period]
+        # },
         {
             'Name': 'instance-state-name',
             'Values': ['pending', 'running']
@@ -25,4 +25,4 @@ def active_imports(table_name, period):
 
 # Test from the CLI
 if __name__ == "__main__":
-    print(active_imports("npi", "weekly"))
+    print(active_imports("npi"))

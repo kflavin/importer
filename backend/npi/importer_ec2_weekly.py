@@ -36,10 +36,10 @@ def handler(event, context):
         print(f"Skipping {bucket_name}/{bucket_key}, already imported.")
         return False
 
-    print(f"Current number of tasks are {active_imports(table_name, WEEKLY)}, max instances are {max_concurrent_instances}")
+    print(f"Current number of tasks are {active_imports(table_name)}, max instances are {max_concurrent_instances}")
 
-    if active_imports(table_name, WEEKLY) >= max_concurrent_instances:
-        print(f"Skipping {bucket_name}/{bucket_key}, there is a {WEEKLY} import running.")
+    if active_imports(table_name) >= max_concurrent_instances:
+        print(f"SKIPPING, there is already an NPI import running.")
         return False
 
     user_data = user_data_tmpl.format(bucket_name=bucket_name,

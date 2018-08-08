@@ -122,11 +122,17 @@ class NpiLoader(object):
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
 
-        # df = df[df.columns.drop(list(df.filter(regex='Test')))]
-        df = pd.read_csv(infile, low_memory=False)
+        # Read the header file first, then reread the entire file with just the columns we want.  This is faster
+        # than reading the entire file, and then removing the columns.
+        col_df = pd.read_csv(infile, nrows=1)
+        col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
+        df = pd.read_csv(infile, usecols=col_df.columns)
+
+        # df = pd.read_csv(infile)
+        # df = pd.read_csv(infile, low_memory=False)
 
         # Drop/clean columns.
-        df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
+        # df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
         df.columns = [ self.__clean_field(col) for col in df.columns]
         
         # regex=re.compile("^other provider", re.IGNORECASE)
