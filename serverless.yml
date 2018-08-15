@@ -29,6 +29,7 @@ custom:
   db_password: ${env:db_password}
   db_schema: ${env:db_schema}
   npi_table_name: ${env:npi_table_name}
+  npi_log_table_name: ${env:npi_log_table_name}
   pythonRequirements:
     dockerizePip: false
     slim: true
@@ -59,6 +60,7 @@ provider:
     # db_password: ${self:custom.db_password}
     # db_schema: ${self:custom.db_schema}
     npi_table_name: ${self:custom.npi_table_name}
+    npi_log_table_name: ${self:custom.npi_log_table_name}
   vpc:
     securityGroupIds:
       - ${self:custom.awsSecurityGroups}

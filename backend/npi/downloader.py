@@ -5,6 +5,7 @@ from urllib.request import urlopen
 from urllib.parse import urljoin
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
+from backend.helpers.rds import add_to_db
 
 download_url = "http://download.cms.gov/nppes/NPI_Files.html"
 base_url = "http://download.cms.gov/nppes/"
@@ -17,6 +18,7 @@ def handler(event, context):
     Download zip files and put them into the appropriate s3 locations
     """
     print("Downloading zip files")
+    table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
     # Enumerate the zip files on the page.  If a file is not passed as a param, then
     # crawl the page for zip files.
     urls = [event.get('file_url')] if event.get('file_url', '') else find_zip_urls()
@@ -25,6 +27,7 @@ def handler(event, context):
     # Add each file into bucket
     for url in urls:
         url_to_s3(url, bucket)
+        add_to_db(url, table_name)
 
     print("Done!")
 

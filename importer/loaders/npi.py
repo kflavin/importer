@@ -126,7 +126,7 @@ class NpiLoader(object):
         # than reading the entire file, and then removing the columns.
         col_df = pd.read_csv(infile, nrows=1)
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
-        df = pd.read_csv(infile, usecols=col_df.columns)
+        df = pd.read_csv(infile, usecols=col_df.columns, low_memory=False)
 
         # df = pd.read_csv(infile)
         # df = pd.read_csv(infile, low_memory=False)
