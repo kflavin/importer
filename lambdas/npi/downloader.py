@@ -5,7 +5,7 @@ from urllib.request import urlopen
 from urllib.parse import urljoin
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
-from backend.helpers.rds import add_to_db
+from lambdas.helpers.rds import add_to_db
 
 download_url = "http://download.cms.gov/nppes/NPI_Files.html"
 base_url = "http://download.cms.gov/nppes/"
