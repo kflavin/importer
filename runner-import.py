@@ -16,12 +16,11 @@ def start(debug, logs):
     DEBUG = debug
     global logger
     
-    if logging == "cloudwatch":
-        print("setup cloudwatch")
+    if logs == "cloudwatch":
         region = os.environ.get('aws_region')
         logger = CloudWatchLogger("importer-npi", os.environ.get('instance_id'), region=region)
+        logger.info("Sending runner logs to cloudwatch")
     else:
-        print("setup system logger")
         logger = logging.getLogger("importer")
         logger.setLevel(level="INFO")
         sh = logging.StreamHandler()
@@ -30,6 +29,7 @@ def start(debug, logs):
         # fh = logging.FileHandler("importer.log")
         # fh.setLevel(logging.DEBUG)
         # logger.addHandler(fh)
+        logger.info("Sending runner logs to stdout")
     
         
 
