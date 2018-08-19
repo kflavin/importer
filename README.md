@@ -91,6 +91,11 @@ _Removed_
 
 See branch: __step_functions__
 
+### Dependencies
+
+* The lambdas have a dependency on the sql resources in the importer, under `resources/sql/`
+* The importer's runner has a dependency on AWS for cloudwatch logging.
+
 ## Destroy
 
 ```bash

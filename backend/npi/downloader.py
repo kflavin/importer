@@ -19,6 +19,7 @@ def handler(event, context):
     """
     print("Downloading zip files")
     table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
+
     # Enumerate the zip files on the page.  If a file is not passed as a param, then
     # crawl the page for zip files.
     urls = [event.get('file_url')] if event.get('file_url', '') else find_zip_urls()
@@ -26,42 +27,33 @@ def handler(event, context):
 
     # Add each file into bucket
     for url in urls:
-        url_to_s3(url, bucket)
-        add_to_db(url, table_name)
+        url_to_s3(url, bucket, table_name) # download the file
 
     print("Done!")
 
-def url_to_s3(url, bucket):
+def url_to_s3(url, bucket, table_name):
     """
-    Download the zip file to the appropriate S3 folder, and tag them as unimported.  Skip files that already exist.
+    Download the zip file to the appropriate S3 folder.  Skip files that already exist.
     """
     zippedFile = urlopen(url)
     fileName = url.split("/")[-1]
+    period = ""
     client = boto3.client('s3')
 
     if "weekly" in fileName.lower():
         key = f"{weekly_dir}/{fileName}"
+        p = 'w'
     else:
         key = f"{monthly_dir}/{fileName}"
+        p = 'm'
 
     # If it's already in our bucket, skip it.
     if not exists(bucket, key):
         print(f"Uploading {bucket}/{key}")
         client.upload_fileobj(zippedFile, bucket, key)
-
-        # Tag the object
-        client.put_object_tagging(
-            Bucket=bucket,
-            Key=key,
-            Tagging={
-                'TagSet': [
-                    {
-                        'Key': 'imported',
-                        'Value': 'false'
-                    },
-                ] } )
+        add_to_db(url, table_name, p) # add the new entry to the database
     else:
-        print(f"Skipping {bucket}/{key}, exists.")
+        print(f"Skipping {bucket}/{key}, already exists.")
 
 # def s3_to_s3(event):
 #     """

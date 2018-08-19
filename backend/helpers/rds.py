@@ -3,35 +3,52 @@ import mysql.connector as connector
 from pprint import pprint
 import boto3
 import sys
-from importer.sql.npi_import_log_insert import INSERT_NPI_IMPORT_LOG_QUERY
+from importer.sql.npi import INSERT_NEW_FILE, GET_FILES
 
-def add_to_db(url, table_name):
-    ssm = boto3.client('ssm', region_name=os.environ['aws_region'])
-    config = {
-        'user': ssm.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value'],
-        'password': ssm.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value'],
-        'host': ssm.get_parameter(Name='db_host')['Parameter']['Value'],
-        'database': ssm.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value']
-    }
+ssm = boto3.client('ssm', region_name=os.environ['aws_region'])
+config = {
+    'user': ssm.get_parameter(Name='db_user', WithDecryption=True)['Parameter']['Value'],
+    'password': ssm.get_parameter(Name='db_password', WithDecryption=True)['Parameter']['Value'],
+    'host': ssm.get_parameter(Name='db_host')['Parameter']['Value'],
+    'database': ssm.get_parameter(Name='db_schema', WithDecryption=True)['Parameter']['Value']
+}
+# config = {
+#     'user': 'root',
+#     'password': '',
+#     'host': 'localhost',
+#     'database': 'rxvantage'
+# }
 
+def imports_ready(table_name, period, limit):
+    print("Connecting to DB")
+
+    p = "m" if period.lower() == "monthly" else "w"
+
+    cnx = connector.connect(**config)
+    cursor = cnx.cursor(buffered=True)
+    q = GET_FILES.format(table_name=table_name, period=p, limit=limit)
+    cursor.execute(q)
+    
+    # If there are any files to import, return true
+    if cursor.rowcount > 0:
+        return True
+    
+    return False
+
+def add_to_db(url, table_name, p):
     print("Connecting to DB")
     cnx = connector.connect(**config)
     cursor = cnx.cursor()
-
-    # cols = ""
-    # columns = ['url']
-    # for column in columns:
-        # cols += "`{}`, ".format(column)
-        # values += "%({})s, ".format(column)
-
-    # cols = cols.rstrip().rstrip(",")
-    # values = values.rstrip().rstrip(",")
-    query = INSERT_NPI_IMPORT_LOG_QUERY.format(table_name=table_name, cols="`url`", values="%(url)s")
+    cols = "url, period"
+    values = "%(url)s, %(period)s"
+    query = INSERT_NEW_FILE.format(table_name=table_name, cols=cols, values=values)
+    
     print("Query")
     print(query)
 
     data = {
-        "url": url
+        "url": url,
+        "period": p
     }
 
     print("Query is: {}".format(query))
@@ -45,37 +62,5 @@ def add_to_db(url, table_name):
 # Test from the CLI
 if __name__ == "__main__":
     print("Add to db")
-    add_to_db("myurl", "npi_import_log")
-
-
-#     def __submit_batch(self, query, data):
-#         if self.debug:
-#             print(query)
-
-#         tries = 3
-#         count = 0
-
-#         # Simple retry
-#         while count < tries:
-#             try:
-#                 # cursor.execute(sql, (arg1, arg2))
-#                 # Deadlock error here when too many processes run at once.  Implement back off timer.
-#                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
-#                 self.cursor.executemany(query, data)
-#                 self.cnx.commit()
-#                 break
-#             except mysql.connector.errors.InternalError as e:
-#                 # print(self.cursor._last_executed)
-#                 # print(self.cursor.statement)
-#                 print("Rolling back...")
-#                 self.cnx.rollback()
-#                 count += 1
-#                 print("Failed on try {count}/{tries}")
-#                 if count < tries:
-#                     print("Could not submit batch")
-#                     raise
-
-#         return self.cursor.rowcount
-
-
-    
+    # add_to_db("myurl", "npi_import_log")
+    imports_ready("npi_import_log", "weekly", 1)

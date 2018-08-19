@@ -1,8 +1,8 @@
 import os
 import mysql.connector as connector
 import boto3
-from importer.sql.npi_create_clean import CREATE_TABLE_SQL
-from importer.sql.npi_import_log_create import CREATE_NPI_IMPORT_LOG_SQL
+from importer.sql.npi_create_clean import CREATE_NPI_TABLE
+from importer.sql.npi_import_log import CREATE_NPI_IMPORT_LOG_TABLE
 
 
 def handler(event, context):
@@ -26,11 +26,11 @@ def handler(event, context):
     cnx.database = database
 
     # Create NPI table
-    create_table_sql = CREATE_TABLE_SQL.format(table_name=table_name)
+    create_table_sql = CREATE_NPI_TABLE.format(table_name=table_name)
     cursor.execute(create_table_sql)
 
     # Create NPI import log table
-    create_log_table_sql = CREATE_NPI_IMPORT_LOG_SQL.format(table_name=log_table_name)
+    create_log_table_sql = CREATE_NPI_IMPORT_LOG_TABLE.format(table_name=log_table_name)
     cursor.execute(create_log_table_sql)
 
     cnx.commit()

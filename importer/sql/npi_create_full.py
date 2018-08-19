@@ -1,4 +1,4 @@
-CREATE_TABLE_SQL = """
+CREATE_NPI_TABLE = """
             CREATE TABLE IF NOT EXISTS `{table_name}` (
             `NPI` int(11) NOT NULL,
             `Entity_Type_Code` int(1) DEFAULT NULL,

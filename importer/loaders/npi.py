@@ -6,9 +6,10 @@ from collections import OrderedDict
 from zipfile import ZipFile
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
-from importer.sql.npi_create_clean import CREATE_TABLE_SQL
-from importer.sql.npi_insert import INSERT_WEEKLY_QUERY, INSERT_MONTHLY_QUERY
+
+from importer.sql.npi import CREATE_NPI_TABLE, INSERT_WEEKLY_QUERY, INSERT_MONTHLY_QUERY, GET_FILES, MARK_AS_IMPORTED
 from importer.sql.checks import DISABLE, ENABLE
+from importer.downloaders.downloader import downloader
 import pandas as pd
 
 class NpiLoader(object):
@@ -23,9 +24,12 @@ class NpiLoader(object):
         """
         Blank constructor, b/c preprocess does not need a db connection.
         """
-        pass
+        self.cnx = ""
+        self.cursor = ""
+        self.debug = ""
+        self.files = {}     # Dict where key is file to load, and value is id in the import log
 
-    def connect(self, user, host, password, database, clientFlags=False, debug=False):
+    def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
 
         config = {
@@ -39,7 +43,7 @@ class NpiLoader(object):
             config['client_flags'] = [ClientFlag.LOCAL_FILES]
 
         self.cnx = connector.connect(**config)
-        self.cursor = self.cnx.cursor()
+        self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
     def __clean_field(self, field):
         """
@@ -90,6 +94,46 @@ class NpiLoader(object):
                     raise
 
         return self.cursor.rowcount
+
+    def fetch(self, url_prefix, table_name, period, output_dir, limit):
+        """
+        Given a URL prefix (containing a directory of files), search the NPI import log for files
+        ready for import. 
+
+        url_prefix: A directory containing files, ie: s3://mybucket/my/prefix/
+        table_name: Name of the NPI import log table
+        period: [weekly|monthly]
+        output_dir: Directory to save the file locally
+        limit: max # of files to download.  The monthly files are hardcoded to 1.
+        """
+        url_prefix = url_prefix.rstrip("/") + "/"
+
+        if period.lower() == "weekly":
+            p = "w"
+            limit = limit
+        else:
+            p = "m"
+            limit = 1       # Never try to load more than one monthly file at once
+
+        q = GET_FILES.format(table_name=table_name, period=p, limit=limit)
+        self.cursor.execute(q)
+
+        print(f"Downloading {self.cursor.rowcount} files")
+        for row in self.cursor:
+            file_name = row.get('url').split("/")[-1]
+
+            print(f"{url_prefix}{file_name} to {output_dir}")
+            dlr = downloader(url_prefix)
+            downloaded_file = dlr.download(file_name, output_dir)
+
+            if downloaded_file:
+                self.files[downloaded_file] = row['id']
+                # self.files.append(downloaded_file)
+
+        print(f"Files to process: {self.files}")
+        return self.files
+
+
 
     def unzip(self, infile, path):
         """
@@ -223,6 +267,19 @@ class NpiLoader(object):
 
     def enable_checks(self):
         self.cursor.execute(ENABLE, multi=True)
+
+    def close(self):
+        self.cursor.close()
+        self.cnx.close()
+
+    def mark_imported(self, id, table_name):
+        """
+        Mark a file as imported in the db
+        """
+        query = MARK_AS_IMPORTED.format(table_name=table_name, id=id)
+        self.cursor.execute(query)
+        self.cnx.commit()
+
 
     # Do this in userdata instead, so the script isn't dependent on AWS
     # def mark_imported(self, bucket, key):
