@@ -107,6 +107,15 @@ resources:
   Resources:
     ScriptBucket:
       Type: "AWS::S3::Bucket"
+      Properties:
+        LifecycleConfiguration:
+          Rules:
+            - Prefix: npi-in/weekly
+              ExpirationInDays: 60
+              Status: Enabled
+            - Prefix: npi-in/monthly
+              ExpirationInDays: 60
+              Status: Enabled
     # Using a NAT gateway instead of VPC endpoints.  Only needed for my local testing.
     # VpcEndpointEc2: ${file(resources/vpc_endpoint_ec2.yml)}
     # VpcEndpointEc2Msg: ${file(resources/vpc_endpoint_ec2messages.yml)}
@@ -128,14 +137,14 @@ resources:
         DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
         #
         ## Big settings
-        StorageType: gp2
-        DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
-        AllocatedStorage: 100
+        # StorageType: gp2
+        # DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
+        # AllocatedStorage: 100
         #
-        ## Small settings
-        # StorageType: Standard
-        # AllocatedStorage: 10
-        # DBInstanceClass: db.t2.micro
+        # Small settings
+        StorageType: Standard
+        AllocatedStorage: 20
+        DBInstanceClass: db.t2.micro
       DeletionPolicy: Delete
 
 package:

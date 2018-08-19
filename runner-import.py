@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 import click
 import os
-# import boto3
 from importer.loaders.npi import NpiLoader
 from importer.loggers.cloudwatch import CloudWatchLogger
 
+DEBUG = False
+
 @click.group()
-def start():
-    pass
+@click.option('--debug/--no-debug', default=False)
+@click.option('--logging', '-l', type=click.STRING, help="[cloudwatch|system]")
+def start(debug, logging):
+    DEBUG = debug
 
 @click.group()
 def npi():
@@ -23,6 +26,26 @@ def create(table_name):
     npi_loader = NpiLoader()
     npi_loader.connect(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'])
     npi_loader.create_table(table_name)
+
+@click.command()
+@click.option('--url-prefix', '-u', required=True, type=click.STRING, help="URL directory that contains weekly or monthly files to download")
+@click.option('--table-name', '-t', default="npi_import_log", type=click.STRING, help="Import log table")
+@click.option('--period', '-p', required=True, type=click.STRING, help="[weekly|monthly]")
+@click.option('--output_dir', '-o', default="/tmp/npi", type=click.STRING, help="Directory to store file on local filesystem")
+@click.option('--limit', '-l', default=3, type=click.INT, help="Max # of files to download at a time.  Only weekly files are adjustable, monthly is set to 1.")
+def fetch(url_prefix, table_name, period, output_dir, limit):
+    """
+    Download files from import log table
+    """
+    print(f"Download '{period}' files from {table_name}")
+    npi_loader = NpiLoader()
+    npi_loader.connect(user=os.environ['db_user'],
+                        host=os.environ['db_host'], 
+                        password=os.environ['db_password'], 
+                        database=os.environ['db_schema'], 
+                        dictionary=True, 
+                        buffered=True)
+    npi_loader.fetch(url_prefix, table_name, period, output_dir, limit)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -74,27 +97,24 @@ def npi_unzip(infile, unzip_path):
     print(csv_file)
 
 @click.command()
-@click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
-@click.option('--unzip-path', '-u', default="/data/NPPES", type=click.STRING, help="Directory to extract zip")
-@click.option('--outfile', '-o', type=click.STRING, help="Name to use for cleaned CSV file")
+# @click.option('--unzip-path', '-u', default="/tmp/npi", type=click.STRING, help="Directory to extract zip")
+@click.option('--url-prefix', '-u', required=True, type=click.STRING, help="URL directory that contains weekly or monthly files to download")
 @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
-@click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table name to load.")
+@click.option('--table-name', '-t', default="npi", type=click.STRING, help="NPI table")
+@click.option('--import-table-name', '-i', default="npi_import_log", type=click.STRING, help="NPI import table")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
-def all(infile, unzip_path, outfile, batch_size, table_name, period):
+@click.option('--workspace', '-w', default="/tmp/npi", type=click.STRING, help="Workspace directory")
+@click.option('--limit', '-l', default=3, type=click.INT, help="Max # of files to download at a time.  Only weekly files are adjustable, monthly is set to 1.")
+# @click.option('--output_dir', '-o', default="/tmp/npi", type=click.STRING, help="Local directory for downloaded files")
+def all(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit):
     """
     Perform all load steps.
     """
-    region = os.environ.get('aws_region')
-    logger = CloudWatchLogger("importer-npi", os.environ.get('instance_id'), region=region)
-    logger.info(f"Start: {period} file")
+    # region = os.environ.get('aws_region')
+    # logger = CloudWatchLogger("importer-npi", os.environ.get('instance_id'), region=region)
+    # logger.info(f"Start: {period} file")
 
-    npi_loader = NpiLoader()
-
-    logger.info("Unzipping file")
-    csv_file = npi_loader.unzip(infile, unzip_path)
-
-    logger.info("Preprocessing file")
-    cleaned_file = npi_loader.preprocess(csv_file, outfile)
+    workspace = workspace.rstrip("/")
 
     args = {
         'user': os.environ.get('db_user'),
@@ -103,26 +123,79 @@ def all(infile, unzip_path, outfile, batch_size, table_name, period):
         'database': os.environ.get('db_schema')
     }
 
-    npi_loader.connect(**args)
-    
-    if period.lower() == "weekly":
-        logger.info("Loading weekly NPI file into database")
-        npi_loader.load_weekly(table_name, cleaned_file, batch_size)
-    else:
-        logger.info("Loading monthly NPI file into database")
-        npi_loader.disable_checks()
-        npi_loader.load_monthly(table_name, cleaned_file)
-        npi_loader.enable_checks()
+    extra_args = {
+        'dictionary': True,      # For referencing returned columns by name
+        'buffered': True        # so we can get row counts without reading every row
+    }
 
-    # logger.info("Mark file as imported in S3")
-    # npi_loader.mark_imported(bucket_name, bucket_key)
-    
-    logger.info(f"Data loaded to table: {table_name}")
+    # Download files listed in import log
+    # logger.info(f"Download '{period}' files from {import_table_name}")
+    print(f"Download '{period}' files from {import_table_name}")
+    npi_downloader = NpiLoader()
+    npi_downloader.connect(**{**args, **extra_args})
+    files = npi_downloader.fetch(url_prefix, import_table_name, period, workspace, limit)
+    npi_downloader.close()
+
+    # Load the files
+    # logger.info(f"Loading '{period}' files from {table_name}")
+    print(f"Loading '{period}' files into {table_name}")
+    npi_loader = NpiLoader()
+    npi_loader.connect(**args)
+
+    for infile,id in files.items():
+        unzip_path = f"{workspace}/{infile.split('/')[-1].split('.')[0]}"
+        # logger.info("Unzipping file to {unzip_path}")
+        print(f"Unzipping {infile} to {unzip_path}")
+
+        try:
+            csv_file = npi_loader.unzip(infile, unzip_path)
+        except Exception as e:
+            print(e)
+            print(f"Error loading zip file, skipping file...")
+            continue
+
+        # logger.info("Preprocessing file")
+        print(f"Preprocessing {csv_file}")
+        try:
+            cleaned_file = npi_loader.preprocess(csv_file)
+        except Exception as e:
+            print(e)
+            print(f"Error preprocessing file, skipping file...")
+            continue
+        
+        try:
+            if period.lower() == "weekly":
+                # logger.info("Loading weekly NPI file into database")
+                print(f"Loading {cleaned_file} (weekly) into database")
+                npi_loader.load_weekly(table_name, cleaned_file, batch_size)
+            else:
+                # logger.info("Loading monthly NPI file into database")
+                print(f"Loading {cleaned_file} (monthly) into database")
+                npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
+                npi_loader.load_monthly(table_name, cleaned_file)
+                npi_loader.enable_checks()
+        except Exception as e:
+            print(e)
+            print(f"Error loading data to DB, skipping file...")
+            continue
+
+        try:
+            npi_loader.mark_imported(id, import_table_name)
+        except Exception as e:
+            print(e)
+            print(f"Failed to update record in database.")
+
+        # npi_loader.clean()
+    npi_loader.close()
+
+    # logger.info(f"Data loaded to table: {table_name}")
+    print(f"Data loaded to table: {table_name}")
 
 
 start.add_command(npi)
 npi.add_command(load)
 npi.add_command(create)
+npi.add_command(fetch)
 npi.add_command(npi_unzip, name="unzip")
 npi.add_command(npi_preprocess, name="preprocess")
 npi.add_command(all)
