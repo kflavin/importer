@@ -2,9 +2,10 @@ import os
 import boto3
 from backend.resources.userdata import user_data_tmpl
 # from backend.helpers.s3 import next_bucket_key, is_imported
-from backend.helpers.rds import import_ready
+from backend.helpers.rds import imports_ready
 from backend.helpers.ec2 import active_imports
 from backend.periods import MONTHLY
+from importer import weekly_prefix as bucket_prefix
 
 def handler(event, context):
     print(f"Starting {MONTHLY} import...")
@@ -21,7 +22,7 @@ def handler(event, context):
     log_table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
     timeout = os.environ.get('monthly_import_timeout', '30')            # Default, 30 minutes
     bucket_name = os.environ.get("aws_s3_bucket")
-    bucket_prefix = f"npi-in/{WEEKLY}"
+    # bucket_prefix = f"npi-in/{MONTHLY}"
 
     # if "Records" in event:
     #     print("Processing from S3 trigger")

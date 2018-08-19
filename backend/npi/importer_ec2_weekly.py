@@ -5,6 +5,7 @@ from backend.resources.userdata import user_data_tmpl
 from backend.helpers.rds import imports_ready
 from backend.helpers.ec2 import active_imports
 from backend.periods import WEEKLY
+from importer import monthly_prefix as bucket_prefix
 
 def handler(event, context):
     print(f"Starting {WEEKLY} import...")
@@ -22,7 +23,7 @@ def handler(event, context):
     timeout = os.environ.get('weekly_import_timeout', '10')             # Default, 30 minutes
     max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 1))
     bucket_name = os.environ.get("aws_s3_bucket")
-    bucket_prefix = f"npi-in/{WEEKLY}"
+    # bucket_prefix = f"npi-in/{WEEKLY}"
 
     # # Remove: using cron instead of triggers
     # if "Records" in event:
