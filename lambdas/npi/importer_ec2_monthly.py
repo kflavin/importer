@@ -1,10 +1,10 @@
 import os
 import boto3
-from backend.resources.userdata import user_data_tmpl
-# from backend.helpers.s3 import next_bucket_key, is_imported
-from backend.helpers.rds import imports_ready
-from backend.helpers.ec2 import active_imports
-from backend.periods import MONTHLY
+from lambdas.resources.userdata import user_data_tmpl
+# from lambdas.helpers.s3 import next_bucket_key, is_imported
+from lambdas.helpers.rds import imports_ready
+from lambdas.helpers.ec2 import active_imports
+from lambdas.periods import MONTHLY
 from importer import weekly_prefix as bucket_prefix
 
 def handler(event, context):

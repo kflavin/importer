@@ -74,9 +74,9 @@ provider:
 functions:
   # Create the initial database
   create_db:
-    handler: backend/create_db.handler
+    handler: lambdas/create_db.handler
   import_npi_weekly:
-    handler: backend/npi/importer_ec2_weekly.handler
+    handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
     # Events don't work with Ref.
@@ -90,12 +90,12 @@ functions:
     #         - prefix: npi-out/
     #         - suffix: .csv
   import_npi_monthly:
-    handler: backend/npi/importer_ec2_monthly.handler
+    handler: lambdas/npi/importer_ec2_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
 
   npi_downloader:
-    handler: backend/npi/downloader.handler
+    handler: lambdas/npi/downloader.handler
     timeout: 300
 
 resources:
