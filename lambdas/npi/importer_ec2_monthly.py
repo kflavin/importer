@@ -5,18 +5,18 @@ from lambdas.resources.userdata import user_data_tmpl
 from lambdas.helpers.db import DBHelper
 from lambdas.helpers.ec2 import EC2Helper
 from lambdas.periods import MONTHLY as period
-from importer import weekly_prefix as bucket_prefix
+from importer import monthly_prefix as bucket_prefix
 
 def handler(event, context):
     print(f"Starting {period} import...")
     print(event)
 
     region = os.environ.get('aws_region')
-    keyName = os.environ.get('aws_key')
-    imageId = os.environ.get('aws_image_id')
-    instanceType = os.environ.get('aws_instance_type')
-    securityGroups = os.environ.get('aws_security_groups').split(",")
-    subnetId = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first private subnet
+    key_name = os.environ.get('aws_key')
+    image_id = os.environ.get('aws_image_id')
+    instance_type = os.environ.get('aws_instance_type')
+    security_groups = os.environ.get('aws_security_groups').split(",")
+    subnet_id = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first private subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name', 'npi')
     log_table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
@@ -40,11 +40,11 @@ def handler(event, context):
         return False
 
     user_data = user_data_tmpl.format(bucket_name=bucket_name,
-                                    bucket_prefix=bucket_prefix,
-                                    table_name=table_name,
-                                    log_table_name=log_table_name,
-                                    period=period,
-                                    timeout=timeout)
+                                      bucket_prefix=bucket_prefix,
+                                      table_name=table_name,
+                                      log_table_name=log_table_name,
+                                      period=period,
+                                      timeout=timeout)
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 

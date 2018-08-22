@@ -136,15 +136,15 @@ resources:
         PubliclyAccessible: false
         DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
         #
-        ## Big settings
-        # StorageType: gp2
-        # DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
-        # AllocatedStorage: 100
+        # Big settings
+        StorageType: gp2
+        DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
+        AllocatedStorage: 100
         #
-        # Small settings
-        StorageType: Standard
-        AllocatedStorage: 20
-        DBInstanceClass: db.t2.micro
+        # # Small settings
+        # StorageType: Standard
+        # AllocatedStorage: 20
+        # DBInstanceClass: db.t2.micro
       DeletionPolicy: Delete
 
 package:

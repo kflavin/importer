@@ -39,6 +39,7 @@ timeout {timeout}m runner-import.py -l cloudwatch npi all \
                     -w /tmp/npi \
                     -u s3://{bucket_name}/{bucket_prefix}
 
-# Terminate the instance
+# Terminate the instance.  Give extra time for logs to sync.
+sleep 10
 halt -p
 """

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-FILE_URL=${1}
-STAGE=${2:-dev}
+STAGE=${1:-dev}
+FILE_URL=${2}
 
 if [ -n "$FILE_URL" ]; then
     echo "Downloading $FILE_URL..."
