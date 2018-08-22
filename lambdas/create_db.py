@@ -1,8 +1,7 @@
 import os
 import mysql.connector as connector
 import boto3
-from importer.sql.npi_create_clean import CREATE_NPI_TABLE
-from importer.sql.npi_import_log import CREATE_NPI_IMPORT_LOG_TABLE
+from importer.sql.npi import CREATE_NPI_TABLE, CREATE_NPI_IMPORT_LOG_TABLE
 
 
 def handler(event, context):

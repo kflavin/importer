@@ -2,7 +2,7 @@
 
 #PREFIX=${1}
 PREFIX="npi-in/monthly"
-STAGE=${2:-dev}
+STAGE=${1:-dev}
 
 if [ -n "$PREFIX" ]; then
     echo "LOADING $PREFIX..."
