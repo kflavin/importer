@@ -13,7 +13,7 @@ class EC2Helper(object):
                 {
                     'DeviceIndex': 0,
                     'SubnetId': subnet_id,
-                    'AssociatePublicIpAddress': False,
+                    # 'AssociatePublicIpAddress': False,
                     'Groups': security_groups
                 },
             ],

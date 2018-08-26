@@ -18,7 +18,7 @@ def handler(event, context):
     Download zip files and put them into the appropriate s3 locations
     """
     print("Downloading zip files")
-    table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
+    table_name = os.environ.get('npi_log_table_name')
     region = os.environ.get('aws_region')
 
     # Enumerate the zip files on the page.  If a file is not passed as a param, then

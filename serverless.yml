@@ -23,8 +23,8 @@ custom:
   weeklyImportTimeout: ${env:weekly_import_timeout}
   monthlyImportTimeout: ${env:monthly_import_timeout}
   vpcId: ${env:aws_vpc_id}
-  dbHost: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
-  dbPort: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
+  dbHost: ${env:db_host} #{"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+  dbPort: 3306 #{"Fn::GetAtt": ["RDS","Endpoint.Port"]}
   dbUser: ${env:db_user}
   dbPassword: ${env:db_password}
   dbSchema: ${env:db_schema}
@@ -33,9 +33,12 @@ custom:
   pythonRequirements:
     dockerizePip: false
     slim: true
+  enabled:
+    dev: false
+    prod: true
   scripts:
     hooks:
-      'deploy:finalize': bash bin/stage_all.sh
+      'deploy:finalize': bash bin/stage_all.sh ${self:custom.stage}
 
 provider:
   name: aws
@@ -61,20 +64,20 @@ provider:
     # db_schema: ${self:custom.db_schema}
     npi_table_name: ${self:custom.npiTableName}
     npi_log_table_name: ${self:custom.npiLogTableName}
-  vpc:
-    securityGroupIds:
-      - ${self:custom.awsSecurityGroups}
-    subnetIds:
-      "Fn::Split":
-       - ","
-       - ${env:aws_private_subnets}
+  # vpc:
+  #   securityGroupIds:
+  #     - ${self:custom.awsSecurityGroups}
+  #   subnetIds:
+  #     "Fn::Split":
+  #      - ","
+  #      - ${env:aws_private_subnets}
     
   iamRoleStatements: ${file(resources/iam.yml)}
 
 functions:
-  # Create the initial database
-  create_db:
-    handler: lambdas/create_db.handler
+  # # Create the initial database
+  # create_db:
+  #   handler: lambdas/create_db.handler
   import_npi_weekly:
     handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
@@ -102,8 +105,8 @@ resources:
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
-    RdsEndpoint:
-      Value: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+    # RdsEndpoint:
+    #   Value: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
   Resources:
     ScriptBucket:
       Type: "AWS::S3::Bucket"
@@ -116,36 +119,37 @@ resources:
             - Prefix: npi-in/monthly
               ExpirationInDays: 60
               Status: Enabled
-    # Using a NAT gateway instead of VPC endpoints.  Only needed for my local testing.
-    # VpcEndpointEc2: ${file(resources/vpc_endpoint_ec2.yml)}
-    # VpcEndpointEc2Msg: ${file(resources/vpc_endpoint_ec2messages.yml)}
-    # VpcEndpointSsm: ${file(resources/vpc_endpoint_ssm.yml)}
-    # VpcEndpointS3: ${file(resources/vpc_endpoint_s3.yml)}
-    NatGateway: ${file(resources/nat_gateway.yml)}
-    ElasticIP: ${file(resources/elastic_ip.yml)}
+    # # Using a NAT gateway instead of VPC endpoints.  Only needed for my local testing.
+    # # VpcEndpointEc2: ${file(resources/vpc_endpoint_ec2.yml)}
+    # # VpcEndpointEc2Msg: ${file(resources/vpc_endpoint_ec2messages.yml)}
+    # # VpcEndpointSsm: ${file(resources/vpc_endpoint_ssm.yml)}
+    # # VpcEndpointS3: ${file(resources/vpc_endpoint_s3.yml)}
+    # NatGateway: ${file(resources/nat_gateway.yml)}
+    # ElasticIP: ${file(resources/elastic_ip.yml)}
     # Spin up a database.  Only needed for my local testing.
-    RDS:
-      Type: AWS::RDS::DBInstance
-      Properties:
-        VPCSecurityGroups:
-          - ${self:custom.awsRdsSecurityGroup}
-        Engine: MySQL
-        EngineVersion: 5.6.29
-        MasterUsername: ${self:custom.dbUser}
-        MasterUserPassword: ${self:custom.dbPassword}
-        PubliclyAccessible: false
-        DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
-        #
-        # Big settings
-        StorageType: gp2
-        DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
-        AllocatedStorage: 100
-        #
-        # # Small settings
-        # StorageType: Standard
-        # AllocatedStorage: 20
-        # DBInstanceClass: db.t2.micro
-      DeletionPolicy: Delete
+    # RDS:
+    #   enabled: false
+    #   Type: AWS::RDS::DBInstance
+    #   Properties:
+    #     VPCSecurityGroups:
+    #       - ${self:custom.awsRdsSecurityGroup}
+    #     Engine: MySQL
+    #     EngineVersion: 5.6.29
+    #     MasterUsername: ${self:custom.dbUser}
+    #     MasterUserPassword: ${self:custom.dbPassword}
+    #     PubliclyAccessible: false
+    #     DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
+    #     #
+    #     # Big settings
+    #     StorageType: gp2
+    #     DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
+    #     AllocatedStorage: 100
+    #     #
+    #     # # Small settings
+    #     # StorageType: Standard
+    #     # AllocatedStorage: 20
+    #     # DBInstanceClass: db.t2.micro
+    #   DeletionPolicy: Delete
 
 package:
   exclude:
