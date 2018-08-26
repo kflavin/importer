@@ -16,11 +16,11 @@ def handler(event, context):
     image_id = os.environ.get('aws_image_id')
     instance_type = os.environ.get('aws_instance_type')
     security_groups = os.environ.get('aws_security_groups').split(",")
-    subnet_id = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first private subnet
+    subnet_id = os.environ.get('aws_private_subnets').split(",")[0]   # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
-    table_name = os.environ.get('npi_table_name', 'npi')
-    log_table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
-    timeout = os.environ.get('weekly_import_timeout', '10')             # Default, 30 minutes
+    table_name = os.environ.get('npi_table_name')
+    log_table_name = os.environ.get('npi_log_table_name')
+    timeout = os.environ.get('weekly_import_timeout', '10')
     max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 1))
     bucket_name = os.environ.get("aws_s3_bucket")
 

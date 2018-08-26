@@ -16,11 +16,11 @@ def handler(event, context):
     image_id = os.environ.get('aws_image_id')
     instance_type = os.environ.get('aws_instance_type')
     security_groups = os.environ.get('aws_security_groups').split(",")
-    subnet_id = os.environ.get('aws_private_subnets').split(",")[0]      # Just take the first private subnet
+    subnet_id = os.environ.get('aws_private_subnets').split(",")[0]      # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
-    table_name = os.environ.get('npi_table_name', 'npi')
-    log_table_name = os.environ.get('npi_log_table_name', 'npi_import_log')
-    timeout = os.environ.get('monthly_import_timeout', '30')            # Default, 30 minutes
+    table_name = os.environ.get('npi_table_name')
+    log_table_name = os.environ.get('npi_log_table_name')
+    timeout = os.environ.get('monthly_import_timeout', '30')
     bucket_name = os.environ.get("aws_s3_bucket")
 
     ec2 = EC2Helper(region, period)

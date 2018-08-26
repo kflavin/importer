@@ -19,7 +19,8 @@ echo "Deleting static assets from ${BUCKET_NAME}..."
 
 mkdir -p /tmp/empty
 
-aws s3 sync --delete /tmp/empty/ "s3://${BUCKET_NAME}/"
+#aws s3 sync --delete /tmp/empty/ "s3://${BUCKET_NAME}/"
+echo aws s3 sync --delete /tmp/empty/ "s3://${BUCKET_NAME}/"
 
 rmdir /tmp/empty
 
