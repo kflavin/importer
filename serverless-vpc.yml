@@ -1,0 +1,160 @@
+service: importer
+
+frameworkVersion: ">=1.9.0 <2.0.0"
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-scripts
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  sshKey: ${env:aws_key}
+  awsRegion: ${env:aws_region}
+  awsImageId: ${env:aws_image_id}
+  awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
+  awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
+  awsSecurityGroups: ${env:aws_security_groups}
+  awsRdsSecurityGroup: ${env:aws_rds_security_group}
+  awsInstanceProfile: ${env:aws_instance_profile}
+  awsPrivateSubnets: ${env:aws_private_subnets}
+  awsPublicSubnets: ${env:aws_public_subnets}
+  awsRdsParameterGroup: ${env:aws_rds_parameter_group}
+  npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
+  weeklyImportTimeout: ${env:weekly_import_timeout}
+  monthlyImportTimeout: ${env:monthly_import_timeout}
+  vpcId: ${env:aws_vpc_id}
+  dbHost: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+  dbPort: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
+  dbUser: ${env:db_user}
+  dbPassword: ${env:db_password}
+  dbSchema: ${env:db_schema}
+  npiTableName: ${env:npi_table_name}
+  npiLogTableName: ${env:npi_log_table_name}
+  pythonRequirements:
+    dockerizePip: false
+    slim: true
+  scripts:
+    hooks:
+      'deploy:finalize': bash bin/stage_all.sh
+
+provider:
+  name: aws
+  region: ${self:custom.awsRegion}
+  runtime: python3.6
+  environment:
+    stage: ${self:custom.stage}
+    aws_key: ${env:aws_key}
+    aws_region: ${env:aws_region}
+    aws_image_id: ${env:aws_image_id}
+    aws_security_groups: ${self:custom.awsSecurityGroups}
+    aws_vpc_id: ${self:custom.vpcId}
+    aws_private_subnets: ${self:custom.awsPrivateSubnets}
+    aws_public_subnets: ${self:custom.awsPublicSubnets}
+    aws_instance_profile: ${self:custom.awsInstanceProfile}
+    aws_s3_bucket: {Ref: ScriptBucket}
+    npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+    monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+    weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+    # db_host: ${self:custom.db_host}
+    # db_port: ${self:custom.db_port}
+    # db_user: ${self:custom.db_user}
+    # db_password: ${self:custom.db_password}
+    # db_schema: ${self:custom.db_schema}
+    npi_table_name: ${self:custom.npiTableName}
+    npi_log_table_name: ${self:custom.npiLogTableName}
+  vpc:
+    securityGroupIds:
+      - ${self:custom.awsSecurityGroups}
+    subnetIds:
+      "Fn::Split":
+       - ","
+       - ${env:aws_private_subnets}
+    
+  iamRoleStatements: ${file(resources/iam.yml)}
+
+functions:
+  # Create the initial database
+  create_db:
+    handler: lambdas/create_db.handler
+  import_npi_weekly:
+    handler: lambdas/npi/importer_ec2_weekly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsWeeklyInstanceType}
+    # Events don't work with Ref.
+    # Issue https://github.com/serverless/serverless/issues/3034
+    # events:
+    #   - s3:
+    #       bucket:
+    #         Ref: ScriptBucket
+    #       event: s3:ObjectCreated:*
+    #       rules:
+    #         - prefix: npi-out/
+    #         - suffix: .csv
+  import_npi_monthly:
+    handler: lambdas/npi/importer_ec2_monthly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+
+  npi_downloader:
+    handler: lambdas/npi/downloader.handler
+    timeout: 300
+
+resources:
+  Outputs:
+    ScriptBucket:
+      Value: {Ref: ScriptBucket}
+    RdsEndpoint:
+      Value: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+  Resources:
+    ScriptBucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        LifecycleConfiguration:
+          Rules:
+            - Prefix: npi-in/weekly
+              ExpirationInDays: 60
+              Status: Enabled
+            - Prefix: npi-in/monthly
+              ExpirationInDays: 60
+              Status: Enabled
+    # Using a NAT gateway instead of VPC endpoints.  Only needed for my local testing.
+    # VpcEndpointEc2: ${file(resources/vpc_endpoint_ec2.yml)}
+    # VpcEndpointEc2Msg: ${file(resources/vpc_endpoint_ec2messages.yml)}
+    # VpcEndpointSsm: ${file(resources/vpc_endpoint_ssm.yml)}
+    # VpcEndpointS3: ${file(resources/vpc_endpoint_s3.yml)}
+    NatGateway: ${file(resources/nat_gateway.yml)}
+    ElasticIP: ${file(resources/elastic_ip.yml)}
+    # Spin up a database.  Only needed for my local testing.
+    RDS:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        VPCSecurityGroups:
+          - ${self:custom.awsRdsSecurityGroup}
+        Engine: MySQL
+        EngineVersion: 5.6.29
+        MasterUsername: ${self:custom.dbUser}
+        MasterUserPassword: ${self:custom.dbPassword}
+        PubliclyAccessible: false
+        DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
+        #
+        # Big settings
+        StorageType: gp2
+        DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
+        AllocatedStorage: 100
+        #
+        # # Small settings
+        # StorageType: Standard
+        # AllocatedStorage: 20
+        # DBInstanceClass: db.t2.micro
+      DeletionPolicy: Delete
+
+package:
+  exclude:
+    - env.python/**
+    - env.python.old/**
+    - importer.*/**
+    - data/**
+    - dist/**
+    - "**/**/*.pyc"
+    - ".env.*"
+    - output/**

@@ -6,11 +6,10 @@ from urllib.parse import urljoin
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from lambdas.helpers.db import DBHelper
+from importer import weekly_prefix, monthly_prefix
 
 download_url = "http://download.cms.gov/nppes/NPI_Files.html"
 base_url = "http://download.cms.gov/nppes/"
-weekly_dir = "npi-in/weekly"
-monthly_dir = "npi-in/monthly"
 max_links = 8  # If we find more zip files than this, exit.  The NPPES site may have changed.
 
 def handler(event, context):
@@ -44,10 +43,10 @@ def url_to_s3(region, url, bucket, table_name):
     rds = DBHelper(region)
 
     if "weekly" in fileName.lower():
-        key = f"{weekly_dir}/{fileName}"
+        key = f"{weekly_prefix}/{fileName}"
         p = 'w'
     else:
-        key = f"{monthly_dir}/{fileName}"
+        key = f"{monthly_prefix}/{fileName}"
         p = 'm'
 
     # If it's already in our bucket, skip it.

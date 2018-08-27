@@ -1,0 +1,6 @@
+---
+Type: "AWS::IAM::InstanceProfile"
+Properties: 
+  Path: "/"
+  Roles: 
+    - Ref: "Ec2Role"

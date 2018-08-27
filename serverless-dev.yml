@@ -11,6 +11,7 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
+  awsDbSubnetGroup: ${env:aws_db_subnet_group}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
@@ -22,8 +23,8 @@ custom:
   weeklyImportTimeout: ${env:weekly_import_timeout}
   monthlyImportTimeout: ${env:monthly_import_timeout}
   vpcId: ${env:aws_vpc_id}
-  dbHost: ${env:db_host}
-  dbPort: 3306
+  dbHost: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+  dbPort: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
   dbUser: ${env:db_user}
   dbPassword: ${env:db_password}
   dbSchema: ${env:db_schema}
@@ -61,6 +62,9 @@ provider:
   iamRoleStatements: ${file(resources/iam.yml)}
 
 functions:
+  # Create the initial database (dev)
+  create_db:
+    handler: lambdas/create_db.handler
   import_npi_weekly:
     handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
@@ -77,6 +81,8 @@ resources:
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
+    RdsEndpoint:
+      Value: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
     Ec2Role:
       Value: {Ref: Ec2Role}
     Ec2InstanceProfile:
@@ -85,6 +91,7 @@ resources:
     ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
     Ec2Role: ${file(resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
+    RDS: ${file(resources/rds.yml)}
 
 package:
   # Stuff we don't want to upload with the lambdas.

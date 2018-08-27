@@ -14,10 +14,10 @@ trap cleanup EXIT
 export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
 export instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 set +x
-export db_user=$(aws ssm get-parameters --names "db_user" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_password=$(aws ssm get-parameters --names "db_password" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_host=$(aws ssm get-parameters --names "db_host" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
-export db_schema=$(aws ssm get-parameters --names "db_schema" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+export db_user=$(aws ssm get-parameters --names "/importer/{stage}/db_user" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+export db_password=$(aws ssm get-parameters --names "/importer/{stage}/db_password" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+export db_host=$(aws ssm get-parameters --names "/importer/{stage}/db_host" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
+export db_schema=$(aws ssm get-parameters --names "/importer/{stage}/db_schema" --region us-east-1 --with-decryption --query Parameters[0].Value --output text)
 set -x
 
 # Send logs to CloudWatch

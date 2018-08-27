@@ -1,0 +1,11 @@
+---
+Type: "AWS::S3::Bucket"
+Properties:
+  LifecycleConfiguration:
+    Rules:
+      - Prefix: npi-in/weekly
+        ExpirationInDays: 60
+        Status: Enabled
+      - Prefix: npi-in/monthly
+        ExpirationInDays: 60
+        Status: Enabled
