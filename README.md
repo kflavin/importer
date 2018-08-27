@@ -2,6 +2,10 @@
 
 ## Installation and Usage
 
+### Pre-reqs
+
+You should have your AWS creds configured.  To use profiles, specify `AWS_PROFILE=profile_name`
+
 ```bash
 # Configure environment
 cp env.template .env.aws
@@ -9,72 +13,91 @@ vim .env.aws
 # < edit values, see below >
 source .env.aws
 
-# Deploy stack (RDS, Lambda, S3)
-sls deploy --stage=dev
-
-# Create initial database
-sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
-
-# Upload a (partial) CSV file to s3
-bin/copy_data_files.sh npidata_pfile_50k.csv
+# Choose a serverless stack to deploy (one of the serverless*.yml files).  The dev stack will deploy an RDS instance.  The prod stack assumes there is an existing database. **Todo: use a single serverless.yml file**
+cp serverless-prod.yml serverless.yml
 
 # Build the Python script
 python setup.py sdist
 
-# Push script to the s3 bucket
-./bin/stage_runner_to_s3.sh
+# Deploy stack to AWS.  This creates some IAM roles and an S3 bucket.  The dev yml creates an RDS instance for testing.
+sls deploy --stage=dev
 
-# Download all available files.  Data is downloaded to npi-in/weekly/ or npi-in/monthly/
-sls invoke --function npi_downloader
+# If using a new database, you can quickly create the db and table as follows.  Otherwise skip this step.
+sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
 
-# Run a weekly import
-sls invoke --function import_npi_weekly --data '{"Records": [{ "s3": {"object": { "key": "BUCKET-KEY"}, "bucket": { "name": "BUCKET-NAME"}}}]}'
 
-# Run a monthly import
-sls invoke --function import_npi_weekly --data '{"Records": [{ "s3": {"object": { "key": "BUCKET-KEY"}, "bucket": { "name": "BUCKET-NAME"}}}]}'
+# The Lambda functions are cron'd, but can be called manually using helper scripts
+
+# Download any available zip files to S3.  Default directly is npi-in/[weekly|monthly]
+./bin/download.sh dev
+
+# Load weekly files
+./bin/weekly.sh dev
+
+# Load the most recent monthly file
+./bin/monthly.sh dev
 ```
-
-This template creates RDS and S3 resources.
 
 #### Environment values
 
 ```bash
+# Set an AWS profile if you wish to use something other than the default.  Otherwise, don't set this.
+# export AWS_PROFILE=my_profile_name
+
+# DB settings
 export db_user=''
 export db_password=''
 export db_host=''
 export db_schema=''
-export npi_table_name=''
-export aws_region=''
+
+export npi_table_name='npi_tmp'
+export npi_log_table_name='npi_import_log_tmp'
+
+################
+## AWS Specific
+################
+export aws_region='us-east-1'
 export aws_key=''
-export aws_image_id='ami-14c5486b'
+
+# Loader AMI
+export aws_image_id=''  # Requires the custom Loader AMI
+
+# Instance sizing
 export aws_weekly_instance_type='t2.small'
-export aws_monthly_instance_type='m5d.2xlarge'  # don't use anything with less than 32 GB
-export aws_private_subnets='subnet1,subnet2'
-export aws_public_subnets='subnet1,subnet2'
+export aws_monthly_instance_type='m5.4xlarge'
+
+# Networking
+export aws_subnets='subnet-1234,subnet-45678'
 export aws_vpc_id=''
-export aws_rds_security_group=''
 export aws_security_groups=''
-export aws_instance_profile=''  # Needs access to S3 and SSM
+
+# Database (only required if provisioning DB resources)
+export aws_rds_security_group=''
 export aws_rds_parameter_group=''
-export npi_max_weekly_instances='3'
+
+# Configuration
+export weekly_import_timeout='20'   # in minutes
+export monthly_import_timeout='120'
 ```
 
 #### Packaging
 
 ```bash
-backend
-└── ...Lambda Functions...
 bin
 └── ...Helper Scripts...
 dist
 └── ...Runner distributable...
 importer
 └── ...Importer Library...
+lambdas
+└── ...Lambda Functions...
 resources
 └── ...AWS resources...
-├── runner-import.py    # Runner for import library
-├── serverless.yml      # Serverless framework
-└── setup.py            # Build the sitributable
+├── runner-import.py     # Runner for import library
+├── serverless.yml       # Serverless framework
+├── serverless-dev.yml   # Create an RDS instance
+├── serverless-prod.yml  # Without RDS instance
+└── setup.py             # Build the python importer
 ```
 
 ### EC2 Importer
@@ -85,22 +108,18 @@ See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9
 
 _Fill out later_
 
-### Step Importer
-
-_Removed_
-
-See branch: __step_functions__
-
 ### Dependencies
 
-* The lambdas have a dependency on the sql resources in the importer, under `resources/sql/`
-* The importer's runner has a dependency on AWS for cloudwatch logging.
+* The lambdas have a dependency on the sql resources in the importer, under `importer/sql/`
+* The importer's runner has a dependency on AWS for cloudwatch logging
+* AWS subnets and security groups need to be created ahead of time
+* The EC2's run on a custom AMI with the environment pre-installed # todo: put this in packer
 
 ## Destroy
 
 ```bash
 # S3 files must be removed, or Cloudformation cannot delete the bucket
-bin/delete_bucket_files.sh
+bin/delete_bucket_files.sh dev
 
 # Tear down stack
 sls remove --stage=dev
