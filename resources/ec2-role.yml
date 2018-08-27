@@ -1,0 +1,63 @@
+---
+Type: "AWS::IAM::Role"
+Properties:
+  AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+  Path: "/"
+  Policies: 
+    - 
+      PolicyName: "ec2-importer2"
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          # EC2
+          - Effect: Allow
+            Action: "ec2:*"
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - "cloudwatch:PutMetricData"
+              - "ds:CreateComputer"
+              - "ds:DescribeDirectories"
+              - "ec2:DescribeInstanceStatus"
+              - "logs:*"
+              - "ssm:*"
+              - "ec2messages:*"
+            Resource: "*"
+          # SSM
+          - Effect: Allow
+            Action: "iam:CreateServiceLinkedRole"
+            Resource: "arn:aws:iam::*:role/aws-service-role/ssm.amazonaws.com/AWSServiceRoleForAmazonSSM*"
+            Condition:
+              StringLike:
+                "iam:AWSServiceName": "ssm.amazonaws.com"
+          - Effect: Allow
+            Action:
+              - "iam:DeleteServiceLinkedRole"
+              - "iam:GetServiceLinkedRoleDeletionStatus"
+            Resource: "arn:aws:iam::*:role/aws-service-role/ssm.amazonaws.com/AWSServiceRoleForAmazonSSM*"
+          - Effect: Allow
+            Action:
+              - "iam:PassRole"
+              - "ec2:DescribeSecurityGroups"
+              - "ec2:DescribeSubnets"
+              - "ec2:DescribeVpcs"
+            Resource: "*"
+          # S3
+          - Effect: Allow
+            Action: "s3:*"
+            Resource:
+              - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
+              - "Fn::Join":
+                  - ""
+                  -
+                    - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
+                    - "/*"

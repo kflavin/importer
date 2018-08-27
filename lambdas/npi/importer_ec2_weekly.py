@@ -11,12 +11,13 @@ def handler(event, context):
     print(f"Starting {period} import...")
     print(event)
 
+    stage = os.environ.get('stage', 'dev')
     region = os.environ.get('aws_region')
     key_name = os.environ.get('aws_key')
     image_id = os.environ.get('aws_image_id')
     instance_type = os.environ.get('aws_instance_type')
     security_groups = os.environ.get('aws_security_groups').split(",")
-    subnet_id = os.environ.get('aws_private_subnets').split(",")[0]   # Just use the first subnet
+    subnet_id = os.environ.get('aws_subnets').split(",")[0]   # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name')
     log_table_name = os.environ.get('npi_log_table_name')
@@ -41,6 +42,7 @@ def handler(event, context):
 
     user_data = user_data_tmpl.format(bucket_name=bucket_name,
                                       bucket_prefix=bucket_prefix,
+                                      stage=stage,
                                       table_name=table_name,
                                       log_table_name=log_table_name,
                                       period=period,

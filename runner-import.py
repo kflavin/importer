@@ -124,7 +124,7 @@ def npi_unzip(infile, unzip_path):
 @click.option('--import-table-name', '-i', default="npi_import_log", type=click.STRING, help="NPI import table")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
 @click.option('--workspace', '-w', default="/tmp/npi", type=click.STRING, help="Workspace directory")
-@click.option('--limit', '-l', default=3, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
+@click.option('--limit', '-l', default=6, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
 def all(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit):
     """
     Perform all load steps.
