@@ -4,7 +4,8 @@
 
 #### Pre-reqs
 
-You should have your AWS creds configured.  To use profiles, specify `AWS_PROFILE=profile_name`
+* python3
+* You should have your AWS creds configured.  To use profiles, specify `AWS_PROFILE=profile_name`
 
 #### Install
 
