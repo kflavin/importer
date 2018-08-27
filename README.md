@@ -2,9 +2,11 @@
 
 ## Installation and Usage
 
-### Pre-reqs
+#### Pre-reqs
 
 You should have your AWS creds configured.  To use profiles, specify `AWS_PROFILE=profile_name`
+
+#### Install
 
 ```bash
 # Configure environment
@@ -13,18 +15,17 @@ vim .env.aws
 # < edit values, see below >
 source .env.aws
 
-# Choose a serverless stack to deploy (one of the serverless*.yml files).  The dev stack will deploy an RDS instance.  The prod stack assumes there is an existing database. **Todo: use a single serverless.yml file**
+# Choose a serverless stack to deploy (one of the serverless*.yml files).  dev stacks creates an RDS instance.
 cp serverless-prod.yml serverless.yml
 
 # Build the Python script
 python setup.py sdist
 
-# Deploy stack to AWS.  This creates some IAM roles and an S3 bucket.  The dev yml creates an RDS instance for testing.
+# Deploy stack to AWS. 
 sls deploy --stage=dev
 
 # If using a new database, you can quickly create the db and table as follows.  Otherwise skip this step.
 sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
-
 
 # The Lambda functions are cron'd, but can be called manually using helper scripts
 
