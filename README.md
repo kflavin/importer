@@ -41,6 +41,8 @@ sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "da
 
 #### Environment values
 
+Your environment should be configured before deploying.  If you are using the stack to create an RDS instance, then you will need to update your environment file (`db_host`) after it has been created.
+
 ```bash
 # Set an AWS profile if you wish to use something other than the default.  Otherwise, don't set this.
 # export AWS_PROFILE=my_profile_name
