@@ -3,6 +3,7 @@ import sys
 import time
 import itertools
 import textwrap
+import datetime
 from collections import OrderedDict
 from zipfile import ZipFile
 import mysql.connector as connector
@@ -12,6 +13,12 @@ from importer.sql.npi import CREATE_NPI_TABLE, INSERT_QUERY, INSERT_LARGE_QUERY,
 from importer.sql.checks import DISABLE, ENABLE
 from importer.downloaders.downloader import downloader
 import pandas as pd
+
+def convert_date(x):
+    if not str(x) == "nan":
+        return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
+    else:
+        return None
 
 class NpiLoader(object):
     """
@@ -83,7 +90,7 @@ class NpiLoader(object):
                 self.cursor.executemany(query, data)
                 self.cnx.commit()
                 break
-            except mysql.connector.errors.InternalError as e:
+            except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
                 # print(self.cursor.statement)
                 print("Rolling back...")
@@ -175,6 +182,11 @@ class NpiLoader(object):
         
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
+
+        # Reformat dates
+        df['Last Update Date'] = df['Last Update Date'].apply(convert_date)
+        df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(convert_date)
+        df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
         
         # df = pd.read_csv(infile)
         # df = pd.read_csv(infile, low_memory=False)
@@ -224,7 +236,7 @@ class NpiLoader(object):
         self.cnx.commit()
         return self.cursor.rowcount
 
-    def load_file(self, table_name, infile, batch_size=1000, throttle_size=20_000, throttle_time=3):
+    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=2):
         """
         Load small files (such as the weekly zip).  Size of INSERT can be broken up into batches (batch_size).  Return the
         number of rows inserted.
@@ -233,7 +245,8 @@ class NpiLoader(object):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        print("NPI loader importing from {}, batch size = {}".format(infile, batch_size))
+        print("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"\
+                .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
         columnNames = reader.fieldnames
@@ -242,11 +255,11 @@ class NpiLoader(object):
         batch = []
         batch_count = 1
         total_rows_inserted = 0
-
         throttle_count = 0
 
+        i = 0
         for row in reader:
-            if row_count >= batch_size:
+            if row_count >= batch_size - 1:
                 print("Submitting batch {}".format(batch_count))
                 total_rows_inserted += self.__submit_batch(q, batch)
                 batch = []
@@ -263,11 +276,13 @@ class NpiLoader(object):
             batch.append(data)
 
             # Put in a sleep timer to throttle how hard we hit the database
-            if throttle_count and throttle_size and throttle_count >= throttle_size:
+            if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
+                print(f"Sleeping for 5 seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
-            else if throttle_count and throttle_size:
+            elif throttle_time and throttle_size:
                 throttle_count += 1
+            i += 1
 
         # Get any remaining rows
         if batch:
