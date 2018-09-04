@@ -30,7 +30,7 @@ def handler(event, context):
     # filename = bucket_key.split("/")[-1]
     print(f"bucket: {bucket_name} prefix: {bucket_prefix} table: {table_name} period: {period}")
 
-    if not rds.imports_ready(log_table_name, period, 1):
+    if not rds.files_ready(log_table_name, period, 1):
         print(f"No files in {bucket_name}/{bucket_prefix} are ready for import.")
         return False
 

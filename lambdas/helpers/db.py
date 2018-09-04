@@ -21,7 +21,7 @@ class DBHelper(object):
                 'database': ssm.get_parameter(Name=f'/importer/{stage}/db_schema', WithDecryption=True)['Parameter']['Value']
             }
 
-    def imports_ready(self, table_name, period, limit):
+    def files_ready(self, table_name, period, limit):
         print("Connecting to DB")
 
         p = "m" if period.lower() == "monthly" else "w"

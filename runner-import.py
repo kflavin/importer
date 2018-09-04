@@ -74,7 +74,8 @@ def fetch(url_prefix, table_name, period, output_dir, limit):
 # @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table name to load.")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
-def load(infile, batch_size, table_name, period):
+@click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
+def load(infile, batch_size, table_name, period, large_file):
     """
     NPI importer
     """
@@ -87,14 +88,17 @@ def load(infile, batch_size, table_name, period):
     }
 
     npi_loader = NpiLoader()
-    if period.lower() == "weekly":
-        print("Loading weekly NPI file")
-        npi_loader.connect(**args)
-        npi_loader.load_weekly(table_name, infile, batch_size)
-    else:
-        print("Loading monthly NPI file")
+
+    if large_file:
+        print(f"Loading {period} (large) file into database.  large_file: {large_file}")
         npi_loader.connect(**args, clientFlags=True)
-        npi_loader.load_monthly(table_name, infile)
+        npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
+        npi_loader.load_large_file(table_name, infile)
+        npi_loader.enable_checks()
+    else:
+        print(f"Loading {period} (small) file into database.  large_file: {large_file}")
+        npi_loader.connect(**args)
+        npi_loader.load_file(table_name, infile, batch_size)
 
     print(f"Data loaded to table: {table_name}")
 
@@ -125,7 +129,8 @@ def npi_unzip(infile, unzip_path):
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
 @click.option('--workspace', '-w', default="/tmp/npi", type=click.STRING, help="Workspace directory")
 @click.option('--limit', '-l', default=6, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
-def all(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit):
+@click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
+def all(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file):
     """
     Perform all load steps.
     """
@@ -178,14 +183,14 @@ def all(url_prefix, batch_size, table_name, import_table_name, period, workspace
             continue
         
         try:
-            if period.lower() == "weekly":
-                logger.info(f"Loading {cleaned_file} (weekly) into database")
-                npi_loader.load_weekly(table_name, cleaned_file, batch_size)
-            else:
-                logger.info(f"Loading {cleaned_file} (monthly) into database")
+            if large_file:
+                print(f"Loading {period} (large) file into database.  large_file: {large_file}")
                 npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
-                npi_loader.load_monthly(table_name, cleaned_file)
+                npi_loader.load_large_file(table_name, cleaned_file)
                 npi_loader.enable_checks()
+            else:
+                print(f"Loading {period} (small) file into database.  large_file: {large_file}")
+                npi_loader.load_file(table_name, cleaned_file, batch_size)
         except Exception as e:
             logger.info(e)
             logger.info(f"Error loading data to DB, skipping file...")

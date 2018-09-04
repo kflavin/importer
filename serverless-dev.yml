@@ -92,6 +92,8 @@ resources:
     Ec2Role: ${file(resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
     RDS: ${file(resources/rds.yml)}
+    # NatGateway: ${file(resources/nat_gateway.yml)}
+    # ElasticIP: ${file(resources/elastic_ip.yml)}
 
 package:
   # Stuff we don't want to upload with the lambdas.

@@ -11,14 +11,15 @@ Properties:
   DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
   DBSubnetGroupName: ${self:custom.awsDbSubnetGroup}
 
-  # #
-  # # Big settings
-  # StorageType: gp2
+  #
+  # Big settings
+  StorageType: gp2
   # DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
-  # AllocatedStorage: 100
+  DBInstanceClass: db.m3.medium
+  AllocatedStorage: 100
   
-  # Small settings
-  StorageType: Standard
-  AllocatedStorage: 20
-  DBInstanceClass: db.t2.micro
+  # # Small settings
+  # StorageType: Standard
+  # AllocatedStorage: 20
+  # DBInstanceClass: db.t2.micro
 DeletionPolicy: Delete

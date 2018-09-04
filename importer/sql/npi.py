@@ -9,7 +9,7 @@
 #     LIMIT {limit}
 # """
 
-# Use a subquery so we limit the search to only recently downloade files.
+# Use a subquery so we limit the search to only recently downloaded files.
 GET_FILES = """
     SELECT * FROM (
         SELECT * FROM `{table_name}`
@@ -21,6 +21,12 @@ GET_FILES = """
     ORDER BY downloaded_at DESC
 """
 
+# # For importing single, user-specified files
+# GET_FILE = """
+#     SELECT * FROM `{table_name}`
+#     WHERE `url`='{url}' AND t.imported = false
+# """
+
 ######################################
 # Inserts and Updates
 ######################################
@@ -30,7 +36,7 @@ MARK_AS_IMPORTED = """
     WHERE id = {id};
 """
 
-INSERT_WEEKLY_QUERY = """
+INSERT_QUERY = """
     INSERT INTO {table_name}
     ({cols})
     VALUES ({values})
@@ -38,7 +44,7 @@ INSERT_WEEKLY_QUERY = """
     {on_dupe_values}
 """
 
-INSERT_MONTHLY_QUERY = """
+INSERT_LARGE_QUERY = """
     LOAD DATA LOCAL INFILE '{infile}' INTO TABLE {table_name}
     FIELDS TERMINATED BY ',' ENCLOSED BY '"'
     LINES TERMINATED BY '\n'

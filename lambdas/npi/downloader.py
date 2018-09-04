@@ -6,11 +6,10 @@ from urllib.parse import urljoin
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from lambdas.helpers.db import DBHelper
+from lambdas.npi import download_url, base_url
 from importer import weekly_prefix, monthly_prefix
 
-download_url = "http://download.cms.gov/nppes/NPI_Files.html"
-base_url = "http://download.cms.gov/nppes/"
-max_links = 8  # If we find more zip files than this, exit.  The NPPES site may have changed.
+max_links = 10  # If we find more zip files than this, exit.  The NPPES site may have changed.
 
 def handler(event, context):
     """

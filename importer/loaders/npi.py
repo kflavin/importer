@@ -7,7 +7,7 @@ from zipfile import ZipFile
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 
-from importer.sql.npi import CREATE_NPI_TABLE, INSERT_WEEKLY_QUERY, INSERT_MONTHLY_QUERY, GET_FILES, MARK_AS_IMPORTED
+from importer.sql.npi import CREATE_NPI_TABLE, INSERT_QUERY, INSERT_LARGE_QUERY, GET_FILES, MARK_AS_IMPORTED
 from importer.sql.checks import DISABLE, ENABLE
 from importer.downloaders.downloader import downloader
 import pandas as pd
@@ -16,8 +16,8 @@ class NpiLoader(object):
     """
     Load NPI data.  There are two loaders in this file.abs
 
-    Weekly Loader: Loads data in batches using an INSERT query.  Files are presumed to be smaller.
-    Monthly Loader: Loads data using LOAD DATA LOCAL INFILE query.  Files are presumed to be larger.
+    File loader: Loads data in batches using an INSERT query.
+    Large file loader: Loads data using LOAD DATA LOCAL INFILE query.
     """
 
     def __init__(self):
@@ -104,7 +104,7 @@ class NpiLoader(object):
         table_name: Name of the NPI import log table
         period: [weekly|monthly]
         output_dir: Directory to save the file locally
-        limit: max # of files to download.  The monthly files are hardcoded to 1.
+        limit: max # of files to load.  The monthly files are hardcoded to 1.
         """
         url_prefix = url_prefix.rstrip("/") + "/"
 
@@ -171,7 +171,10 @@ class NpiLoader(object):
         col_df = pd.read_csv(infile, nrows=1)
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
         df = pd.read_csv(infile, usecols=col_df.columns, low_memory=False)
-
+        
+        # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
+        df = df[df['Entity Type Code'] != 2.0]
+        
         # df = pd.read_csv(infile)
         # df = pd.read_csv(infile, low_memory=False)
 
@@ -186,7 +189,7 @@ class NpiLoader(object):
 
         return outfile
 
-    def build_weekly_query(self, columns, table_name):
+    def build_insert_query(self, columns, table_name):
         """
         Construct the NPI INSERT query to use with the weekly loader.
         """
@@ -203,15 +206,15 @@ class NpiLoader(object):
         values = values.rstrip().rstrip(",")
         on_dupe_values = on_dupe_values.rstrip().rstrip(",")
 
-        query = INSERT_WEEKLY_QUERY.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
+        query = INSERT_QUERY.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
 
-    def load_monthly(self, table_name, infile):
+    def load_large_file(self, table_name, infile):
         """
-        Load monthly data (larger) file.  Return the number of rows inserted.
+        Load large files (such as the monthly zip).  Return the number of rows inserted.
         """
-        print("NPI monthly loader importing from {}".format(infile))
-        q = INSERT_MONTHLY_QUERY.format(infile=infile, table_name=table_name)
+        print("NPI large loader importing from {}".format(infile))
+        q = INSERT_LARGE_QUERY.format(infile=infile, table_name=table_name)
         
         if self.debug:
             print(repr(q))
@@ -220,14 +223,14 @@ class NpiLoader(object):
         self.cnx.commit()
         return self.cursor.rowcount
 
-    def load_weekly(self, table_name, infile, batch_size=1000):
+    def load_file(self, table_name, infile, batch_size=1000):
         """
-        Load weekly data (smaller) file.  Size of INSERT can be broken up into batches (batch_size).  Return the
+        Load small files (such as the weekly zip).  Size of INSERT can be broken up into batches (batch_size).  Return the
         number of rows inserted.
         """
-        print("NPI weekly loader importing from {}, batch size = {}".format(infile, batch_size))
+        print("NPI loader importing from {}, batch size = {}".format(infile, batch_size))
         reader = csv.DictReader(open(infile, 'r'))
-        q = self.build_weekly_query(self.__clean_fields(reader.fieldnames), table_name)
+        q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
         columnNames = reader.fieldnames
 
         row_count = 0
@@ -279,24 +282,3 @@ class NpiLoader(object):
         query = MARK_AS_IMPORTED.format(table_name=table_name, id=id)
         self.cursor.execute(query)
         self.cnx.commit()
-
-
-    # Do this in userdata instead, so the script isn't dependent on AWS
-    # def mark_imported(self, bucket, key):
-    #     """
-    #     Marks the s3 object as imported.
-    #     """
-    #     client = boto3.client('s3')
-
-    #     response = client.put_object_tagging(
-    #         Bucket=bucket,
-    #         Key=key,
-    #         Tagging={
-    #             'TagSet': [
-    #                 {
-    #                     'Key': 'imported',
-    #                     'Value': 'true'
-    #                 },
-    #             ]
-    #         }
-    #     )
