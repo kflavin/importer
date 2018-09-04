@@ -1,5 +1,6 @@
 import csv
 import sys
+import time
 import itertools
 import textwrap
 from collections import OrderedDict
@@ -223,10 +224,14 @@ class NpiLoader(object):
         self.cnx.commit()
         return self.cursor.rowcount
 
-    def load_file(self, table_name, infile, batch_size=1000):
+    def load_file(self, table_name, infile, batch_size=1000, throttle_size=20_000, throttle_time=3):
         """
         Load small files (such as the weekly zip).  Size of INSERT can be broken up into batches (batch_size).  Return the
         number of rows inserted.
+
+        Optionally specify a batch and throttle sizes.  Batch size controls the number of rows sent to the DB at one time.  The
+        throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
+        either throttle arg is set to 0, throttling will be disabled.
         """
         print("NPI loader importing from {}, batch size = {}".format(infile, batch_size))
         reader = csv.DictReader(open(infile, 'r'))
@@ -237,6 +242,8 @@ class NpiLoader(object):
         batch = []
         batch_count = 1
         total_rows_inserted = 0
+
+        throttle_count = 0
 
         for row in reader:
             if row_count >= batch_size:
@@ -254,6 +261,13 @@ class NpiLoader(object):
             data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
 
             batch.append(data)
+
+            # Put in a sleep timer to throttle how hard we hit the database
+            if throttle_count and throttle_size and throttle_count >= throttle_size:
+                time.sleep(int(throttle_time))
+                throttle_count = 0
+            else if throttle_count and throttle_size:
+                throttle_count += 1
 
         # Get any remaining rows
         if batch:

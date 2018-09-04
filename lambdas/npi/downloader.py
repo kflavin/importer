@@ -7,7 +7,7 @@ from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from lambdas.helpers.db import DBHelper
 from lambdas.npi import download_url, base_url
-from importer import weekly_prefix, monthly_prefix
+from importer import weekly_prefix, monthly_prefix, deactivated_prefix
 
 max_links = 10  # If we find more zip files than this, exit.  The NPPES site may have changed.
 
@@ -44,6 +44,9 @@ def url_to_s3(region, url, bucket, table_name):
     if "weekly" in fileName.lower():
         key = f"{weekly_prefix}/{fileName}"
         p = 'w'
+    elif "deactivated" in fileName.lower():
+        key = f"{deactivated_prefix}/{fileName}"
+        p = 'x'
     else:
         key = f"{monthly_prefix}/{fileName}"
         p = 'm'
@@ -52,7 +55,8 @@ def url_to_s3(region, url, bucket, table_name):
     if not exists(bucket, key):
         print(f"Uploading {bucket}/{key}")
         client.upload_fileobj(zippedFile, bucket, key)
-        rds.add_to_db(url, table_name, p) # add the new entry to the database
+        if not rds.add_to_db(url, table_name, p):  # add the new entry to the database
+            print(f"Failed to add {url}")
     else:
         print(f"Skipping {bucket}/{key}, already exists.")
 
@@ -87,8 +91,7 @@ def exists(bucket, key):
 
 def find_zip_urls():
     """
-    Locate any zip files we want and return them.  This finds only the dissemination files,
-    not deactivation.
+    Locate any data and deactivation files.
     """
     html = urlopen(download_url).read()
     soup = BeautifulSoup(html, 'html.parser')
@@ -104,8 +107,10 @@ def find_zip_urls():
     for l in links:
         link = l['href']
 
-        # Only grab dissemination links, not deactivation.
+        # Get data and deactivation URL's
         if "/nppes_data_dissemination" in link.lower():
+            urls.append(urljoin(base_url, link))
+        elif "/nppes_deactivated_npi_report" in link.lower():
             urls.append(urljoin(base_url, link))
 
     return urls

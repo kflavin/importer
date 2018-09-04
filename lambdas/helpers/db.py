@@ -55,10 +55,19 @@ class DBHelper(object):
 
         print("Query is: {}".format(query))
 
-        cursor.execute(query, data)
-        cnx.commit()
+        try:
+            cursor.execute(query, data)
+            cnx.commit()
+        except connector.IntegrityError as e:
+            print(e)
+            print("Integrity error, may have duplicate key, won't insert.")
+            cursor.close()
+            cnx.close()
+            return False
+
         cursor.close()
         cnx.close()
+        return True
 
 
 # Test from the CLI
