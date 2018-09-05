@@ -4,6 +4,8 @@ STAGE=$(echo ${1:-dev} | tr '[:upper:]' '[:lower:]')
 ENV_FILE=.env.${STAGE}
 echo "Deploying to $STAGE using $ENV_FILE"
 
+source $ENV_FILE
+
 if [[ $STAGE == "dev" ]]; then
   cp serverless-dev.yml serverless.yml
 else

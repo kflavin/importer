@@ -183,7 +183,7 @@ class NpiLoader(object):
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
 
-        # Reformat dates
+        # Reformat dates to be MySQL friendly
         df['Last Update Date'] = df['Last Update Date'].apply(convert_date)
         df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(convert_date)
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
@@ -236,7 +236,7 @@ class NpiLoader(object):
         self.cnx.commit()
         return self.cursor.rowcount
 
-    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=2):
+    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
         Load small files (such as the weekly zip).  Size of INSERT can be broken up into batches (batch_size).  Return the
         number of rows inserted.
@@ -277,7 +277,7 @@ class NpiLoader(object):
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                print(f"Sleeping for 5 seconds... row: {i}")
+                print(f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:

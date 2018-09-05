@@ -7,7 +7,7 @@ Properties:
   EngineVersion: 5.6.29
   MasterUsername: ${self:custom.dbUser}
   MasterUserPassword: ${self:custom.dbPassword}
-  # PubliclyAccessible: false   # Let subnet group determine if it's publicly accessible
+  PubliclyAccessible: true
   DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
   DBSubnetGroupName: ${self:custom.awsDbSubnetGroup}
 

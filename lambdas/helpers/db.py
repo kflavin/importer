@@ -44,16 +44,11 @@ class DBHelper(object):
         cols = "url, period"
         values = "%(url)s, %(period)s"
         query = INSERT_NEW_FILE.format(table_name=table_name, cols=cols, values=values)
-        
-        print("Query")
-        print(query)
 
         data = {
             "url": url,
             "period": p
         }
-
-        print("Query is: {}".format(query))
 
         try:
             cursor.execute(query, data)
