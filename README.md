@@ -7,84 +7,67 @@
 * python3
 * You should have your AWS creds configured.  To use profiles, specify `AWS_PROFILE=profile_name`
 
-#### Install
+#### Building and Installation
+
+Each stack corresponds to an environment.  You can create as many environments as you'd like, but they must have unique names.  To create a new stack:
+
+* Create an environment file: `cp env.template .env.<environment name>`
+* Create a serverless YAML file: `cp serverless-<environment>.yml serverless-<my new environment>.yml`
+
+The `serverless-dev.yml` file spins up an RDS instance for testing, while the other `serverless-*.yml` files do not.
+
+Example:
 
 ```bash
-# Configure environment
-cp env.template .env.aws
-vim .env.aws
-# < edit values, see below >
-source .env.aws
+cp env.template .env.stage
+cp serverless-prod.yml serverless.stage
+```
 
-# Choose a serverless stack to deploy (one of the serverless*.yml files).  dev stacks creates an RDS instance.
-cp serverless-prod.yml serverless.yml
+To deploy:
 
-# Build the Python script
+```bash
+# First run only
+./setup.sh stage
+source .env.stage
+
+# Subsequent updates, use:
+./bin/deploy.sh stage
+```
+
+To build and deploy the runner separately:
+
+```bash
 python setup.py sdist
+./bin/stage_runner_to_s3.sh stage
+```
 
-# Deploy stack to AWS. 
-sls deploy --stage=dev
+The helper scripts in `./bin/` take the environment name as the first parameter.
 
-# If using a new database, you can quickly create the db and table as follows.  Otherwise skip this step.
+#### Usage
+
+The Lambda functions are cron'd, but you can run them manually as follows.
+
+```bash
+# Create initial DB and tables.  Dev only.
 sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
 
-# The Lambda functions are cron'd, but can be called manually using helper scripts
-
 # Download any available zip files to S3.  Default directly is npi-in/[weekly|monthly]
-./bin/download.sh dev
+./bin/download.sh stage
 
 # Load weekly files
-./bin/weekly.sh dev
+./bin/weekly.sh stage
 
 # Load the most recent monthly file
-./bin/monthly.sh dev
+./bin/monthly.sh stage
 ```
 
 #### Environment values
 
-Your environment should be configured before deploying.  If you are using the stack to create an RDS instance, then you will need to update your environment file (`db_host`) after it has been created.
-
-```bash
-# Set an AWS profile if you wish to use something other than the default.  Otherwise, don't set this.
-# export AWS_PROFILE=my_profile_name
-
-# DB settings
-export db_user=''
-export db_password=''
-export db_host=''
-export db_schema=''
-
-export npi_table_name='npi_tmp'
-export npi_log_table_name='npi_import_log_tmp'
-
-################
-## AWS Specific
-################
-export aws_region='us-east-1'
-export aws_key=''
-
-# Loader AMI
-export aws_image_id=''  # Requires the custom Loader AMI
-
-# Instance sizing
-export aws_weekly_instance_type='t2.small'
-export aws_monthly_instance_type='m5.4xlarge'
-
-# Networking
-export aws_subnets='subnet-1234,subnet-45678'
-export aws_vpc_id=''
-export aws_security_groups=''
-
-# Database (only required if provisioning DB resources)
-export aws_rds_security_group=''
-export aws_rds_parameter_group=''
-
-# Configuration
-export weekly_import_timeout='20'   # in minutes
-export monthly_import_timeout='120'
-```
+See `env.template` for an example environment file.  The filename should be suffixed with the environment.
 
 #### Packaging
+
+The directory structure is laid out as follows:
 
 ```bash
 bin
@@ -104,6 +87,9 @@ resources
 └── setup.py             # Build the python importer
 ```
 
+Generally speaking, changes to code in `lambdas/` requires a deploy `./bin/deploy.sh <env>`.  Changes to 
+`npi/` (the runner) requires it to be rebuilt and pushed: `python setup.py sdist && ./bin/stage_runner_to_s3.sh <env>`.
+
 ### EC2 Importer
 
 Deploys an ephemeral EC2 instance to handle data import.
@@ -122,9 +108,5 @@ _Fill out later_
 ## Destroy
 
 ```bash
-# S3 files must be removed, or Cloudformation cannot delete the bucket
-bin/delete_bucket_files.sh dev
-
-# Tear down stack
-sls remove --stage=dev
+./teardown.sh stage
 ```
