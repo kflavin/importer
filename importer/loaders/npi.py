@@ -96,8 +96,8 @@ class NpiLoader(object):
                 print("Rolling back...")
                 self.cnx.rollback()
                 count += 1
-                print("Failed on try {count}/{tries}")
-                if count < tries:
+                print(f"Failed on try {count}/{tries}")
+                if count >= tries:
                     print("Could not submit batch")
                     raise
 
