@@ -34,9 +34,10 @@ def handler(event, context):
         print(f"No files in {bucket_name}/{bucket_prefix} are ready for import.")
         return False
 
-    print(f"Current number of tasks are {ec2.active_imports(table_name)}, max instances are {max_concurrent_instances}")
+    active_imports = ec2.active_imports(table_name, stage)
+    print(f"Current number of tasks are {active_imports}, max instances are {max_concurrent_instances}")
 
-    if ec2.active_imports(table_name) >= max_concurrent_instances:
+    if active_imports >= max_concurrent_instances:
         print(f"SKIPPING, there is already an import running for table {table_name}.")
         return False
 
@@ -50,7 +51,7 @@ def handler(event, context):
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
-                        security_groups, context.function_name, period, table_name)
+                        security_groups, context.function_name, period, table_name, stage)
 
     print(f"Instance: {instance}")
     return True
