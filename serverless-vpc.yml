@@ -7,7 +7,7 @@ plugins:
   - serverless-plugin-scripts
 
 custom:
-  stage: ${opt:stage, self:provider.stage}
+  environment: ${opt:stage, self:provider.stage}
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
@@ -42,7 +42,7 @@ provider:
   region: ${self:custom.awsRegion}
   runtime: python3.6
   environment:
-    stage: ${self:custom.stage}
+    environment: ${self:custom.environment}
     aws_key: ${env:aws_key}
     aws_region: ${env:aws_region}
     aws_image_id: ${env:aws_image_id}

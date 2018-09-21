@@ -103,7 +103,7 @@ class NpiLoader(object):
 
         return self.cursor.rowcount
 
-    def fetch(self, url_prefix, table_name, period, output_dir, limit):
+    def fetch(self, url_prefix, table_name, period, environment, output_dir, limit):
         """
         Given a URL prefix (containing a directory of files), search the NPI import log for files
         ready for import. 
@@ -111,6 +111,7 @@ class NpiLoader(object):
         url_prefix: A directory containing files, ie: s3://mybucket/my/prefix/
         table_name: Name of the NPI import log table
         period: [weekly|monthly]
+        environment: User specified environment, ie: dev|rc|stage|prod, etc
         output_dir: Directory to save the file locally
         limit: max # of files to load.  The monthly files are hardcoded to 1.
         """
@@ -123,7 +124,7 @@ class NpiLoader(object):
             p = "m"
             limit = 1       # Never try to load more than one monthly file at once
 
-        q = GET_FILES.format(table_name=table_name, period=p, limit=limit)
+        q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
         self.cursor.execute(q)
 
         print(f"Downloading {self.cursor.rowcount} files")

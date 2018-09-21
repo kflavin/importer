@@ -7,7 +7,7 @@ class EC2Helper(object):
         self.resource = boto3.resource('ec2', region_name=region)
         self.period = period
 
-    def run(self, key_name, image_id, instance_type, subnet_id, user_data, instance_profile, security_groups, function_name, period, table_name, stage):
+    def run(self, key_name, image_id, instance_type, subnet_id, user_data, instance_profile, security_groups, function_name, period, table_name, environment):
         instance_id = self.resource.create_instances(
             NetworkInterfaces=[
                 {
@@ -37,8 +37,8 @@ class EC2Helper(object):
                             'Value': self.period
                         },
                         {
-                            'Key': 'stage', 
-                            'Value': stage
+                            'Key': 'environment', 
+                            'Value': environment
                         }
                     ]
                 },
@@ -60,7 +60,7 @@ class EC2Helper(object):
 
         return instance_id
 
-    def active_imports(self, table_name, stage):
+    def active_imports(self, table_name, environment):
         filters = [
             {
                 'Name':'tag:table_name', 
@@ -71,8 +71,8 @@ class EC2Helper(object):
             #     'Values': [period]
             # },
             {
-                'Name':'tag:stage', 
-                'Values': [stage]
+                'Name':'tag:environment', 
+                'Values': [environment]
             },
             {
                 'Name': 'instance-state-name',

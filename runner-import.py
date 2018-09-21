@@ -54,7 +54,8 @@ def create(table_name):
 @click.option('--period', '-p', required=True, type=click.STRING, help="[weekly|monthly]")
 @click.option('--output_dir', '-o', default="/tmp/npi", type=click.STRING, help="Directory to store file on local filesystem")
 @click.option('--limit', '-l', default=3, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
-def fetch(url_prefix, table_name, period, output_dir, limit):
+@click.option('--environment', '-e', default="dev", type=click.STRING, help="User specified environment, ie: dev|rc|stage|prod, etc")
+def fetch(url_prefix, table_name, period, output_dir, limit, environment):
     """
     Fetch files from import log table
     """
@@ -66,7 +67,7 @@ def fetch(url_prefix, table_name, period, output_dir, limit):
                         database=os.environ['db_schema'], 
                         dictionary=True, 
                         buffered=True)
-    npi_loader.fetch(url_prefix, table_name, period, output_dir, limit)
+    npi_loader.fetch(url_prefix, table_name, period, environment, output_dir, limit)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -130,7 +131,8 @@ def npi_unzip(infile, unzip_path):
 @click.option('--workspace', '-w', default="/tmp/npi", type=click.STRING, help="Workspace directory")
 @click.option('--limit', '-l', default=6, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
 @click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
-def all(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file):
+@click.option('--environment', '-e', default="dev", type=click.STRING, help="User specified environment, ie: dev|rc|stage|prod, etc")
+def all(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file, environment):
     """
     Perform all load steps.
     """
@@ -155,7 +157,7 @@ def all(url_prefix, batch_size, table_name, import_table_name, period, workspace
     logger.info(f"Fetch {period} files from {import_table_name}")
     npi_fetcher = NpiLoader()
     npi_fetcher.connect(**{**args, **extra_args})
-    files = npi_fetcher.fetch(url_prefix, import_table_name, period, workspace, limit)
+    files = npi_fetcher.fetch(url_prefix, import_table_name, period, environment, workspace, limit)
     npi_fetcher.close()
 
     # Load the files

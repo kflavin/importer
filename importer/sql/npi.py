@@ -13,7 +13,7 @@
 GET_FILES = """
     SELECT * FROM (
         SELECT * FROM `{table_name}`
-        WHERE `period`='{period}'
+        WHERE `period`='{period}' AND `environment`='{environment}'
         ORDER BY downloaded_at DESC
         LIMIT {limit}
     ) as t
@@ -67,13 +67,14 @@ CREATE_NPI_IMPORT_LOG_TABLE = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `url` VARCHAR(150) NOT NULL,
+    `environment` VARCHAR(50) NOT NULL,
     `imported` BOOL DEFAULT FALSE,
     `attempts` INT DEFAULT 0,
     `period` CHAR(1),
     `imported_at` TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     `downloaded_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE(`url`)
+    UNIQUE KEY `url_per_env` (`url`,`environment`)
     )
 """
 

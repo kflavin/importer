@@ -21,14 +21,14 @@ class DBHelper(object):
                 'database': ssm.get_parameter(Name=f'/importer/{stage}/db_schema', WithDecryption=True)['Parameter']['Value']
             }
 
-    def files_ready(self, table_name, period, limit):
+    def files_ready(self, table_name, period, environment, limit):
         print("Connecting to DB")
 
         p = "m" if period.lower() == "monthly" else "w"
 
         cnx = connector.connect(**self.config)
         cursor = cnx.cursor(buffered=True)
-        q = GET_FILES.format(table_name=table_name, period=p, limit=limit)
+        q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
         cursor.execute(q)
         
         # If there are any files to import, return true
@@ -37,17 +37,18 @@ class DBHelper(object):
         
         return False
 
-    def add_to_db(self, url, table_name, p):
+    def add_to_db(self, url, table_name, p, environment):
         print("Connecting to DB")
         cnx = connector.connect(**self.config)
         cursor = cnx.cursor()
-        cols = "url, period"
-        values = "%(url)s, %(period)s"
+        cols = "url, period, environment"
+        values = "%(url)s, %(period)s, %(environment)s"
         query = INSERT_NEW_FILE.format(table_name=table_name, cols=cols, values=values)
 
         data = {
             "url": url,
-            "period": p
+            "period": p,
+            "environment": environment
         }
 
         try:

@@ -18,6 +18,7 @@ def handler(event, context):
     print("Downloading zip files")
     table_name = os.environ.get('npi_log_table_name')
     region = os.environ.get('aws_region')
+    environment = os.environ.get('environment')
 
     # Enumerate the zip files on the page.  If a file is not passed as a param, then
     # crawl the page for zip files.
@@ -26,11 +27,11 @@ def handler(event, context):
 
     # Add each file into bucket
     for url in urls:
-        url_to_s3(region, url, bucket, table_name) # download the file
+        url_to_s3(region, url, bucket, table_name, environment) # download the file
 
     print("Done!")
 
-def url_to_s3(region, url, bucket, table_name):
+def url_to_s3(region, url, bucket, table_name, environment):
     """
     Download the zip file to the appropriate S3 folder.  Skip files that already exist.
     """
@@ -55,7 +56,7 @@ def url_to_s3(region, url, bucket, table_name):
     if not exists(bucket, key):
         print(f"Uploading {bucket}/{key}")
         client.upload_fileobj(zippedFile, bucket, key)
-        if not rds.add_to_db(url, table_name, p):  # add the new entry to the database
+        if not rds.add_to_db(url, table_name, p, environment):  # add the new entry to the database
             print(f"Failed to add {url}")
     else:
         print(f"Skipping {bucket}/{key}, already exists.")
@@ -111,7 +112,9 @@ def find_zip_urls():
         if "/nppes_data_dissemination" in link.lower():
             urls.append(urljoin(base_url, link))
         elif "/nppes_deactivated_npi_report" in link.lower():
-            urls.append(urljoin(base_url, link))
+            # We are not currently using these files, so skip.
+            # urls.append(urljoin(base_url, link))
+            pass
 
     return urls
 
