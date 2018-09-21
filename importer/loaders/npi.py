@@ -98,7 +98,7 @@ class NpiLoader(object):
                 count += 1
                 print(f"Failed on try {count}/{tries}")
                 if count >= tries:
-                    print("Could not submit batch")
+                    print("Could not submit batch, aborting.")
                     raise
 
         return self.cursor.rowcount
