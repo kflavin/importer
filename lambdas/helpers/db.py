@@ -22,13 +22,14 @@ class DBHelper(object):
             }
 
     def files_ready(self, table_name, period, environment, limit):
-        print("Connecting to DB")
+        print(f"Connecting to host: {self.config.get('host')} db: {self.config.get('database')} table: ${table_name}, environment: {environment} limit: {limit}")
 
         p = "m" if period.lower() == "monthly" else "w"
 
         cnx = connector.connect(**self.config)
         cursor = cnx.cursor(buffered=True)
         q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
+        print(q.replace('\n', ' ').replace('\r', ''))
         cursor.execute(q)
         
         # If there are any files to import, return true

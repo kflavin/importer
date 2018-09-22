@@ -66,10 +66,12 @@ functions:
     handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
+    timeout: 15
   import_npi_monthly:
     handler: lambdas/npi/importer_ec2_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+    timeout: 15
   npi_downloader:
     handler: lambdas/npi/downloader.handler
     timeout: 120

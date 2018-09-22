@@ -9,16 +9,33 @@
 #     LIMIT {limit}
 # """
 
-# Use a subquery so we limit the search to only recently downloaded files.
+# # Use a subquery so we limit the search to only recently downloaded files.
+# GET_FILES = """
+#     SELECT * FROM (
+#         SELECT * FROM `{table_name}`
+#         WHERE `period`='{period}' AND `environment`='{environment}'
+#         ORDER BY downloaded_at DESC
+#         LIMIT {limit}
+#     ) as t
+#     WHERE t.imported = false
+#     ORDER BY downloaded_at DESC
+# """
+
+# Limit files to those that have been downloaded after the last successful import, so we
+# don't overwrite new data with old.
 GET_FILES = """
-    SELECT * FROM (
-        SELECT * FROM `{table_name}`
-        WHERE `period`='{period}' AND `environment`='{environment}'
-        ORDER BY downloaded_at DESC
-        LIMIT {limit}
-    ) as t
-    WHERE t.imported = false
-    ORDER BY downloaded_at DESC
+    SELECT * FROM `{table_name}` WHERE id > (
+        SELECT IF(max(id IS NULL) = 0, max(id), 0) AS id
+        FROM `{table_name}`
+        WHERE period='{period}'
+        AND environment='{environment}'
+        AND imported = true
+    )
+    AND imported = false
+    AND environment='{environment}'
+    AND period='{period}'
+    ORDER BY downloaded_at ASC
+    LIMIT {limit};
 """
 
 # # For importing single, user-specified files

@@ -125,9 +125,10 @@ class NpiLoader(object):
             limit = 1       # Never try to load more than one monthly file at once
 
         q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
+        print(q.replace('\n', ' ').replace('\r', ''))
         self.cursor.execute(q)
 
-        print(f"Downloading {self.cursor.rowcount} files")
+        print(f"Fetching {self.cursor.rowcount} files")
         for row in self.cursor:
             file_name = row.get('url').split("/")[-1]
 
