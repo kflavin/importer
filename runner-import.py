@@ -53,7 +53,7 @@ def create(table_name):
 @click.option('--table-name', '-t', default="npi_import_log", type=click.STRING, help="Import log table")
 @click.option('--period', '-p', required=True, type=click.STRING, help="[weekly|monthly]")
 @click.option('--output_dir', '-o', default="/tmp/npi", type=click.STRING, help="Directory to store file on local filesystem")
-@click.option('--limit', '-l', default=3, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
+@click.option('--limit', '-l', default=6, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
 @click.option('--environment', '-e', default="dev", type=click.STRING, help="User specified environment, ie: dev|rc|stage|prod, etc")
 def fetch(url_prefix, table_name, period, output_dir, limit, environment):
     """

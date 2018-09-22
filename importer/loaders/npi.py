@@ -64,7 +64,7 @@ class NpiLoader(object):
         field_clean = field_clean.replace("", "")
         field_clean = field_clean.replace(" If outside US", "")
         field_clean = field_clean.replace(" ", "_")
-        return field_clean
+        return field_clean.lower()
 
     def __clean_fields(self, fields):
         columns = []
@@ -178,6 +178,8 @@ class NpiLoader(object):
         # Read the header file first, then reread the entire file with just the columns we want.  This is faster
         # than reading the entire file, and then removing the columns.
         col_df = pd.read_csv(infile, nrows=1)
+        col_df = col_df[col_df.columns.drop(col_df.filter(regex='Healthcare Provider Taxonomy Group').columns)]
+        col_df = col_df[col_df.columns.drop(col_df.filter(regex='Provider License Number').columns)]
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
         df = pd.read_csv(infile, usecols=col_df.columns, low_memory=False)
         
