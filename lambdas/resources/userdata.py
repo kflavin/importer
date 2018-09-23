@@ -32,7 +32,7 @@ pip3 install /opt/importer.tar.gz
 PATH=/usr/local/bin:$PATH
 
 # Clean and load CSV file, then mark the object as imported
-timeout {timeout}m runner-import.py -l cloudwatch npi all \
+timeout {timeout}m runner-import.py -l cloudwatch npi full \
                     -t {table_name} \
                     -i {log_table_name} \
                     -p {period} \
