@@ -9,7 +9,7 @@ from zipfile import ZipFile
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 
-from importer.sql.npi import CREATE_NPI_TABLE, INSERT_QUERY, INSERT_LARGE_QUERY, GET_FILES, MARK_AS_IMPORTED
+from importer.sql.npi import CREATE_NPI_TABLE, INSERT_QUERY, UPDATE_QUERY, INSERT_LARGE_QUERY, GET_FILES, MARK_AS_IMPORTED
 from importer.sql.checks import DISABLE, ENABLE
 from importer.downloaders.downloader import downloader
 import pandas as pd
@@ -47,6 +47,7 @@ class NpiLoader(object):
             'database': database
         }
 
+        # Needed for LOAD DATA INFILE LOCAL
         if clientFlags:
             config['client_flags'] = [ClientFlag.LOCAL_FILES]
 
@@ -208,7 +209,7 @@ class NpiLoader(object):
 
     def build_insert_query(self, columns, table_name):
         """
-        Construct the NPI INSERT query to use with the weekly loader.
+        Construct the NPI INSERT query.
         """
         cols = ""
         values = ""
@@ -226,6 +227,13 @@ class NpiLoader(object):
         query = INSERT_QUERY.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
 
+    def build_update_query(self, table_name):
+        """
+        Construct the NPI UPDATE query.  Used to preserve data when an NPI has been deactivated.
+        """
+        query = UPDATE_QUERY.format(table_name=table_name, npi_deactivation_date="%(npi_deactivation_date)s", npi="%(npi)s")
+        return query
+
     def load_large_file(self, table_name, infile):
         """
         Load large files (such as the monthly zip).  Return the number of rows inserted.
@@ -240,10 +248,11 @@ class NpiLoader(object):
         self.cnx.commit()
         return self.cursor.rowcount
 
-    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
+    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3, initialize=False):
         """
-        Load small files (such as the weekly zip).  Size of INSERT can be broken up into batches (batch_size).  Return the
-        number of rows inserted.
+        Load NPI data using INSERT and UPDATE statements.  If a record in the data has been deactivated, then do an
+        UPDATE instead of an INSERT to preserve the NPI data associated with the record.  This assumes the NPI record
+        exists.  If it does not, the deactivated row will not be added.
 
         Optionally specify a batch and throttle sizes.  Batch size controls the number of rows sent to the DB at one time.  The
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
@@ -252,32 +261,54 @@ class NpiLoader(object):
         print("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"\
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
-        q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
+        insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
+        update_q = self.build_update_query(table_name)
         columnNames = reader.fieldnames
 
-        row_count = 0
-        batch = []
-        batch_count = 1
-        total_rows_inserted = 0
+        # Maintain two batches.  One for INSERT queries, and one for UPDATE queries.
+        insert_row_count = 0
+        insert_batch = []
+        insert_batch_count = 1
+
+        update_row_count = 0
+        update_batch = []
+        update_batch_count = 1
+
+        total_rows_modified = 0
         throttle_count = 0
 
         i = 0
         for row in reader:
-            if row_count >= batch_size - 1:
-                print("Submitting batch {}".format(batch_count))
-                total_rows_inserted += self.__submit_batch(q, batch)
-                batch = []
-                row_count = 0
-                batch_count += 1
+            if row.get('npi_deactivation_date') and \
+               not row.get('npi_reactivation_date') and \
+               not initialize:
+                # This NPI has been deactivated.  Don't blindly overwrite the old row, because we want
+                # to preserve the NPI's data.  Do an UPDATE instead.
+                if update_row_count >= batch_size - 1:
+                    print("Submitting UPDATE batch {}".format(update_batch_count))
+                    total_rows_modified += self.__submit_batch(update_q, update_batch)
+                    update_batch = []
+                    update_row_count = 0
+                    update_batch_count += 1
+                else:
+                    update_row_count += 1
+
+                # data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
+                data = OrderedDict((('npi_deactivation_date', row.get('npi_deactivation_date')), ('npi', row.get('npi'))))
+                update_batch.append(data)
+
             else:
-                row_count += 1
+                if insert_row_count >= batch_size - 1:
+                    print("Submitting INSERT batch {}".format(insert_batch_count))
+                    total_rows_modified += self.__submit_batch(insert_q, insert_batch)
+                    insert_batch = []
+                    insert_row_count = 0
+                    insert_batch_count += 1
+                else:
+                    insert_row_count += 1
 
-            columns, values = zip(*row.items())
-
-            # data = {key: value for key, value in row.items() }
-            data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
-
-            batch.append(data)
+                data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
+                insert_batch.append(data)
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
@@ -288,12 +319,18 @@ class NpiLoader(object):
                 throttle_count += 1
             i += 1
 
-        # Get any remaining rows
-        if batch:
-            print("Submitting batch {}".format(batch_count))
-            total_rows_inserted += self.__submit_batch(q, batch)
+        # Submit remaining INSERT queries
+        if insert_batch:
+            print("Submitting INSERT batch {}".format(insert_batch_count))
+            total_rows_modified += self.__submit_batch(insert_q, insert_batch)
 
-        return total_rows_inserted
+        # Submit remaining UPDATE queries
+        if update_batch:
+            print("Submitting UPDATE batch {}".format(update_batch_count))
+            print(len(update_batch))
+            total_rows_modified += self.__submit_batch(update_q, update_batch)
+
+        return total_rows_modified
 
     def disable_checks(self):
         """

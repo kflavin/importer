@@ -64,6 +64,13 @@ INSERT_QUERY = """
     {on_dupe_values}, updated_at=now()
 """
 
+# Used for deactivated NPI's.  We want to keep old data, so just mark them as deactivated, don't zero out all data.
+UPDATE_QUERY = """
+    UPDATE {table_name}
+    SET `npi_deactivation_date`={npi_deactivation_date}
+    WHERE `npi`={npi}
+"""
+
 # Optional query which can be used for large files
 INSERT_LARGE_QUERY = """
     LOAD DATA LOCAL INFILE '{infile}' INTO TABLE {table_name}
