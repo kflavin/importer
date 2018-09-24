@@ -8,17 +8,17 @@ from importer.sql.npi import INSERT_NEW_FILE, GET_FILES
 
 class DBHelper(object):
     def __init__(self, region, config=None):
-        stage = os.environ.get('stage', 'dev')
+        environment = os.environ.get('environment', 'dev')
         ssm = boto3.client('ssm', region_name=region)
 
         if config:
             self.config = config
         else:   
             self.config = {
-                'user': ssm.get_parameter(Name=f'/importer/{stage}/db_user', WithDecryption=True)['Parameter']['Value'],
-                'password': ssm.get_parameter(Name=f'/importer/{stage}/db_password', WithDecryption=True)['Parameter']['Value'],
-                'host': ssm.get_parameter(Name=f'/importer/{stage}/db_host')['Parameter']['Value'],
-                'database': ssm.get_parameter(Name=f'/importer/{stage}/db_schema', WithDecryption=True)['Parameter']['Value']
+                'user': ssm.get_parameter(Name=f'/importer/{environment}/db_user', WithDecryption=True)['Parameter']['Value'],
+                'password': ssm.get_parameter(Name=f'/importer/{environment}/db_password', WithDecryption=True)['Parameter']['Value'],
+                'host': ssm.get_parameter(Name=f'/importer/{environment}/db_host')['Parameter']['Value'],
+                'database': ssm.get_parameter(Name=f'/importer/{environment}/db_schema', WithDecryption=True)['Parameter']['Value']
             }
 
     def files_ready(self, table_name, period, environment, limit):
