@@ -49,7 +49,7 @@ GET_FILES = """
 ######################################
 MARK_AS_IMPORTED = """
     UPDATE `{table_name}`
-    SET imported = true, attempts = attempts + 1
+    SET imported = true, attempts = attempts + 1, updated_at=now()
     WHERE id = {id};
 """
 
