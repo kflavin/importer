@@ -21,5 +21,9 @@ fi
 
 echo "----- Source .env.$STAGE -----"
 source .env.$STAGE
+
+echo "----- Build Runner -----"
+python setup.py sdist
+
 echo "----- Deploying to $STAGE using serverless-$STAGE.yml -----"
 sls deploy --stage=$STAGE $*
