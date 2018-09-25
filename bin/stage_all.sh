@@ -10,8 +10,10 @@ BUCKET_NAME=$(aws \
     --query "Stacks[0].Outputs[?OutputKey=='ScriptBucket'] | [0].OutputValue" \
     --output text)
 
-echo "Copy configs/ to ${BUCKET_NAME}"
+echo "----- Copy configs/ to ${BUCKET_NAME} -----"
 aws s3 cp --recursive config/ s3://${BUCKET_NAME}/config/
-echo "Copy runner to ${BUCKET_NAME}"
+echo "----- Build runner -----"
+python setup.py sdist
+echo "----- Copy runner to ${BUCKET_NAME} -----"
 aws s3 cp dist/*.tar.gz s3://${BUCKET_NAME}/importer.tar.gz
 
