@@ -160,7 +160,8 @@ def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_
 @click.option('--limit', '-l', default=6, type=click.INT, help="Max # of files to fetch at a time.  Only weekly files are adjustable, monthly is set to 1.")
 @click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
 @click.option('--environment', '-e', default="dev", type=click.STRING, help="User specified environment, ie: dev|rc|stage|prod, etc")
-def full(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file, environment):
+@click.option('--initialize', default=False, is_flag=True, help="Only use for first table load to get all deactivated NPI's!  This will OVERWRITE existing data!")
+def full(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file, environment, initialize):
     """
     Perform all load steps.
     """
@@ -200,7 +201,7 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
         try:
             csv_file = npi_loader.unzip(infile, unzip_path)
         except Exception as e:
-            logger.info(e)
+            logger.info(f"{e}")
             logger.info(f"Error loading zip file, skipping file...")
             continue
 
@@ -208,28 +209,28 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
         try:
             cleaned_file = npi_loader.preprocess(csv_file)
         except Exception as e:
-            logger.info(e)
+            logger.info(f"{e}")
             logger.info(f"Error preprocessing file, skipping file...")
             continue
         
         try:
             if large_file:
-                print(f"Loading {period} (large) file into database.  large_file: {large_file}")
+                print(f"Loading {period} file into database.  large_file: {large_file}")
                 npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
                 npi_loader.load_large_file(table_name, cleaned_file)
                 npi_loader.enable_checks()
             else:
-                print(f"Loading {period} (small) file into database.  large_file: {large_file}")
-                npi_loader.load_file(table_name, cleaned_file, batch_size)
+                print(f"Loading {period} file into database.  large_file: {large_file}")
+                npi_loader.load_file(table_name, cleaned_file, batch_size, 10000, 3, initialize)
         except Exception as e:
-            logger.info(e)
+            logger.info(f"{e}")
             logger.info(f"Error loading data to DB, skipping file...")
             continue
 
         try:
             npi_loader.mark_imported(id, import_table_name)
         except Exception as e:
-            logger.info(e)
+            logger.info(f"{e}")
             logger.info(f"Failed to update record in database.")
 
         # npi_loader.clean()

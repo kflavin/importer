@@ -11,6 +11,11 @@ def handler(event, context):
     print(f"Starting {period} import...")
     print(event)
 
+    # Run first time to initialize database.  This will zero out deactivate NPI data.
+    initialize = event.get('initialize', False)
+    init_flag = "--initialize" if initialize else ""
+    print(f"Initialize?: {initialize}, init_flag={init_flag}")
+
     environment = os.environ.get('environment', 'dev')
     region = os.environ.get('aws_region')
     key_name = os.environ.get('aws_key')
@@ -46,7 +51,8 @@ def handler(event, context):
                                       table_name=table_name,
                                       log_table_name=log_table_name,
                                       period=period,
-                                      timeout=timeout)
+                                      timeout=timeout,
+                                      init_flag=init_flag)
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
