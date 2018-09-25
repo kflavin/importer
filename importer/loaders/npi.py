@@ -9,7 +9,8 @@ from zipfile import ZipFile
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 
-from importer.sql.npi import CREATE_NPI_TABLE, INSERT_QUERY, UPDATE_QUERY, INSERT_LARGE_QUERY, GET_FILES, MARK_AS_IMPORTED
+from importer.sql.npi import (CREATE_NPI_TABLE, INSERT_QUERY, UPDATE_QUERY,
+                              INSERT_LARGE_QUERY, GET_FILES, GET_MONTHLY_FILES, MARK_AS_IMPORTED)
 from importer.sql.checks import DISABLE, ENABLE
 from importer.downloaders.downloader import downloader
 import pandas as pd
@@ -35,7 +36,7 @@ class NpiLoader(object):
         self.cnx = ""
         self.cursor = ""
         self.debug = ""
-        self.files = {}     # Dict where key is file to load, and value is id in the import log
+        self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -107,7 +108,7 @@ class NpiLoader(object):
     def fetch(self, url_prefix, table_name, period, environment, output_dir, limit):
         """
         Given a URL prefix (containing a directory of files), search the NPI import log for files
-        ready for import. 
+        ready for import.  Fetch them into the output directory.
 
         url_prefix: A directory containing files, ie: s3://mybucket/my/prefix/
         table_name: Name of the NPI import log table
@@ -121,11 +122,12 @@ class NpiLoader(object):
         if period.lower() == "weekly":
             p = "w"
             limit = limit
+            q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
         else:
             p = "m"
-            limit = 1       # Never try to load more than one monthly file at once
+            # We only want to load one monthly file at a time.  Pick the most recent one.
+            q = GET_MONTHLY_FILES.format(table_name=table_name, period=p, environment=environment)
 
-        q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
         print(q.replace('\n', ' ').replace('\r', ''))
         self.cursor.execute(q)
 
@@ -139,12 +141,10 @@ class NpiLoader(object):
 
             if downloaded_file:
                 self.files[downloaded_file] = row['id']
-                # self.files.append(downloaded_file)
 
-        print(f"Files to process: {self.files}")
-        return self.files
-
-
+        files_reversed = OrderedDict(reversed(list(self.files.items())))   # we receive in desc order, so reverse for processing
+        print(f"Files to process: {files_reversed}")
+        return files_reversed
 
     def unzip(self, infile, path):
         """

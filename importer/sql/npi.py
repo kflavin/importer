@@ -2,30 +2,11 @@
 # Queries
 ######################################
 
-# GET_FILES = """
-#     SELECT * FROM `{table_name}`
-#     WHERE period = '{period}' AND imported = false
-#     ORDER BY created_at DESC
-#     LIMIT {limit}
-# """
-
-# # Use a subquery so we limit the search to only recently downloaded files.
-# GET_FILES = """
-#     SELECT * FROM (
-#         SELECT * FROM `{table_name}`
-#         WHERE `period`='{period}' AND `environment`='{environment}'
-#         ORDER BY created_at DESC
-#         LIMIT {limit}
-#     ) as t
-#     WHERE t.imported = false
-#     ORDER BY created_at DESC
-# """
-
 # Limit files to those that have been downloaded after the last successful import, so we
 # don't overwrite new data with old.
 GET_FILES = """
     SELECT * FROM `{table_name}` WHERE id > (
-        SELECT IF(max(id IS NULL) = 0, max(id), 0) AS id
+        SELECT IF(ISNULL(MAX(id)), 0, MAX(id)) AS maxid
         FROM `{table_name}`
         WHERE period='{period}'
         AND environment='{environment}'
@@ -34,15 +15,26 @@ GET_FILES = """
     AND imported = false
     AND environment='{environment}'
     AND period='{period}'
-    ORDER BY created_at ASC
+    ORDER BY created_at DESC, id DESC
     LIMIT {limit};
 """
 
-# # For importing single, user-specified files
-# GET_FILE = """
-#     SELECT * FROM `{table_name}`
-#     WHERE `url`='{url}' AND t.imported = false
-# """
+# For the monthly files, just change the order so we're loading the most recent monthly file.  We
+# shouldn't try to load more than one monthly file at a time.
+GET_MONTHLY_FILES = """
+    SELECT * FROM `{table_name}` WHERE id > (
+        SELECT IF(ISNULL(MAX(id)), 0, MAX(id)) AS maxid
+        FROM `{table_name}`
+        WHERE period='{period}'
+        AND environment='{environment}'
+        AND imported = true
+    )
+    AND imported = false
+    AND environment='{environment}'
+    AND period='{period}'
+    ORDER BY created_at DESC, id DESC
+    LIMIT 1;
+"""
 
 ######################################
 # Inserts and Updates

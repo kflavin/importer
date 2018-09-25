@@ -52,7 +52,8 @@ def handler(event, context):
                                       log_table_name=log_table_name,
                                       period=period,
                                       timeout=timeout,
-                                      init_flag=init_flag)
+                                      init_flag=init_flag,
+                                      limit=1)
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
