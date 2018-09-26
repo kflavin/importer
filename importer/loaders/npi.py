@@ -76,6 +76,16 @@ class NpiLoader(object):
 
         return columns
 
+    def __nullify_field(self, value):
+        """
+        Used to convert empty strings, "", into None values so they appear as NULLs in the database
+        for DATE columns.
+        """
+        if not value:
+            return None
+        else:
+            return value
+
     def __submit_batch(self, query, data):
         if self.debug:
             print(query)
@@ -189,6 +199,7 @@ class NpiLoader(object):
         df = df[df['Entity Type Code'] != 2.0]
 
         # Reformat dates to be MySQL friendly
+        df['Provider Enumeration Date'] = df['Provider Enumeration Date'].apply(convert_date)
         df['Last Update Date'] = df['Last Update Date'].apply(convert_date)
         df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(convert_date)
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
@@ -279,6 +290,14 @@ class NpiLoader(object):
 
         i = 0
         for row in reader:
+            # These four date fields require some additional scrubbing once they're loaded back from
+            # file, so they don't try to submit empty dates as empty strings, "".  We need them to go
+            # into the database as NULL's instead.
+            row['provider_enumeration_date'] = self.__nullify_field(row['provider_enumeration_date'])
+            row['last_update_date'] = self.__nullify_field(row['last_update_date'])
+            row['npi_deactivation_date'] = self.__nullify_field(row['npi_deactivation_date'])
+            row['npi_reactivation_date'] = self.__nullify_field(row['npi_reactivation_date'])
+
             if row.get('npi_deactivation_date') and \
                not row.get('npi_reactivation_date') and \
                not initialize:

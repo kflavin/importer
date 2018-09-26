@@ -138,7 +138,10 @@ def npi_unzip(infile, unzip_path):
 @click.pass_context
 def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_table_name, period, workspace, limit, large_file, initialize):
     """
-    Local version.  Perform all steps, but does not update import table metadata, or pull from S3.  Primarily used to initialize table.
+    Local version of the "full" load.
+    
+    It will perform all the steps of the full load, except it does not fetch the data from s3 or update the log table metadata.  Primarily
+    used to initialize the table, or for testing.
     """
     npi_loader = NpiLoader()
     print(f"Unzipping {infile}")
@@ -163,7 +166,8 @@ def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_
 @click.option('--initialize', default=False, is_flag=True, help="Only use for first table load to get all deactivated NPI's!  This will OVERWRITE existing data!")
 def full(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file, environment, initialize):
     """
-    Perform all load steps.
+    Perform a full load.  This will fetch, unzip, preprocess, and load the file from S3 into the database.  On completion, mark
+    the file as imported in the log table.
     """
     logger.info(f"Start: {period} file")
 
@@ -221,7 +225,7 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
                 npi_loader.enable_checks()
             else:
                 print(f"Loading {period} file into database.  large_file: {large_file}")
-                npi_loader.load_file(table_name, cleaned_file, batch_size, 10000, 3, initialize)
+                npi_loader.load_file(table_name, cleaned_file, batch_size, 10000, 1, initialize)
         except Exception as e:
             logger.info(f"{e}")
             logger.info(f"Error loading data to DB, skipping file...")
