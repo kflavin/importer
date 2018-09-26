@@ -17,7 +17,10 @@ import pandas as pd
 
 def convert_date(x):
     if not str(x) == "nan":
-        return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
+        try:
+            return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
+        except Exception e:
+            return None
     else:
         return None
 
@@ -76,12 +79,11 @@ class NpiLoader(object):
 
         return columns
 
-    def __nullify_field(self, value):
+    def __nullify(self, value):
         """
-        Used to convert empty strings, "", into None values so they appear as NULLs in the database
-        for DATE columns.
+        Used to convert empty strings, "", into None values so they appear as NULLs in the database.
         """
-        if not value:
+        if not str(value).strip():
             return None
         else:
             return value
@@ -293,10 +295,10 @@ class NpiLoader(object):
             # These four date fields require some additional scrubbing once they're loaded back from
             # file, so they don't try to submit empty dates as empty strings, "".  We need them to go
             # into the database as NULL's instead.
-            row['provider_enumeration_date'] = self.__nullify_field(row['provider_enumeration_date'])
-            row['last_update_date'] = self.__nullify_field(row['last_update_date'])
-            row['npi_deactivation_date'] = self.__nullify_field(row['npi_deactivation_date'])
-            row['npi_reactivation_date'] = self.__nullify_field(row['npi_reactivation_date'])
+            row['provider_enumeration_date'] = self.__nullify(row['provider_enumeration_date'])
+            row['last_update_date'] = self.__nullify(row['last_update_date'])
+            row['npi_deactivation_date'] = self.__nullify(row['npi_deactivation_date'])
+            row['npi_reactivation_date'] = self.__nullify(row['npi_reactivation_date'])
 
             if row.get('npi_deactivation_date') and \
                not row.get('npi_reactivation_date') and \
