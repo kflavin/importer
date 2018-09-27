@@ -299,7 +299,6 @@ class NpiLoader(object):
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
-        print(insert_q)
         update_q = self.build_update_query(table_name)
         columnNames = reader.fieldnames
 
