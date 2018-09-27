@@ -19,7 +19,7 @@ def convert_date(x):
     if not str(x) == "nan":
         try:
             return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
-        except Exception e:
+        except Exception as e:
             return None
     else:
         return None
