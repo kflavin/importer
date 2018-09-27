@@ -1,9 +1,4 @@
-import csv
-import sys
-import time
-import itertools
-import textwrap
-import datetime
+import csv, sys, subprocess, time, itertools, textwrap, datetime
 from collections import OrderedDict
 from zipfile import ZipFile
 import mysql.connector as connector
@@ -162,8 +157,18 @@ class NpiLoader(object):
         """
         Given a zip file (infile) and path to unzip to (path), unzip the file and return the full path.
         """
+        path = path.strip("/")
+
         zip = ZipFile(infile)
         names = zip.namelist()
+
+        # # When passed PKWare zips with Type 9 compression, we can read the zip header, but
+        # #  are unable to do the extraction.  If for some reason we have a problem reading
+        # #  headers, we can use the system unzip to do so, as commented below:
+        # status = not subprocess.call(["which", "unzip"])
+        # if status:
+        #     out = subprocess.run(["unzip", "-Z1", infile], stdout=subprocess.PIPE)
+        #     names = [ i.decode() for i in out.stdout.split()]
 
         extractions = []
         for name in names:
@@ -177,7 +182,21 @@ class NpiLoader(object):
             sys.exit(1)
 
         csv_file = extractions[0]
-        zip.extract(csv_file, path)
+
+        try:
+            zip.extract(csv_file, path)
+        except NotImplementedError as e:
+            print("Python does not support Type 9 compression, trying system unzip...")
+            
+            if not subprocess.run(["which", "unzip"]).returncode:
+                out = subprocess.run(["unzip", infile, csv_file, "-d", path], stdout=subprocess.PIPE)
+                if out.returncode:
+                    print("Can't unzip this file.  Local unzip failed.")
+                    raise
+            else:
+                print("Can't unzip this file.  Type 9 compression not supported, and no local unzip.")
+                raise
+        
         return f"{path}/{csv_file}"
 
     def preprocess(self, infile, outfile=None):
