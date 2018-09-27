@@ -56,10 +56,14 @@ INSERT_QUERY = """
     {on_dupe_values}, updated_at=now()
 """
 
-# Used for deactivated NPI's.  We want to keep old data, so just mark them as deactivated, don't zero out all data.
+# Used for deactivated NPI's.  We want to keep old data, so just mark them as deactivated, don't 
+# zero out all data.  Update empty date values so they are inserted as NULL instead of '0000-00-00'
 UPDATE_QUERY = """
-    UPDATE {table_name}
-    SET `npi_deactivation_date`={npi_deactivation_date}
+    UPDATE {table_name} SET
+    `npi_deactivation_date`={npi_deactivation_date},
+    `npi_reactivation_date`={npi_reactivation_date},
+    `last_update_date`={last_update_date},
+    `provider_enumeration_date`={provider_enumeration_date}
     WHERE `npi`={npi}
 """
 
