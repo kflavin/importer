@@ -263,7 +263,12 @@ class NpiLoader(object):
         """
         Construct the NPI UPDATE query.  Used to preserve data when an NPI has been deactivated.
         """
-        query = UPDATE_QUERY.format(table_name=table_name, npi_deactivation_date="%(npi_deactivation_date)s", npi="%(npi)s")
+        query = UPDATE_QUERY.format(table_name=table_name, 
+            npi_deactivation_date="%(npi_deactivation_date)s", 
+            npi_reactivation_date="%(npi_reactivation_date)s", 
+            last_update_date="%(last_update_date)s", 
+            provider_enumeration_date="%(provider_enumeration_date)s", 
+            npi="%(npi)s")
         return query
 
     def load_large_file(self, table_name, infile):
@@ -294,6 +299,7 @@ class NpiLoader(object):
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
+        print(insert_q)
         update_q = self.build_update_query(table_name)
         columnNames = reader.fieldnames
 
@@ -334,7 +340,14 @@ class NpiLoader(object):
                     update_row_count += 1
 
                 # data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
-                data = OrderedDict((('npi_deactivation_date', row.get('npi_deactivation_date')), ('npi', row.get('npi'))))
+                # data = OrderedDict((('npi_deactivation_date', row.get('npi_deactivation_date')), ('npi', row.get('npi'))))
+                data = OrderedDict((
+                    ('npi_deactivation_date', self.__nullify(row.get('npi_deactivation_date', ""))),
+                    ('npi_reactivation_date', self.__nullify(row.get('npi_reactivation_date', ""))), 
+                    ('last_update_date', self.__nullify(row.get('last_update_date', ""))),
+                    ('provider_enumeration_date', self.__nullify(row.get('provider_enumeration_date', ""))),
+                    ('npi', row.get('npi'))
+                ))
                 update_batch.append(data)
 
             else:
