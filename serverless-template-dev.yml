@@ -1,0 +1,108 @@
+service: importer
+
+frameworkVersion: ">=1.9.0 <2.0.0"
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-scripts
+
+custom:
+  environment: ${opt:stage, self:provider.stage}
+  sshKey: ${env:aws_key}
+  awsRegion: ${env:aws_region}
+  awsImageId: ${env:aws_image_id}
+  awsDbSubnetGroup: ${env:aws_db_subnet_group}
+  awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
+  awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
+  awsSecurityGroups: ${env:aws_security_groups}
+  awsRdsSecurityGroup: ${env:aws_rds_security_group}
+  awsInstanceProfile: {Ref: Ec2InstanceProfile}
+  awsSubnets: ${env:aws_subnets}
+  awsRdsParameterGroup: ${env:aws_rds_parameter_group}
+  npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
+  weeklyImportTimeout: ${env:weekly_import_timeout}
+  monthlyImportTimeout: ${env:monthly_import_timeout}
+  vpcId: ${env:aws_vpc_id}
+  dbHost: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+  dbPort: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
+  dbUser: ${env:db_user}
+  dbPassword: ${env:db_password}
+  dbSchema: ${env:db_schema}
+  npiTableName: ${env:npi_table_name}
+  npiLogTableName: ${env:npi_log_table_name}
+  pythonRequirements:
+    dockerizePip: false
+    slim: true
+  enabled:
+    dev: false
+    prod: true
+  scripts:
+    hooks:
+      'deploy:finalize': bash bin/stage_all.sh ${self:custom.environment}
+
+provider:
+  name: aws
+  region: ${self:custom.awsRegion}
+  runtime: python3.6
+  environment:
+    environment: ${self:custom.environment}
+    aws_key: ${env:aws_key}
+    aws_region: ${env:aws_region}
+    aws_image_id: ${env:aws_image_id}
+    aws_security_groups: ${self:custom.awsSecurityGroups}
+    aws_vpc_id: ${self:custom.vpcId}
+    aws_subnets: ${self:custom.awsSubnets}
+    aws_instance_profile: ${self:custom.awsInstanceProfile}
+    aws_s3_bucket: {Ref: ScriptBucket}
+    npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+    monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+    weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+    npi_table_name: ${self:custom.npiTableName}
+    npi_log_table_name: ${self:custom.npiLogTableName}
+  iamRoleStatements: ${file(resources/iam.yml)}
+
+functions:
+  # Create the initial database (dev)
+  create_db:
+    handler: lambdas/create_db.handler
+  import_npi_weekly:
+    handler: lambdas/npi/importer_ec2_weekly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsWeeklyInstanceType}
+  import_npi_monthly:
+    handler: lambdas/npi/importer_ec2_monthly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+  npi_downloader:
+    handler: lambdas/npi/downloader.handler
+    timeout: 120
+
+resources:
+  Outputs:
+    ScriptBucket:
+      Value: {Ref: ScriptBucket}
+    RdsEndpoint:
+      Value: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
+    Ec2Role:
+      Value: {Ref: Ec2Role}
+    Ec2InstanceProfile:
+      Value: {Ref: Ec2InstanceProfile}
+  Resources:
+    ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
+    Ec2Role: ${file(resources/ec2-role.yml)}
+    Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
+    RDS: ${file(resources/rds.yml)}
+    # NatGateway: ${file(resources/nat_gateway.yml)}
+    # ElasticIP: ${file(resources/elastic_ip.yml)}
+
+package:
+  # Stuff we don't want to upload with the lambdas.
+  exclude:
+    - env.python/**
+    - env.python.old/**
+    - importer.*/**
+    - data/**
+    - dist/**
+    - "**/**/*.pyc"
+    - ".env.*"
+    - output/**
