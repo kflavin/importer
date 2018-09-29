@@ -5,33 +5,33 @@
 #### Pre-reqs
 
 * python3
-* You should have your AWS creds configured.  To use profiles, specify `AWS_PROFILE=profile_name`
+* You should have your AWS creds file configured.  If you are using profiles: `export AWS_PROFILE=profile_name`
 
 #### Building and Installation
 
 Each stack corresponds to an environment.  You can create as many environments as you'd like, but they must have unique names.  To create a new stack:
 
 * Create an environment file: `cp env.template .env.<environment name>`
-* Create a serverless YAML file: `cp serverless-<environment>.yml serverless-<my new environment>.yml`
+* Create a serverless YAML file: `cp serverless-template.yml serverless-<my new environment>.yml`
 
-The `serverless-dev.yml` file spins up an RDS instance for testing, while the other `serverless-*.yml` files do not.
+The `serverless-template-dev.yml` file spins up an RDS instance for testing, while the other `serverless-template.yml` files do not.
 
 Example:
 
 ```bash
-cp env.template .env.stage
-cp serverless-prod.yml serverless.stage
+cp env.template .env.prod
+cp serverless-template.yml serverless.prod
 ```
 
 To deploy:
 
 ```bash
 # First run only
-./setup.sh stage
-source .env.stage
+./setup.sh prod
+source .env.prod
 
 # Subsequent updates, use:
-./bin/deploy.sh stage
+./bin/deploy.sh prod
 ```
 
 To build and deploy the runner separately:
@@ -48,17 +48,17 @@ The helper scripts in `./bin/` take the environment name as the first parameter.
 The Lambda functions are cron'd, but you can run them manually as follows.
 
 ```bash
-# Create initial DB and tables.  Dev only.
-sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
-
 # Download any available zip files to S3.  Default directly is npi-in/[weekly|monthly]
-./bin/download.sh stage
+./bin/download.sh prod
 
 # Load weekly files
-./bin/weekly.sh stage
+./bin/weekly.sh prod
 
 # Load the most recent monthly file
-./bin/monthly.sh stage
+./bin/monthly.sh prod
+
+# Create initial DB and tables.  Dev only.
+sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
 ```
 
 #### Environment values
@@ -80,11 +80,10 @@ lambdas
 └── ...Lambda Functions...
 resources
 └── ...AWS resources...
-├── runner-import.py     # Runner for import library
-├── serverless.yml       # Serverless framework
-├── serverless-dev.yml   # Create an RDS instance
-├── serverless-prod.yml  # Without RDS instance
-└── setup.py             # Build the python importer
+├── runner-import.py              # Runner for import library
+├── serverless-template-dev.yml   # Create an RDS instance
+├── serverless-template.yml       # Without RDS instance
+└── setup.py                      # Build the python importer
 ```
 
 Generally speaking, changes to code in `lambdas/` requires a deploy `./bin/deploy.sh <env>`.  Changes to 
