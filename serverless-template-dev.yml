@@ -15,10 +15,13 @@ custom:
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
+  awsRdsEngine: ${env:aws_rds_engine}
+  awsRdsEngineVersion: ${env:aws_rds_engine_version}
   awsRdsSecurityGroup: ${env:aws_rds_security_group}
   awsInstanceProfile: {Ref: Ec2InstanceProfile}
   awsSubnets: ${env:aws_subnets}
   awsRdsParameterGroup: ${env:aws_rds_parameter_group}
+  awsRdsSubnetGroup: ${env:aws_rds_subnet_group}
   npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
   weeklyImportTimeout: ${env:weekly_import_timeout}
   monthlyImportTimeout: ${env:monthly_import_timeout}
@@ -28,6 +31,8 @@ custom:
   dbUser: ${env:db_user}
   dbPassword: ${env:db_password}
   dbSchema: ${env:db_schema}
+  dbInstance: ${env:db_instance}
+  dbStorage: ${env:db_storage}
   npiTableName: ${env:npi_table_name}
   npiLogTableName: ${env:npi_log_table_name}
   pythonRequirements:
