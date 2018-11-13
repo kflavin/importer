@@ -24,7 +24,6 @@ setup(name='importer',
         "pandas==0.23.3",
         "python-dateutil==2.7.3",
         "s3transfer==0.1.13",
-        "six==1.11.0",
-        "watchtower==0.5.3"
+        "six==1.11.0"
       ],
       zip_safe=False)
