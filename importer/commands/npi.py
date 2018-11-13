@@ -11,17 +11,6 @@ def npi():
     pass
 
 @click.command()
-@click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table to create")
-def create(table_name):
-    """
-    Create the initial NPI table.
-    """
-    print(f"Create NPI Table: {table_name}")
-    npi_loader = NpiLoader()
-    npi_loader.connect(user=os.environ['db_user'], host=os.environ['db_host'], password=os.environ['db_password'], database=os.environ['db_schema'])
-    npi_loader.create_table(table_name)
-
-@click.command()
 @click.option('--url-prefix', '-u', required=True, type=click.STRING, help="URL directory that contains weekly or monthly files to fetch")
 @click.option('--table-name', '-t', default="npi_import_log", type=click.STRING, help="Import log table")
 @click.option('--period', '-p', required=True, type=click.STRING, help="[weekly|monthly]")
@@ -216,7 +205,6 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
     logger.info(f"Data loaded to table: {table_name}")
 
 npi.add_command(load)
-npi.add_command(create)
 npi.add_command(fetch)
 npi.add_command(npi_unzip, name="unzip")
 npi.add_command(npi_preprocess, name="preprocess")
