@@ -1,4 +1,4 @@
-import csv, sys, subprocess, time, itertools, textwrap, datetime
+import logging, csv, sys, subprocess, time, itertools, textwrap, datetime
 from collections import OrderedDict
 from zipfile import ZipFile
 import mysql.connector as connector
@@ -11,6 +11,7 @@ from importer.loaders.base import BaseLoader, convert_date
 
 import pandas as pd
 
+logger = logging.getLogger(__name__)
 
 class HdmLoader(BaseLoader):
     """
@@ -94,7 +95,7 @@ class HdmLoader(BaseLoader):
 
         # Drop/clean columns.
         # df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
-        df.columns = [ self.__clean_field(col) for col in df.columns]
+        df.columns = [ super()._clean_field(col) for col in df.columns]
         df['eff_date'] = df['eff_date'].apply(convert_date)
         df['end_eff_date'] = df['end_eff_date'].apply(convert_date)
         
@@ -102,7 +103,7 @@ class HdmLoader(BaseLoader):
 
         return outfile
 
-    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3, initialize=False):
+    def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
         Load NPI data using INSERT and UPDATE statements.  If a record in the data has been deactivated, then do an
         UPDATE instead of an INSERT to preserve the NPI data associated with the record.  This assumes the NPI record
@@ -112,10 +113,10 @@ class HdmLoader(BaseLoader):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        print("HDM loader importing from {}, batch size = {} throttle size={} throttle time={}"\
+        logger.info("HDM loader importing from {}, batch size = {} throttle size={} throttle time={}"\
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
-        insert_q = self.build_insert_query(INSERT_QUERY, self.__clean_fields(reader.fieldnames), table_name)
+        insert_q = super().build_insert_query(INSERT_QUERY, super()._clean_fields(reader.fieldnames), table_name)
         # columnNames = reader.fieldnames
 
         row_count = 0
@@ -129,14 +130,14 @@ class HdmLoader(BaseLoader):
         for row in reader:
             if row_count >= batch_size - 1:
                 print("Submitting INSERT batch {}".format(batch_count))
-                total_rows_modified += self.__submit_batch(insert_q, batch)
+                total_rows_modified += super()._submit_batch(insert_q, batch)
                 batch = []
                 row_count = 0
                 batch_count += 1
             else:
                 row_count += 1
 
-            data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
+            data = OrderedDict((super(HdmLoader, self)._clean_field(key), value) for key, value in row.items())
             batch.append(data)
 
             # Put in a sleep timer to throttle how hard we hit the database
@@ -151,7 +152,7 @@ class HdmLoader(BaseLoader):
         # Submit remaining INSERT queries
         if batch:
             print("Submitting INSERT batch {}".format(batch_count))
-            total_rows_modified += self.__submit_batch(insert_q, batch)
+            total_rows_modified += super()._submit_batch(insert_q, batch)
 
         return total_rows_modified
 
@@ -168,10 +169,10 @@ class HdmLoader(BaseLoader):
         self.cursor.close()
         self.cnx.close()
 
-    def mark_imported(self, id, table_name):
-        """
-        Mark a file as imported in the db
-        """
-        query = MARK_AS_IMPORTED.format(table_name=table_name, id=id)
-        self.cursor.execute(query)
-        self.cnx.commit()
+    # def mark_imported(self, id, table_name):
+    #     """
+    #     Mark a file as imported in the db
+    #     """
+    #     query = MARK_AS_IMPORTED.format(table_name=table_name, id=id)
+    #     self.cursor.execute(query)
+    #     self.cnx.commit()

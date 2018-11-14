@@ -7,8 +7,15 @@ from importer.loaders.hdm import HdmLoader
 logger = logging.getLogger(__name__)
 
 @click.group()
-def hdm():
-    pass
+@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
+@click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after this many inserts.")
+@click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
+@click.pass_context
+def hdm(ctx, batch_size, throttle_size, throttle_time):
+    ctx.ensure_object(dict)
+    ctx.obj['batch_size'] = batch_size
+    ctx.obj['throttle_size'] = throttle_size
+    ctx.obj['throttle_time'] = throttle_time
 
 # @click.command()
 # @click.option('--table-name', '-t', default="npi", type=click.STRING, help="Table to create")
@@ -42,40 +49,34 @@ def hdm():
 #                         buffered=True)
 #     npi_loader.fetch(url_prefix, table_name, period, environment, output_dir, limit)
 
-# @click.command()
-# @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
-# @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
-# # @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
-# @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
-# @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
-# @click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
-# @click.option('--initialize', default=False, is_flag=True, help="Only use for first table load to get all deactivated NPI's!  This will OVERWRITE existing data!")
-# def load(infile, batch_size, table_name, period, large_file, initialize):
-#     """
-#     NPI importer
-#     """
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
+# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
+@click.pass_context
+def load(ctx, infile, table_name):
+    """
+    NPI importer
+    """
+    batch_size = ctx.obj['batch_size']
+    throttle_size = ctx.obj['throttle_size']
+    throttle_time = ctx.obj['throttle_time']
 
-#     args = {
-#         'user': os.environ.get('db_user'),
-#         'password': os.environ.get('db_password'),
-#         'host': os.environ.get('db_host'),
-#         'database': os.environ.get('db_schema')
-#     }
+    args = {
+        'user': os.environ.get('db_user'),
+        'password': os.environ.get('db_password'),
+        'host': os.environ.get('db_host'),
+        'database': os.environ.get('db_schema')
+    }
 
-#     npi_loader = NpiLoader()
+    loader = HdmLoader()
 
-#     if large_file:
-#         print(f"Loading {period} (large) file into database.  large_file: {large_file}")
-#         npi_loader.connect(**args, clientFlags=True)
-#         npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
-#         npi_loader.load_large_file(table_name, infile)
-#         npi_loader.enable_checks()
-#     else:
-#         print(f"Loading {period} (small) file into database.  large_file: {large_file}")
-#         npi_loader.connect(**args)
-#         npi_loader.load_file(table_name, infile, batch_size, 10000, 3, initialize)
+    # print(f"Loading {period} (small) file into database.  large_file: {large_file}")
+    logger.info(f"Loading {infile} into {table_name}")
+    loader.connect(**args)
+    loader.load_file(table_name, infile, batch_size, throttle_size, throttle_time)
 
-#     print(f"Data loaded to table: {table_name}")
+    print(f"Data loaded to table: {table_name}")
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with HDM Master data")
@@ -215,7 +216,7 @@ def preprocess(infile, outfile):
 
 #     logger.info(f"Data loaded to table: {table_name}")
 
-# npi.add_command(load)
+hdm.add_command(load)
 # npi.add_command(create)
 # npi.add_command(fetch)
 # npi.add_command(npi_unzip, name="unzip")

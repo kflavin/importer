@@ -38,6 +38,7 @@ CREATE_NDCMASTER_TABLE = """
     `end_eff_date` datetime DEFAULT NULL,
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY (`productndc`, `ind_name`)
     )
 """

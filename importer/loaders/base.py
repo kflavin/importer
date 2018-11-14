@@ -37,15 +37,15 @@ class BaseLoader(object):
         self.cnx = connector.connect(**config)
         self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
-    def __clean_fields(self, fields):
+    def _clean_fields(self, fields):
         columns = []
 
         for field in fields:
-            columns.append(self.__clean_field(field))
+            columns.append(self._clean_field(field))
 
         return columns
     
-    def __clean_field(self, field):
+    def _clean_field(self, field):
         """
         Sanitize data
         """
@@ -57,7 +57,7 @@ class BaseLoader(object):
         field_clean = field_clean.replace(" ", "_")
         return field_clean.lower()
 
-    def __nullify(self, value):
+    def _nullify(self, value):
         """
         Used to convert empty strings, "", into None values so they appear as NULLs in the database.
         """
@@ -66,7 +66,7 @@ class BaseLoader(object):
         else:
             return value
 
-    def __submit_batch(self, query, data):
+    def _submit_batch(self, query, data):
         if self.debug:
             print(query)
 
