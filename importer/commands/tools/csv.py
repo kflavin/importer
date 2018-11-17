@@ -3,90 +3,105 @@ import os
 import logging
 import sys
 import re
+from collections import OrderedDict
 from numpy import dtype
 import pandas as pd
 from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
                             is_numeric_dtype, is_float_dtype)
 
-# from importer.loaders.hdm import HdmLoader
+# print(logging.Logger.manager.loggerDict)
+
+def get_int_type(val):
+    if val < 2147483647:
+        return "INT"
+    else:
+        return "BIGINT"
+
+def get_float_type(val):
+    left = str(val).find(".")
+    right = str(123.332)[::-1].find(".")
+    digit_count = left + right
+    return f"DECIMAL({digit_count}, {right})"
+
+def create_table_sql(ordered_columns, table_name):
+    """
+    Output SQL for creating the table, include an ID primary key.
+    """
+    print(f"CREATE TABLE IF NOT EXISTS `{table_name}` (")
+    print("  `id` INT NOT NULL AUTO_INCREMENT,")
+    for col,d in ordered_columns.items():
+        print(f"  `{col}` {d['type']} DEFAULT NULL,")
+    print("   PRIMARY KEY (`id`)")
+    print(");")
+    print("-- Be sure to verify the column values!")
 
 logger = logging.getLogger(__name__)
 
 @click.group()
-# @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
-# @click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after this many inserts.")
-# @click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
 @click.pass_context
-#def csv(ctx, batch_size, throttle_size, throttle_time):
 def csv(ctx):
     ctx.ensure_object(dict)
-    # ctx.obj['batch_size'] = batch_size
-    # ctx.obj['throttle_size'] = throttle_size
-    # ctx.obj['throttle_time'] = throttle_time
-
 
 @click.command()
-# @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
-# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
-@click.option('--table-name', '-t', default="[TABLE_NAME]", required=True, type=click.STRING, help="Table name.")
-@click.option('--col-spacing', '-s', default=20, required=True, type=click.INT, help="Spacing between columns.")
+@click.option('--table-name', '-t', default="[TABLE_NAME]", type=click.STRING, help="Table name.")
+@click.option('--col-spacing', '-s', default=20, type=click.INT, help="Spacing between columns.")
+@click.option('--varchar-factor', default=1, type=click.INT, help="Factor for creating varchar field.  Defaults to 2x max value length.")
+@click.option('--sql/--no-sql', default=True, help="Display create table SQL.")
 @click.pass_context
-def create_table(ctx, infile, table_name, col_spacing):
+def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql):
     """
-    Display SQL table create command
+    Display SQL table create command from a CSV file
     """
-    # batch_size = ctx.obj['batch_size']
-    # throttle_size = ctx.obj['throttle_size']
-    # throttle_time = ctx.obj['throttle_time']
 
+    ordered_columns = OrderedDict()
     df = pd.read_csv(infile)
-
+    
     count = 0
     for column in df.columns:
         #print(df[column].dtype)
         count += 1
         sys.stdout.write(f"{str(count):3} ")
 
+        # The entire column is empty.  No rows have values.
         if df[column].isna().all():
+            ordered_columns[column] = {'type': None, 'length': None}
             print("{:{col_spacing}}: {}".format("No values", column, col_spacing=col_spacing))
             continue
 
-        #print(df[column].dtype)
+        # Handling of numeric fields
         if is_numeric_dtype(df[column]):
+            # Find the max value
+            maxVal = None
+            validVals = [i for i in df[column].dropna()]
+            if validVals:
+                maxVal = max(validVals)
+            
             if is_float_dtype(df[column]):
                 # Pandas stores numerical columns with null values as floats.  We
                 # need to do some extra work to determine if the column is an int
-                allIntegers = any(i.is_integer() for i in df[column].dropna())
+                allIntegers = all(i.is_integer() for i in df[column].dropna())
 
                 if allIntegers:
-                    maxVal = None
-                    allVals = [i for i in df[column].dropna()]
-                    if allVals:
-                        maxVal = max(allVals)
-
-                    if not maxVal:
-                        # We shouldn't make it here
-                        print("{0:{col_spacing}}: {1}".format('No values?', column,
-                                                    col_spacing=col_spacing))
-                    else:
-                        print(f"int, {str(maxVal):{col_spacing-5}}: {column}")
+                    # this is an Integer column
+                    ordered_columns[column] = {'type': get_int_type(maxVal), 'length': maxVal}
+                    print(f"int, {str(maxVal):{col_spacing-5}}: {column} : ({df[column].dtype})")
                     #df[df[column].fillna(0) != 0.0][column].astype(int)
                 else:
-                    print(f"{str(df[column].dtype):{col_spacing}}: {column}")
+                    # this is a Float column
+                    ordered_columns[column] = {'type': get_float_type(maxVal), 'length': maxVal}
+                    print(f"{df[column].dtype}, {str(maxVal):{col_spacing-5}}: {column}")
             else:
-                #print("{:{col_spacing}}: {column}")
+                # These types were detected as integers during loading of the file.
                 if is_int64_dtype(df[column]) or is_integer(df[column]):
-                    maxVal = None
-                    allVals = [i for i in df[column].dropna()]
-                    if allVals:
-                        maxVal = max(allVals)
+                    ordered_columns[column] = {'type': get_int_type(maxVal), 'length': maxVal}
                     print(f"int, {str(maxVal):{col_spacing-5}}: {column}")
                 else:
                     unknown = "???"
                     print(f"{unknown:{col_spacing}}: {column}")
+        # Handling of Strings
         else:
-            #print('string')
+            # Look for values that look like dates in 2018/01/01 or 01/01/2018 form
             patterns = [
                 re.compile('^\d{1,2}[-/]\d{1,2}[-/]\d{1,4}$'),
                 re.compile('^\d{1,4}[-/]\d{1,2}[-/]\d{1,2}$')
@@ -97,13 +112,21 @@ def create_table(ctx, infile, table_name, col_spacing):
                 if any(i == True for i in df[column].str.contains(pattern)):
                     foundDate = True
 
+            maxVal = str(int(df[column].str.len().max()))
+
             if foundDate:
-                print(f"Date, {str(int(df[column].str.len().max())):{col_spacing-6}}: {column}")
+                ordered_columns[column] = {'type': "DATE", 'length': maxVal}
+                print(f"Date, {maxVal:{col_spacing-6}}: {column}")
             else:
-                print(f"String, {str(int(df[column].str.len().max())):{col_spacing-8}}: {column}")
+                ordered_columns[column] = {'type': f"VARCHAR({int(maxVal)*varchar_factor})", 'length': maxVal}
+                print(f"String, {maxVal:{col_spacing-8}}: {column}")
 
-
+    print("-------------------------------------")
     print(f"Total columns are: {len(df.columns)}")
+    print("-------------------------------------")
 
+    if sql:
+        create_table_sql(ordered_columns, table_name)
+        
 
 csv.add_command(create_table)

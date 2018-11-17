@@ -2,6 +2,8 @@
 import click
 import os
 import logging
+# import warnings
+# warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*pandas.*|.*numpy.*")
 
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
