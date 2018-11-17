@@ -6,6 +6,7 @@ import logging
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
 from importer.commands.hdm import hdm
+from importer.commands.product import product
 
 @click.group()
 @click.option('--debug/--no-debug', default=False)
@@ -28,6 +29,7 @@ def start(debug, logs, log_group):
         
 start.add_command(npi)
 start.add_command(hdm)
+start.add_command(product)
 
 if __name__ == '__main__':
     start()

@@ -115,3 +115,7 @@ class BaseLoader(object):
 
         query = query.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
+
+    def close(self):
+        self.cursor.close()
+        self.cnx.close()
