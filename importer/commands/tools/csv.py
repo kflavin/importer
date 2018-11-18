@@ -42,6 +42,18 @@ logger = logging.getLogger(__name__)
 def csv(ctx):
     ctx.ensure_object(dict)
 
+
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
+@click.pass_context
+def x2c(ctx, infile):
+    """
+    Convert Excel file to CSV.  Does NOT handle multiple worksheets!
+    """
+    df = pd.ExcelFile(infile).parse()
+    outfile = ".".join(infile.split(".")[:-1]) + ".csv"
+    df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
+
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
 @click.option('--table-name', '-t', default="[TABLE_NAME]", type=click.STRING, help="Table name.")
@@ -51,7 +63,7 @@ def csv(ctx):
 @click.pass_context
 def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql):
     """
-    Display SQL table create command from a CSV file
+    Display SQL table create command from a CSV file.
     """
 
     ordered_columns = OrderedDict()
@@ -129,4 +141,5 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql):
         create_table_sql(ordered_columns, table_name)
         
 
+csv.add_command(x2c)
 csv.add_command(create_table)
