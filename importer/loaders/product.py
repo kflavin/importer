@@ -1,4 +1,4 @@
-import logging, csv, sys, subprocess, time, itertools, textwrap, datetime
+import logging, csv, sys, subprocess, time, itertools, textwrap, datetime, re
 from collections import OrderedDict
 from zipfile import ZipFile
 import mysql.connector as connector
@@ -7,7 +7,7 @@ from mysql.connector.constants import ClientFlag
 from importer.sql.product import (INSERT_QUERY)
 # from importer.sql.checks import DISABLE, ENABLE
 # from importer.downloaders.downloader import downloader
-from importer.loaders.base import BaseLoader, convert_date
+from importer.loaders.base import BaseLoader, convert_date_time
 
 import pandas as pd
 
@@ -24,6 +24,12 @@ class ProductLoader(BaseLoader):
     def __init__(self):
         super(ProductLoader, self).__init__()
 
+    def merge(self, product_file, ndc_file):
+        product = pd.read_csv(product_file)
+        ndc = pd.read_csv(ndc_file)
+
+
+
     def preprocess(self, infile, outfile=None, encoding="ISO-8859-1"):
         """
         This takes an improperly formatted txt and turns it into a proper CSV :/
@@ -32,21 +38,70 @@ class ProductLoader(BaseLoader):
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
 
-        count = 0
-        error_count = 0
+        tmpfile = infile[:infile.rindex(".")] + ".tmp.csv"
+
         with open(infile, "r", encoding="latin1") as f:
+            csvfile = open(tmpfile, 'w', newline='\n')
+            csvwriter = csv.writer(csvfile)
+
             for line in f:
-                count += 1
+                split = line.split(",")
+                master_id = split.pop(0).strip()
+                master_type = split.pop(0).strip()
+
+                end_eff_date = split.pop().strip()
+                eff_date = split.pop().strip()
+
+                # if len(split) > 2:
+                #     count += 1
+
+                #     middle_fields = ",".join(split)
+
+                #     # print(middle_fields)
+                #     left = middle_fields.split(",")[0]
+                #     right = middle_fields.split(",")[1:]
+                   
+                left = split[0]
+                right = ",".join(split[1:])
+
+                csvwriter.writerow([master_id, master_type, left, right, eff_date, end_eff_date])
+                    # print(left)
+
+                    # s = longestRepetitiveSubstring(middle_fields)
+                    # if s:
+                    #     if middle_fields[len(s)].startswith(s):
+                    #         print(middle_fields)
+                    #         print(s)
+
+                        # be, le, ri = middle_fields.partition(s)
+                        # csvwriter.writerow([master_id, master_type, s, ri, eff_date, end_eff_date])
+                    # print("line: " + line)
+
+                    # longest_lens.append(s)
+                    
+                    # csvwriter.writerow([master_id, master_type, *middle_fields, eff_date, end_eff_date])
+
+
+                    # matches = re.findall(r'(.+)(?=.*\1)', middle_fields)
+                    # largest = '' if not matches else max(matches,key=lambda m:len(m))
+                    # delim = largest.count(",")
+                    # one = ",".join(middle_fields.split(",")[:delim+1]).strip()
+                    # two = ",".join(middle_fields.split(",")[delim+1:]).strip()
+                    # print(one == two)
+                    # print(f"{len(one)} {len(two)} {one} {two}")
+                    # print(f"{len(left)} {len(right)} {left} {right}")
+
+                # print(f"{master_id} {master_type} {eff_date} {end_eff_date}")
                 
-                try:
-                    # newline = line.encode("ISO-8859-1").decode("utf-8")
-                    newline = line.encode("latin1").decode("utf-8")
-                except UnicodeDecodeError as e:
-                    print(count)
-                    print(line)
-                    error_count += 1
-                    print(error_count)
-                    # print(newline)
+                # try:
+                #     # newline = line.encode("ISO-8859-1").decode("utf-8")
+                #     newline = line.encode("latin1").decode("utf-8")
+                # except UnicodeDecodeError as e:
+                #     print(count)
+                #     print(line)
+                #     error_count += 1
+                #     print(error_count)
+                #     # print(newline)
                 
 
                 # print("line")
@@ -54,19 +109,16 @@ class ProductLoader(BaseLoader):
                 # if count == 48461:
                 #     break
                 # print("next")
+            # print("Wrote: " + outfile)
+            # print(csv.list_dialects())
+            # print(longest_lens)
+            # print(min(longest_lens))
+        df = pd.read_csv(tmpfile)
+        df.columns = [ super(ProductLoader, self)._clean_field(col) for col in df.columns]
+        df['eff_date'] = df['eff_date'].apply(convert_date_time)
+        df['end_eff_date'] = df['end_eff_date'].apply(convert_date_time)
+        df.to_csv(outfile, sep=',', quoting=1, index=False)
 
-        # df = pd.ExcelFile(infile).parse()
-
-
-        # # Drop/clean columns.
-        # # df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
-        # df.columns = [ super()._clean_field(col) for col in df.columns]
-        # df['eff_date'] = df['eff_date'].apply(convert_date)
-        # df['end_eff_date'] = df['end_eff_date'].apply(convert_date)
-        
-        # df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
-
-        # return outfile
 
     def load_file(self, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
@@ -120,4 +172,29 @@ class ProductLoader(BaseLoader):
             total_rows_modified += super()._submit_batch(insert_q, batch)
 
         return total_rows_modified
+
+
+from collections import defaultdict
+def getsubs(loc, s):
+    substr = s[loc:]
+    i = -1
+    while(substr):
+        yield substr
+        substr = s[loc:i]
+        i -= 1
+def longestRepetitiveSubstring(r):
+    occ = defaultdict(int)
+    # tally all occurrences of all substrings
+    for i in range(len(r)):
+        for sub in getsubs(i,r):
+            if r.startswith(sub):
+                occ[sub] += 1
+    # filter out all sub strings with fewer than 2 occurrences
+    filtered = [k for k,v in occ.items() if v >= 2]
+    if filtered:
+        maxkey =  max(filtered, key=len) # Find longest string
+        return maxkey
+    else:
+        return ""
+        # raise ValueError("no repetitions of any substring of '%s' with 2 or more occurrences" % (r))
 

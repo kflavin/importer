@@ -12,6 +12,15 @@ def convert_date(x):
     else:
         return None
 
+def convert_date_time(x):
+    if not str(x) == "nan":
+        try:
+            return datetime.datetime.strptime(str(x), '%m/%d/%Y %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
+        except Exception as e:
+            return None
+    else:
+        return None
+
 class BaseLoader(object):
 
     def __init__(self):
