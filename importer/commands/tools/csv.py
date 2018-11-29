@@ -42,6 +42,36 @@ logger = logging.getLogger(__name__)
 def csv(ctx):
     ctx.ensure_object(dict)
 
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
+@click.option('--encoding', '-e', default="utf-8", type=click.STRING, help="Character encoding.  Default 'utf-8'")
+@click.pass_context
+def invalid_chars(ctx, infile, encoding):
+    """
+    Detect invalid character in a CSV file.
+    """
+    with open(infile, mode='r', encoding=encoding) as f:
+
+        line = "start"
+        pattern = re.compile(".*can't decode byte (0x[a-fA-F0-9]+)")
+        s = set()
+
+        lineno = 1
+        count = 0
+        while line:
+            try:
+                line = f.readline()
+            except UnicodeDecodeError as e:
+                print(f"line {str(lineno):10}: {str(e)}")
+                match = pattern.match(str(e))
+                if match:
+                    s.add(match.groups()[0])
+                count += 1
+            lineno += 1
+
+    print("\nInvalid characters detected:")
+    print(s)
+    print(f"Total bad lines: {count}")
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
@@ -60,14 +90,15 @@ def x2c(ctx, infile):
 @click.option('--col-spacing', '-s', default=20, type=click.INT, help="Spacing between columns.")
 @click.option('--varchar-factor', default=1, type=click.INT, help="Factor for creating varchar field.  Defaults to 2x max value length.")
 @click.option('--sql/--no-sql', default=True, help="Display create table SQL.")
+@click.option('--encoding', '-e', default="utf-8", type=click.STRING, help="Character encoding.  Default 'utf-8'")
 @click.pass_context
-def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql):
+def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, encoding):
     """
     Display SQL table create command from a CSV file.
     """
 
     ordered_columns = OrderedDict()
-    df = pd.read_csv(infile)
+    df = pd.read_csv(infile, encoding=encoding)
     
     count = 0
     for column in df.columns:
@@ -141,5 +172,6 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql):
         create_table_sql(ordered_columns, table_name)
         
 
+csv.add_command(invalid_chars)
 csv.add_command(x2c)
 csv.add_command(create_table)
