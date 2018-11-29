@@ -1,7 +1,10 @@
-import time, itertools, datetime
+import time, itertools, datetime, logging
 from collections import OrderedDict
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
+import csv
+
+logger = logging.getLogger(__name__)
 
 def convert_date(x):
     if not str(x) == "nan":
@@ -124,6 +127,57 @@ class BaseLoader(object):
 
         query = query.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
+
+    def load_file(self, query, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
+        """
+        Load data using the given query.
+
+        Optionally specify a batch and throttle sizes.  Batch size controls the number of rows sent to the DB at one time.  The
+        throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
+        either throttle arg is set to 0, throttling will be disabled.
+        """
+        logger.info("HDM loader importing from {}, batch size = {} throttle size={} throttle time={}"\
+                .format(infile, batch_size, throttle_size, throttle_time))
+        reader = csv.DictReader(open(infile, 'r'))
+        insert_q = self.build_insert_query(query, self._clean_fields(reader.fieldnames), table_name)
+        # columnNames = reader.fieldnames
+
+        row_count = 0
+        batch = []
+        batch_count = 1
+
+        total_rows_modified = 0
+        throttle_count = 0
+
+        i = 0
+        for row in reader:
+            if row_count >= batch_size - 1:
+                print("Submitting INSERT batch {}".format(batch_count))
+                total_rows_modified += self._submit_batch(insert_q, batch)
+                batch = []
+                row_count = 0
+                batch_count += 1
+            else:
+                row_count += 1
+
+            data = OrderedDict((self._clean_field(key), value) for key, value in row.items())
+            batch.append(data)
+
+            # Put in a sleep timer to throttle how hard we hit the database
+            if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
+                print(f"Sleeping for {throttle_time} seconds... row: {i}")
+                time.sleep(int(throttle_time))
+                throttle_count = 0
+            elif throttle_time and throttle_size:
+                throttle_count += 1
+            i += 1
+
+        # Submit remaining INSERT queries
+        if batch:
+            print("Submitting INSERT batch {}".format(batch_count))
+            total_rows_modified += self._submit_batch(insert_q, batch)
+        
+        return total_rows_modified
 
     def close(self):
         self.cursor.close()

@@ -1,0 +1,25 @@
+import click
+import os
+import logging
+
+from importer.loaders.product import ProductLoader
+from importer.commands.products.product import product
+from importer.commands.products.ndc import ndc
+from importer.commands.products.device import device
+
+logger = logging.getLogger(__name__)
+
+@click.group()
+@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
+@click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after this many inserts.")
+@click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
+@click.pass_context
+def products(ctx, batch_size, throttle_size, throttle_time):
+    ctx.ensure_object(dict)
+    ctx.obj['batch_size'] = batch_size
+    ctx.obj['throttle_size'] = throttle_size
+    ctx.obj['throttle_time'] = throttle_time
+
+products.add_command(product)
+products.add_command(ndc)
+products.add_command(device)
