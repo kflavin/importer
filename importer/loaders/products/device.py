@@ -1,12 +1,4 @@
-import logging, csv, sys, subprocess, time, itertools, textwrap, datetime, re
-from collections import OrderedDict
-from zipfile import ZipFile
-import mysql.connector as connector
-from mysql.connector.constants import ClientFlag
-
-# from importer.sql.products.product import (INSERT_QUERY)
-# from importer.sql.checks import DISABLE, ENABLE
-# from importer.downloaders.downloader import downloader
+import logging
 from importer.loaders.base import BaseLoader, convert_date
 
 import pandas as pd
@@ -14,10 +6,13 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 class DeviceLoader(BaseLoader):
+    """
+    Load Med Device data
+    """
 
-    def __init__(self):
-        # super(DeviceLoader, self).__init__()
-        super().__init__()
+    # def __init__(self):
+    #     # super(DeviceLoader, self).__init__()
+    #     super().__init__()
 
     # def preprocess(self, infile, outfile=None, encoding="ISO-8859-1"):
     def preprocess(self, infile, outfile=None, encoding="latin1"):

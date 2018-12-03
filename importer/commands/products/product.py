@@ -3,7 +3,7 @@ import os
 import logging
 
 from importer.loaders.products.product import ProductLoader
-from importer.sql.products.product import (INSERT_QUERY)
+from importer.sql import (INSERT_QUERY)
 
 logger = logging.getLogger(__name__)
 
@@ -11,9 +11,6 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def product(ctx):
     ctx.ensure_object(dict)
-    # ctx.obj['batch_size'] = batch_size
-    # ctx.obj['throttle_size'] = throttle_size
-    # ctx.obj['throttle_time'] = throttle_time
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -21,7 +18,7 @@ def product(ctx):
 @click.pass_context
 def load(ctx, infile, table_name):
     """
-    NPI importer
+    Product importer
     """
     batch_size = ctx.obj['batch_size']
     throttle_size = ctx.obj['throttle_size']
@@ -46,12 +43,14 @@ def load(ctx, infile, table_name):
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with Product Master data")
 @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
-def preprocess(infile, outfile):
+@click.option('--encoding', default="utf-8", type=click.STRING, help="Process Excel file (CSV by default)")
+@click.option('--excel', type=click.BOOL, help="Process Excel file (CSV by default)")
+def preprocess(infile, outfile, encoding, excel):
     """
-    Preprocess NPI csv file to do things like remove extraneous columns
+    Preprocess Product files
     """
     product_loader = ProductLoader()
-    product_loader.preprocess(infile, outfile)
+    product_loader.preprocess(infile, outfile, encoding, excel)
     print(outfile)
 
 product.add_command(load)

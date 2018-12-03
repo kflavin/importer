@@ -21,3 +21,5 @@ CREATE_RXV_MED_DEVICE_TABLE = """
     PRIMARY KEY (`id`)
     );
 """
+
+

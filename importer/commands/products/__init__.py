@@ -1,8 +1,6 @@
 import click
-import os
 import logging
 
-from importer.loaders.product import ProductLoader
 from importer.commands.products.product import product
 from importer.commands.products.ndc import ndc
 from importer.commands.products.device import device

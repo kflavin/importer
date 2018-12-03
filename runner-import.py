@@ -7,10 +7,6 @@ import logging
 
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
-from importer.commands.hdm import hdm
-
-# Second import will eventually replace first
-from importer.commands.product import product
 from importer.commands.products import products
 
 from importer.commands.tools.csv import csv
@@ -35,8 +31,8 @@ def start(debug, logs, log_group):
     
         
 start.add_command(npi)
-start.add_command(hdm)
-start.add_command(product)
+# start.add_command(hdm)
+# start.add_command(product)
 start.add_command(products)
 start.add_command(csv)
 

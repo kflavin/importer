@@ -2,7 +2,9 @@ import click
 import os
 import logging
 
-from importer.loaders.product import ProductLoader
+from importer.loaders import NdcLoader
+from importer.sql import (INSERT_QUERY)
+
 
 logger = logging.getLogger(__name__)
 
@@ -10,9 +12,6 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def ndc(ctx):
     ctx.ensure_object(dict)
-    # ctx.obj['batch_size'] = batch_size
-    # ctx.obj['throttle_size'] = throttle_size
-    # ctx.obj['throttle_time'] = throttle_time
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -34,26 +33,25 @@ def load(ctx, infile, table_name):
         'database': os.environ.get('db_schema')
     }
 
-    loader = ProductLoader()
+    loader = NdcLoader()
 
     # print(f"Loading {period} (small) file into database.  large_file: {large_file}")
     logger.info(f"Loading {infile} into {table_name}")
     loader.connect(**args)
-    loader.load_file(table_name, infile, batch_size, throttle_size, throttle_time)
+    loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
 
     print(f"Data loaded to table: {table_name}")
 
 @click.command()
-@click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with Product Master data")
+@click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with NDC Master data")
 @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
 def preprocess(infile, outfile):
     """
-    Preprocess NPI csv file to do things like remove extraneous columns
+    Preprocess NDC data
     """
-    product_loader = ProductLoader()
-    product_loader.preprocess(infile, outfile)
+    ndc_loader = NdcLoader()
+    ndc_loader.preprocess(infile, outfile)
     print(outfile)
 
-
-ndc.add_command(preprocess)
 ndc.add_command(load)
+ndc.add_command(preprocess)

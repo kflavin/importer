@@ -3,7 +3,7 @@ import os
 import logging
 
 from importer.loaders.products.device import DeviceLoader
-from importer.sql.base import (INSERT_QUERY)
+from importer.sql import (INSERT_QUERY)
 
 logger = logging.getLogger(__name__)
 
@@ -11,9 +11,6 @@ logger = logging.getLogger(__name__)
 @click.pass_context
 def device(ctx):
     ctx.ensure_object(dict)
-    # ctx.obj['batch_size'] = batch_size
-    # ctx.obj['throttle_size'] = throttle_size
-    # ctx.obj['throttle_time'] = throttle_time
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -22,7 +19,7 @@ def device(ctx):
 @click.pass_context
 def load(ctx, infile, table_name):
     """
-    NPI importer
+    Med Device Loader
     """
     batch_size = ctx.obj['batch_size']
     throttle_size = ctx.obj['throttle_size']
@@ -49,10 +46,10 @@ def load(ctx, infile, table_name):
 @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
 def preprocess(infile, outfile):
     """
-    Preprocess NPI csv file to do things like remove extraneous columns
+    Preprocess device files
     """
-    product_loader = DeviceLoader()
-    product_loader.preprocess(infile, outfile)
+    loader = DeviceLoader()
+    loader.preprocess(infile, outfile)
     print(outfile)
 
 device.add_command(load)

@@ -45,8 +45,10 @@ def csv(ctx):
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
 @click.option('--encoding', '-e', default="utf-8", type=click.STRING, help="Character encoding.  Default 'utf-8'")
+@click.option('--show-errors/--no-show-errors', default=True, help="Display problematic lines.")
+@click.option('--out-encoding', '-e', default="latin1", type=click.STRING, help="Encoding used to print out problematic characters")
 @click.pass_context
-def invalid_chars(ctx, infile, encoding):
+def invalid_chars(ctx, infile, encoding, show_errors, out_encoding):
     """
     Detect invalid character in a CSV file.
     """
@@ -69,8 +71,23 @@ def invalid_chars(ctx, infile, encoding):
                 count += 1
             lineno += 1
 
+    
+    # This will only show the first bad character in a line
+    if show_errors:
+        with open(infile, mode='r', encoding=out_encoding) as f:
+            for line in f:
+                for i in s:
+                    # print(f"\{i[1:]}")
+                    search = chr(int(i, 16))
+                    loc = line.find(search)
+                    if loc != -1:
+                        print(f"{line.strip()}")
+                        print("{:>{loc}}".format("^", loc=loc+1))
+
     print("\nInvalid characters detected:")
     print(s)
+    for i in s:
+        print(i + ": " + chr(int(i, 16)))
     print(f"Total bad lines: {count}")
 
 @click.command()
