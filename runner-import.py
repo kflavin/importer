@@ -15,9 +15,19 @@ from importer.commands.tools.csv import csv
 @click.option('--debug/--no-debug', default=False)
 @click.option('--logs', '-l', default="system", type=click.Choice(["cloudwatch", "system"]), help="[cloudwatch|system] - CW requires aws_region/instance_id env vars to be set.")
 @click.option('--log-group', default="importer-test", help="Cloudwatch log group name")
-def start(debug, logs, log_group):
+@click.pass_context
+def start(ctx, debug, logs, log_group):
+    ctx.ensure_object(dict)
     logger = logging.getLogger("importer")
-    logger.setLevel(level="INFO")
+
+    if debug:
+        logger.setLevel(level="DEBUG")
+        ctx.obj['debug'] = True
+        handler_level = logging.DEBUG
+    else:
+        logger.setLevel(level="INFO")
+        ctx.obj['debug'] = False
+        handler_level = logging.INFO
     
     if logs == "cloudwatch":
         region = os.environ.get('aws_region')
@@ -25,7 +35,7 @@ def start(debug, logs, log_group):
         logger.info("Sending runner logs to cloudwatch")
     else:
         sh = logging.StreamHandler()
-        sh.setLevel(logging.INFO)
+        sh.setLevel(handler_level)
         logger.addHandler(sh)
         logger.info("Sending runner logs to stdout")
     

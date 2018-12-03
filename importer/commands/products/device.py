@@ -24,17 +24,25 @@ def load(ctx, infile, table_name):
     batch_size = ctx.obj['batch_size']
     throttle_size = ctx.obj['throttle_size']
     throttle_time = ctx.obj['throttle_time']
+    debug = ctx.obj['debug']
 
     args = {
         'user': os.environ.get('db_user'),
         'password': os.environ.get('db_password'),
         'host': os.environ.get('db_host'),
-        'database': os.environ.get('db_schema')
+        'database': os.environ.get('db_schema'),
+        'debug': debug
     }
 
-    loader = DeviceLoader()
+    logger.debug("Loading: query={} table={} infile={} batch_size={} throttle_size={} throttle_time={} \n".format(
+        INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
+    ))
 
-    # print(f"Loading {period} (small) file into database.  large_file: {large_file}")
+    loader = DeviceLoader()
+    loader.column_type_overrides = {
+        'rx': bool,
+        'otc': bool
+    }
     logger.info(f"Loading {infile} into {table_name}")
     loader.connect(**args)
     loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)

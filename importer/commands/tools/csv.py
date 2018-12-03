@@ -115,7 +115,13 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
     """
 
     ordered_columns = OrderedDict()
-    df = pd.read_csv(infile, encoding=encoding)
+
+    if infile.endswith(".xls") or infile.endswith(".xlsx"):
+        print("Loading Excel file...")
+        df = pd.ExcelFile(infile).parse()
+    else:
+        print("Loading CSV file...")
+        df = pd.read_csv(infile, encoding=encoding)
     
     count = 0
     for column in df.columns:
@@ -172,7 +178,14 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
                 if any(i == True for i in df[column].str.contains(pattern)):
                     foundDate = True
 
-            maxVal = str(int(df[column].str.len().max()))
+            try:
+                maxVal = str(int(df[column].dropna().str.len().max()))
+            except:
+                # Could be boolean?
+                if any(type(i) == bool for i in df[column].dropna()):
+                    maxVal = 0
+                else:
+                    maxVal = 0
 
             if foundDate:
                 ordered_columns[column] = {'type': "DATE", 'length': maxVal}

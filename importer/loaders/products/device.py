@@ -19,7 +19,11 @@ class DeviceLoader(BaseLoader):
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
 
-        df = pd.read_csv(infile, encoding=encoding)
+        if infile.endswith(".xls") or infile.endswith(".xlsx"):
+            df = pd.ExcelFile(infile).parse()
+        else:
+            df = pd.read_csv(infile, encoding=encoding)
+
         df.columns = [ super(DeviceLoader, self)._clean_field(col) for col in df.columns]
         df['pkgdiscontinuedate'] = df['pkgdiscontinuedate'].apply(convert_date)
         df['eff_date'] = df['eff_date'].apply(convert_date)

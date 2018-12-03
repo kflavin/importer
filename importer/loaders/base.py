@@ -11,18 +11,18 @@ def convert_date(x):
         try:
             return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
         except Exception as e:
-            return None
+            return x
     else:
-        return None
+        return x
 
 def convert_date_time(x):
     if not str(x) == "nan":
         try:
             return datetime.datetime.strptime(str(x), '%m/%d/%Y %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
         except Exception as e:
-            return None
+            return x
     else:
-        return None
+        return x
 
 class BaseLoader(object):
 
@@ -31,6 +31,7 @@ class BaseLoader(object):
         self.cursor = ""
         self.debug = ""
         self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
+        self.column_type_overrides = {}  # Optional dict to force column types, ie: {'id': int}
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -48,6 +49,26 @@ class BaseLoader(object):
 
         self.cnx = connector.connect(**config)
         self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
+
+    def _clean_values(self, key, value):
+        desired_column_type = self.column_type_overrides[key]
+
+        if type(value) == str:
+            if desired_column_type == int:
+                try:
+                    value = int(float(value))
+                except:
+                    pass
+            elif desired_column_type == bool:
+                try:
+                    if value.lower() == "true":
+                        value = True
+                    else:
+                        value = False
+                except:
+                    pass
+
+        return value
 
     def _clean_fields(self, fields):
         columns = []
@@ -136,7 +157,7 @@ class BaseLoader(object):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        logger.info("HDM loader importing from {}, batch size = {} throttle size={} throttle time={}"\
+        logger.info("Importing from {}, batch size = {} throttle size={} throttle time={}"\
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(query, self._clean_fields(reader.fieldnames), table_name)
@@ -154,13 +175,24 @@ class BaseLoader(object):
             if row_count >= batch_size - 1:
                 print("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
+                
+                logger.debug(insert_q)
+                logger.debug(batch)
+
                 batch = []
                 row_count = 0
                 batch_count += 1
             else:
                 row_count += 1
 
-            data = OrderedDict((self._clean_field(key), value) for key, value in row.items())
+            # data = OrderedDict((self._clean_field(key), value) for key, value in row.items())
+            data = OrderedDict()
+            for key, value in row.items():
+                key = self._clean_field(key)
+                if key in self.column_type_overrides:
+                    value = self._clean_values(key, value)
+                data[key] = value
+
             batch.append(data)
 
             # Put in a sleep timer to throttle how hard we hit the database
