@@ -11,7 +11,7 @@
 # RxVantageNDCMaster
 ######################################
 
-CREATE_PRODUCT_MASTER = """
+CREATE_PRODUCT_MASTER_COMPLETE = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `master_id` INT DEFAULT NULL,
@@ -23,12 +23,12 @@ CREATE_PRODUCT_MASTER = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
-CREATE_PRODUCT_MASTER_COMPLETE = """
+CREATE_PRODUCT_MASTER = """
     CREATE TABLE `{table_name}` (
-    `id` int(11) NOT NULL DEFAULT ''0'',
+    `id` int(11) NOT NULL DEFAULT 0,
     `client_product_id` varchar(50) DEFAULT NULL,
     `master_id` int(11) DEFAULT NULL,
     `master_type` varchar(20) DEFAULT NULL,
@@ -49,5 +49,5 @@ CREATE_PRODUCT_MASTER_COMPLETE = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """

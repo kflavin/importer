@@ -28,5 +28,5 @@ CREATE_NDCMASTER_TABLE = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`, `ind_name`)
-    )
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """

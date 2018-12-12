@@ -19,7 +19,7 @@ CREATE_RXV_MED_DEVICE = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
 CREATE_RXV_MED_DEVICE_COMPLETE  = """
@@ -33,7 +33,7 @@ CREATE_RXV_MED_DEVICE_COMPLETE  = """
     `phone` VARCHAR(20) DEFAULT NULL,
     `phoneextension` INT DEFAULT NULL,
     `email` VARCHAR(100) DEFAULT NULL,
-    `brandname` VARCHAR(80) DEFAULT NULL,
+    `brandname` VARCHAR(175) DEFAULT NULL,
     `dunsnumber` BIGINT DEFAULT NULL,
     `deviceidissuingagency` VARCHAR(50) DEFAULT NULL,
     `containsdinumber` BIGINT DEFAULT NULL,
@@ -48,7 +48,5 @@ CREATE_RXV_MED_DEVICE_COMPLETE  = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`)
-    );
+    ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
-
-
