@@ -9,7 +9,7 @@ from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
 from importer.commands.products import products
 
-from importer.commands.tools.csv import csv
+from importer.commands.tools import tools
 
 @click.group()
 @click.option('--debug/--no-debug', default=False)
@@ -44,7 +44,7 @@ start.add_command(npi)
 # start.add_command(hdm)
 # start.add_command(product)
 start.add_command(products)
-start.add_command(csv)
+start.add_command(tools)
 
 if __name__ == '__main__':
     start()
