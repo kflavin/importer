@@ -3,11 +3,15 @@ from collections import OrderedDict
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 import csv
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 def convert_date(x):
     if not str(x) == "nan":
+        if not x:
+            return None
+
         try:
             return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
         except Exception as e:
@@ -30,6 +34,7 @@ class BaseLoader(object):
         self.cnx = ""
         self.cursor = ""
         self.debug = ""
+        self.warnings = False
         self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
         self.column_type_overrides = {}  # Optional dict to force column types, ie: {'id': int}
 
@@ -40,7 +45,8 @@ class BaseLoader(object):
             'user': user,
             'password': password,
             'host': host,
-            'database': database
+            'database': database,
+            'get_warnings': self.warnings
         }
 
         # Needed for LOAD DATA INFILE LOCAL
@@ -88,6 +94,7 @@ class BaseLoader(object):
         field_clean = field_clean.replace(".", "")
         field_clean = field_clean.replace("", "")
         field_clean = field_clean.replace(" ", "_")
+        field_clean = field_clean.replace(";", "_")
         return field_clean.lower()
 
     def _nullify(self, value):
@@ -100,8 +107,7 @@ class BaseLoader(object):
             return value
 
     def _submit_batch(self, query, data):
-        if self.debug:
-            print(query)
+        logger.debug(query)
 
         tries = 3
         count = 0
@@ -113,7 +119,13 @@ class BaseLoader(object):
                 # Deadlock error here when too many processes run at once.  Implement back off timer.
                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
                 self.cursor.executemany(query, data)
+                # import pdb; pdb.set_trace()
                 self.cnx.commit()
+
+                if self.cursor.fetchwarnings():
+                    for warning in self.cursor.fetchwarnings():
+                        logger.info(warning)
+                # pdb.set_trace()
                 break
             except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
@@ -176,7 +188,6 @@ class BaseLoader(object):
                 print("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
                 
-                logger.debug(insert_q)
                 logger.debug(batch)
 
                 batch = []
@@ -190,7 +201,17 @@ class BaseLoader(object):
             for key, value in row.items():
                 key = self._clean_field(key)
                 if key in self.column_type_overrides:
-                    value = self._clean_values(key, value)
+                    try:
+                        value = self.column_type_overrides[key](value)
+                    except Exception as e:
+                        logger.debug(e)
+                        logger.debug(f"Could not set value for {key}, default to None")
+                        value = None
+                    # value = self._clean_values(key, value)
+                else:
+                    # If no value is defined, use null.
+                    if not value:
+                        value = None
                 data[key] = value
 
             batch.append(data)
@@ -206,10 +227,29 @@ class BaseLoader(object):
 
         # Submit remaining INSERT queries
         if batch:
+            logger.debug(batch)
             print("Submitting INSERT batch {}".format(batch_count))
             total_rows_modified += self._submit_batch(insert_q, batch)
         
         return total_rows_modified
+
+    def preprocess(self, infile, outfile=None, encoding="latin1", sep=None):
+        """
+        Preprocess data
+        """
+        if not outfile:
+            outfile = infile[:infile.rindex(".")] + ".clean.csv"
+
+        if infile.endswith(".xls") or infile.endswith(".xlsx"):
+            df = pd.ExcelFile(infile).parse()
+        else:
+            if sep:
+                df = pd.read_csv(infile, encoding=encoding, sep=sep)
+            else:
+                df = pd.read_csv(infile, encoding=encoding)
+
+        df.columns = [ self._clean_field(col) for col in df.columns]
+        df.to_csv(outfile, sep=',', quoting=1, index=False)
 
     def close(self):
         self.cursor.close()

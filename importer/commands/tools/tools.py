@@ -9,6 +9,9 @@ import pandas as pd
 from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
                             is_numeric_dtype, is_float_dtype)
 
+from importer.loaders.base import BaseLoader
+from importer.sql.base import INSERT_QUERY
+
 # print(logging.Logger.manager.loggerDict)
 
 def get_int_type(val):
@@ -38,9 +41,69 @@ def create_table_sql(ordered_columns, table_name):
 logger = logging.getLogger(__name__)
 
 @click.group()
+@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
+@click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after this many inserts.")
+@click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
 @click.pass_context
-def csv(ctx):
+def tools(ctx, batch_size, throttle_size, throttle_time):
     ctx.ensure_object(dict)
+    ctx.obj['batch_size'] = batch_size
+    ctx.obj['throttle_size'] = throttle_size
+    ctx.obj['throttle_time'] = throttle_time
+
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
+# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
+@click.pass_context
+def load(ctx, infile, table_name):
+    """
+     Generic loader
+    """
+    batch_size = ctx.obj['batch_size']
+    throttle_size = ctx.obj['throttle_size']
+    throttle_time = ctx.obj['throttle_time']
+    debug = ctx.obj['debug']
+
+    args = {
+        'user': os.environ.get('db_user'),
+        'password': os.environ.get('db_password'),
+        'host': os.environ.get('db_host'),
+        'database': os.environ.get('db_schema'),
+        'debug': debug
+    }
+
+    logger.debug("Loading: query={} table={} infile={} batch_size={} throttle_size={} throttle_time={} \n".format(
+        INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
+    ))
+
+    loader = BaseLoader()
+    # loader.column_type_overrides = {
+    #     'rx': (lambda x: True if x.lower() == "true" else False),
+    #     'otc': (lambda x: True if x.lower() == "true" else False),
+    #     'phoneextension': (lambda x: float(int(x)) if x else None),
+    #     'containsdinumber': (lambda x: float(int(x)) if x else None)
+    #     # 'pkgquantity': (lambda x: float(int(x)) if x else None)
+    # }
+    loader.warnings = True
+    logger.info(f"Loading {infile} into {table_name}")
+    loader.connect(**args)
+    loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
+
+    print(f"Data loaded to table: {table_name}")
+
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with Product Master data")
+@click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
+@click.option('--separator', '-s', type=click.STRING, help="CSV separator (optional)")
+@click.option('--encoding', '-e', default='utf-8', type=click.STRING, help="CSV encoding, default 'utf-8'")
+def preprocess(infile, outfile, separator, encoding):
+    """
+    Preprocess device files
+    """
+    loader = BaseLoader()
+    loader.preprocess(infile, outfile, encoding=encoding, sep=separator)
+    print(outfile)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
@@ -202,6 +265,8 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
         create_table_sql(ordered_columns, table_name)
         
 
-csv.add_command(invalid_chars)
-csv.add_command(x2c)
-csv.add_command(create_table)
+tools.add_command(invalid_chars)
+tools.add_command(x2c)
+tools.add_command(preprocess)
+tools.add_command(load)
+tools.add_command(create_table)

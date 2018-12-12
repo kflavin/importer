@@ -2,7 +2,7 @@ import click
 import os
 import logging
 
-from importer.loaders.products.product import ProductLoader
+from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,12 @@ def load(ctx, infile, table_name):
         'database': os.environ.get('db_schema')
     }
 
-    loader = ProductLoader()
+    loader = BaseLoader()
+    loader.column_type_overrides = {
+        'eff_date': (lambda x: convert_date(x)),
+        'end_eff_date': (lambda x: convert_date(x))
+    }
+    loader.warnings = True
 
     # print(f"Loading {period} (small) file into database.  large_file: {large_file}")
     logger.info(f"Loading {infile} into {table_name}")

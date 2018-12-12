@@ -2,7 +2,7 @@ import click
 import os
 import logging
 
-from importer.loaders.products.device import DeviceLoader
+from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
 
 logger = logging.getLogger(__name__)
@@ -38,11 +38,16 @@ def load(ctx, infile, table_name):
         INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
     ))
 
-    loader = DeviceLoader()
+    loader = BaseLoader()
     loader.column_type_overrides = {
-        'rx': bool,
-        'otc': bool
+        'rx': (lambda x: True if x.lower() == "true" else False),
+        'otc': (lambda x: True if x.lower() == "true" else False),
+        'phoneextension': (lambda x: float(int(x)) if x else None),
+        'containsdinumber': (lambda x: float(int(x)) if x else None),
+        'eff_date': (lambda x: convert_date(x)),
+        'end_eff_date': (lambda x: convert_date(x))
     }
+    loader.warnings = True
     logger.info(f"Loading {infile} into {table_name}")
     loader.connect(**args)
     loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
