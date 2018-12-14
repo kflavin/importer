@@ -54,7 +54,7 @@ def preprocess(infile, outfile, encoding, excel):
     """
     Preprocess Product files
     """
-    product_loader = ProductLoader()
+    product_loader = BaseLoader()
     product_loader.preprocess(infile, outfile, encoding, excel)
     print(outfile)
 

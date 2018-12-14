@@ -61,7 +61,7 @@ def preprocess(infile, outfile):
     """
     Preprocess device files
     """
-    loader = DeviceLoader()
+    loader = BaseLoader()
     loader.preprocess(infile, outfile)
     print(outfile)
 
