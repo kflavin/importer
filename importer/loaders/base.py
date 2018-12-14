@@ -30,13 +30,14 @@ def convert_date_time(x):
 
 class BaseLoader(object):
 
-    def __init__(self):
+    def __init__(self, warnings=True):
         self.cnx = ""
         self.cursor = ""
         self.debug = ""
-        self.warnings = False
+        self.warnings = warnings
         self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
-        self.column_type_overrides = {}  # Optional dict to force column types, ie: {'id': int}
+        self.column_type_overrides = {}  # Optional dict for functions to transform select columns {'id': int}
+        self.all_columns_xform = [] # Optional list of functions to transform all columns.  Run after type overrides.
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -107,7 +108,8 @@ class BaseLoader(object):
             return value
 
     def _submit_batch(self, query, data):
-        logger.debug(query)
+        # logger.debug(query)
+        logger.debug(f"Total data to submit: {len(data)}")
 
         tries = 3
         count = 0
@@ -124,18 +126,18 @@ class BaseLoader(object):
 
                 if self.cursor.fetchwarnings():
                     for warning in self.cursor.fetchwarnings():
-                        logger.info(warning)
+                        logger.warn(warning)
                 # pdb.set_trace()
                 break
             except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
                 # print(self.cursor.statement)
-                print("Rolling back...")
+                logger.warn("Rolling back...")
                 self.cnx.rollback()
                 count += 1
-                print(f"Failed on try {count}/{tries}")
+                logger.warn(f"Failed on try {count}/{tries}")
                 if count >= tries:
-                    print("Could not submit batch, aborting.")
+                    logger.error("Could not submit batch, aborting.")
                     raise
 
         return self.cursor.rowcount
@@ -160,6 +162,104 @@ class BaseLoader(object):
 
         query = query.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
+
+    def row_loader(self, query, columns, rows, table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
+        """
+        Replacement for "load_file".  This doesn't assume the file is a CSV, and instead takes a list of columns,
+        and a list of rows.
+        """
+        logger.info(f"Loading data into {table_name}")
+        clean_columns = self._clean_fields(columns)
+        insert_q = self.build_insert_query(query, clean_columns, table_name)
+
+        row_count = 0
+        batch = []
+        batch_count = 1
+
+        total_rows_modified = 0
+        throttle_count = 0
+
+        i = 0
+        for row in rows:
+            if row_count >= batch_size - 1:
+                print("Submitting INSERT batch {}".format(batch_count))
+                total_rows_modified += self._submit_batch(insert_q, batch)
+                
+                logger.debug(batch)
+
+                batch = []
+                row_count = 0
+                batch_count += 1
+            else:
+                row_count += 1
+
+            # if len(row) != len(clean_columns):
+            #     logger.warn(f"Row {i} elements do not match # of columns {len(row)} != {len(clean_columns)}")
+            #     continue
+            
+            # data = OrderedDict(zip(clean_columns, row))
+            # for key, value in data.items():
+            #     if key in self.column_type_overrides:
+            #         try:
+            #             value = self.column_type_overrides[key](value)
+            #         except Exception as e:
+            #             logger.debug(e)
+            #             logger.debug(f"Could not set value for {key}, default to None")
+            #             value = None
+            #     else:
+            #         # If no value is defined, use null.
+            #         if not value:
+            #             value = None
+            #     data[key] = value
+
+
+            data = OrderedDict()
+            for key, value in row.items():
+                key = self._clean_field(key)
+                if key in self.column_type_overrides:
+                    try:
+                        value = self.column_type_overrides[key](value)
+                    except Exception as e:
+                        logger.debug(e)
+                        logger.debug(f"Could not set value for {key}, default to None")
+                        value = None
+                else:
+                    # If no value is defined, use null.
+                    if not value:
+                        value = None
+
+                for xform in self.all_columns_xform:
+                    try:
+                        value = xform(value)
+                    except Exception as e:
+                        logger.debug("exception")
+                        logger.debug(value)
+                        logger.debug(e)
+                        logger.debug(f"Could not set value for {key}, default to None")
+                        value = None
+
+                data[key] = value
+
+            batch.append(data)
+
+            # Put in a sleep timer to throttle how hard we hit the database
+            if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
+                print(f"Sleeping for {throttle_time} seconds... row: {i}")
+                time.sleep(int(throttle_time))
+                throttle_count = 0
+            elif throttle_time and throttle_size:
+                throttle_count += 1
+            i += 1
+
+        # Submit remaining INSERT queries
+        if batch:
+            logger.debug(batch)
+            print("Submitting INSERT partial batch {}".format(batch_count))
+            total_rows_modified += self._submit_batch(insert_q, batch)
+        
+        return total_rows_modified
+
+
 
     def load_file(self, query, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """

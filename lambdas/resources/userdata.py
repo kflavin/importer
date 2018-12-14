@@ -4,9 +4,17 @@ sleep 1
 
 # Ensure we halt if something goes wrong
 function cleanup {{
+  set +e
   logger "Halting instance due to a failure"
+  if [ -n "{sns_topic_arn}" ]; then
+    aws sns publish --topic-arn {sns_topic_arn} --message "Importer EC2 failed.  Instance_ID=$instance_id" || true
+  fi
   sleep 10  # give some extra time to get all logs to CW
-  halt -p
+  while true; do
+    halt -f -f &
+    sleep 60
+    logger "Still running, try to halt again..."
+  done
 }}
 trap cleanup EXIT
 
@@ -43,5 +51,10 @@ timeout {timeout}m runner-import.py -l cloudwatch npi full {init_flag} \
 
 # Terminate the instance.  Give extra time for logs to sync.
 sleep 10
-halt -p
+if [ -n "{sns_topic_arn}" ]; then
+  set +x
+  aws sns publish --topic-arn {sns_topic_arn} --message "Importer EC2 failed.  Instance_ID=$instance_id" || true
+  set -x
+fi
+halt -f -f
 """

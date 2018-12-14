@@ -24,19 +24,18 @@ CREATE_RXV_MED_DEVICE = """
 
 CREATE_RXV_MED_DEVICE_COMPLETE  = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
-    `id` INT DEFAULT NULL,
-    `primarydi` VARCHAR(50) DEFAULT NULL,
+    `publicdevicerecordkey` VARCHAR(50) DEFAULT NULL,
     `deviceid` VARCHAR(50) DEFAULT NULL,
     `deviceidtype` VARCHAR(50) DEFAULT NULL,
     `devicedescription` VARCHAR(2000) DEFAULT NULL,
     `companyname` VARCHAR(120) DEFAULT NULL,
     `phone` VARCHAR(20) DEFAULT NULL,
-    `phoneextension` INT DEFAULT NULL,
+    `phoneextension` BIGINT DEFAULT NULL,
     `email` VARCHAR(100) DEFAULT NULL,
     `brandname` VARCHAR(175) DEFAULT NULL,
     `dunsnumber` BIGINT DEFAULT NULL,
     `deviceidissuingagency` VARCHAR(50) DEFAULT NULL,
-    `containsdinumber` BIGINT DEFAULT NULL,
+    `containsdinumber` VARCHAR(23) DEFAULT NULL,
     `pkgquantity` INT DEFAULT NULL,
     `pkgdiscontinuedate` DATE DEFAULT NULL,
     `pkgstatus` VARCHAR(50) DEFAULT NULL,
@@ -47,6 +46,6 @@ CREATE_RXV_MED_DEVICE_COMPLETE  = """
     `end_eff_date` DATE DEFAULT NULL,
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`publicDeviceRecordKey`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """

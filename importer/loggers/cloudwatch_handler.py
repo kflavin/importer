@@ -3,7 +3,7 @@ from operator import itemgetter
 import os, sys, json, logging, time, threading, warnings, collections
 import queue
 
-# Borrowed from Wathtower
+# Borrowed from Watchtower
 # https://github.com/kislyuk/watchtower
 
 import boto3

@@ -24,6 +24,7 @@ def handler(event, context):
     timeout = os.environ.get('weekly_import_timeout', '10')
     max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 1))
     bucket_name = os.environ.get("aws_s3_bucket")
+    sns_topic_arn = os.environ.get("aws_sns_topic_arn")
 
     ec2 = EC2Helper(region, period)
     rds = DBHelper(region)
@@ -49,7 +50,8 @@ def handler(event, context):
                                       period=period,
                                       timeout=timeout,
                                       init_flag="",
-                                      limit=6)
+                                      limit=6,
+                                      sns_topic_arn=sns_topic_arn)
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
