@@ -121,13 +121,11 @@ class BaseLoader(object):
                 # Deadlock error here when too many processes run at once.  Implement back off timer.
                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
                 self.cursor.executemany(query, data)
-                # import pdb; pdb.set_trace()
                 self.cnx.commit()
 
                 if self.cursor.fetchwarnings():
                     for warning in self.cursor.fetchwarnings():
                         logger.warn(warning)
-                # pdb.set_trace()
                 break
             except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
@@ -139,6 +137,13 @@ class BaseLoader(object):
                 if count >= tries:
                     logger.error("Could not submit batch, aborting.")
                     raise
+            except connector.errors.IntegrityError as e:
+                logger.warn(e)
+                logger.warn("Note: this will cause entire batch to fail!")
+                self.cnx.rollback()
+                break
+            
+            count += 1
 
         return self.cursor.rowcount
 
@@ -165,8 +170,8 @@ class BaseLoader(object):
 
     def row_loader(self, query, columns, rows, table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
-        Replacement for "load_file".  This doesn't assume the file is a CSV, and instead takes a list of columns,
-        and a list of rows.
+        Replacement for "load_file".  This doesn't assume the file is a CSV, and instead takes a list rows, where
+        each row is composed of a dictionary as follows: key is column, and value is row value.
         """
         logger.info(f"Loading data into {table_name}")
         clean_columns = self._clean_fields(columns)
@@ -181,8 +186,8 @@ class BaseLoader(object):
 
         i = 0
         for row in rows:
-            if row_count >= batch_size - 1:
-                print("Submitting INSERT batch {}".format(batch_count))
+            if row_count > batch_size - 1:
+                logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
                 
                 logger.debug(batch)
@@ -190,6 +195,8 @@ class BaseLoader(object):
                 batch = []
                 row_count = 0
                 batch_count += 1
+
+                # break # toggle to load one batch only
             else:
                 row_count += 1
 
@@ -215,36 +222,39 @@ class BaseLoader(object):
 
             data = OrderedDict()
             for key, value in row.items():
+                # Perform column-specific transformations
                 key = self._clean_field(key)
                 if key in self.column_type_overrides:
                     try:
+                        # logger.debug(f"Call {self.column_type_overrides[key](value)} on {key}={value}")
                         value = self.column_type_overrides[key](value)
                     except Exception as e:
-                        logger.debug(e)
-                        logger.debug(f"Could not set value for {key}, default to None")
+                        # logger.debug(e)
+                        # logger.debug(f"Could not set value for {key}, default to None")
                         value = None
                 else:
                     # If no value is defined, use null.
                     if not value:
                         value = None
 
+                # Perform transformation on all columns
                 for xform in self.all_columns_xform:
                     try:
+                        # logger.debug(f"Perform {xform} on {key} ")
                         value = xform(value)
                     except Exception as e:
-                        logger.debug("exception")
-                        logger.debug(value)
-                        logger.debug(e)
-                        logger.debug(f"Could not set value for {key}, default to None")
-                        value = None
+                        # logger.debug(e)
+                        # logger.debug(f"Could not apply {xform} to {key}={value}.  Continue...")
+                        pass
 
+                # logger.debug("\n")
                 data[key] = value
 
             batch.append(data)
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                print(f"Sleeping for {throttle_time} seconds... row: {i}")
+                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:
@@ -254,7 +264,7 @@ class BaseLoader(object):
         # Submit remaining INSERT queries
         if batch:
             logger.debug(batch)
-            print("Submitting INSERT partial batch {}".format(batch_count))
+            logger.info("Submitting INSERT final batch {}".format(batch_count))
             total_rows_modified += self._submit_batch(insert_q, batch)
         
         return total_rows_modified
@@ -273,6 +283,7 @@ class BaseLoader(object):
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(query, self._clean_fields(reader.fieldnames), table_name)
+        logger.debug(insert_q)
         # columnNames = reader.fieldnames
 
         row_count = 0
@@ -285,7 +296,7 @@ class BaseLoader(object):
         i = 0
         for row in reader:
             if row_count >= batch_size - 1:
-                print("Submitting INSERT batch {}".format(batch_count))
+                logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
                 
                 logger.debug(batch)
@@ -318,7 +329,7 @@ class BaseLoader(object):
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                print(f"Sleeping for {throttle_time} seconds... row: {i}")
+                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:
@@ -328,7 +339,7 @@ class BaseLoader(object):
         # Submit remaining INSERT queries
         if batch:
             logger.debug(batch)
-            print("Submitting INSERT batch {}".format(batch_count))
+            logger.info("Submitting INSERT batch {}".format(batch_count))
             total_rows_modified += self._submit_batch(insert_q, batch)
         
         return total_rows_modified

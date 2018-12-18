@@ -10,7 +10,7 @@ from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
                             is_numeric_dtype, is_float_dtype)
 
 from importer.loaders.base import BaseLoader
-from importer.sql.base import INSERT_QUERY
+from importer.sql.base import INSERT_AND_UPDATE_QUERY
 
 # print(logging.Logger.manager.loggerDict)
 
@@ -41,15 +41,9 @@ def create_table_sql(ordered_columns, table_name):
 logger = logging.getLogger(__name__)
 
 @click.group()
-@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
-@click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after this many inserts.")
-@click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
 @click.pass_context
-def tools(ctx, batch_size, throttle_size, throttle_time):
+def tools(ctx):
     ctx.ensure_object(dict)
-    ctx.obj['batch_size'] = batch_size
-    ctx.obj['throttle_size'] = throttle_size
-    ctx.obj['throttle_time'] = throttle_time
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -74,7 +68,7 @@ def load(ctx, infile, table_name):
     }
 
     logger.debug("Loading: query={} table={} infile={} batch_size={} throttle_size={} throttle_time={} \n".format(
-        INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
+        INSERT_AND_UPDATE_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
     ))
 
     loader = BaseLoader()
@@ -88,7 +82,7 @@ def load(ctx, infile, table_name):
     loader.warnings = True
     logger.info(f"Loading {infile} into {table_name}")
     loader.connect(**args)
-    loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
+    loader.load_file(INSERT_AND_UPDATE_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
 
     print(f"Data loaded to table: {table_name}")
 

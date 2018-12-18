@@ -24,8 +24,8 @@ CREATE_RXV_MED_DEVICE = """
 
 CREATE_RXV_MED_DEVICE_COMPLETE  = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
+	`deviceid` VARCHAR(50) DEFAULT NULL,
     `publicdevicerecordkey` VARCHAR(50) DEFAULT NULL,
-    `deviceid` VARCHAR(50) DEFAULT NULL,
     `deviceidtype` VARCHAR(50) DEFAULT NULL,
     `devicedescription` VARCHAR(2000) DEFAULT NULL,
     `companyname` VARCHAR(120) DEFAULT NULL,
@@ -46,6 +46,67 @@ CREATE_RXV_MED_DEVICE_COMPLETE  = """
     `end_eff_date` DATE DEFAULT NULL,
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
-    PRIMARY KEY (`publicDeviceRecordKey`)
+    PRIMARY KEY (`deviceid`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
+
+DELTA_RECORDS_Q = """
+    select a.publicdevicerecordkey, a.deviceid, a.deviceidtype, CASE WHEN b.publicdevicerecordkey IS NULL THEN false ELSE true END as r 
+    from reload_medicaldevicemaster a 
+    left outer join reload_medicaldevicemaster_stage b 
+    on a.publicdevicerecordkey = b.publicdevicerecordkey and 
+    a.deviceid = b.deviceid and 
+    a.deviceidtype = b.deviceidtype
+"""
+
+COMPARE_EXISTING_RECORDS_Q = """
+    SELECT
+    `publicdevicerecordkey`,
+    `deviceid`,
+    `deviceidtype`,
+    `devicedescription`,
+    `companyname`,
+    `phone`,
+    `phoneextension`,
+    `email`,
+    `brandname`,
+    `dunsnumber`,
+    `deviceidissuingagency`,
+    `containsdinumber`,
+    `pkgquantity`,
+    `pkgdiscontinuedate`,
+    `pkgstatus`,
+    `pkgtype`,
+    `rx`,
+    `otc`
+    FROM  {table_name}
+    WHERE (
+		{where_clause}
+    )
+"""
+
+INSERT_Q = """
+    INSERT INTO `{table_name}` (
+    `publicdevicerecordkey`,
+    `deviceid`,
+    `deviceidtype`,
+    `devicedescription`,
+    `companyname`,
+    `phone`,
+    `phoneextension`,
+    `email`,
+    `brandname`,
+    `dunsnumber`,
+    `deviceidissuingagency`,
+    `containsdinumber`,
+    `pkgquantity`,
+    `pkgdiscontinuedate`,
+    `pkgstatus`,
+    `pkgtype`,
+    `rx`,
+    `otc`
+    )
+    VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )
+"""
+    
+    

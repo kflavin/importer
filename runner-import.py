@@ -2,6 +2,7 @@
 import click
 import os
 import logging
+import sys
 # import warnings
 # warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*pandas.*|.*numpy.*")
 
@@ -44,7 +45,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         logger.addHandler(CloudWatchLogHandler(log_group=log_group, stream_name=os.environ.get('instance_id'), region=region))
         logger.info("Sending runner logs to cloudwatch")
     else:
-        sh = logging.StreamHandler()
+        sh = logging.StreamHandler(sys.stdout)
         sh.setLevel(handler_level)
         logger.addHandler(sh)
         logger.info("Sending runner logs to stdout")

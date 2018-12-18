@@ -3,7 +3,7 @@ import os
 import logging
 
 from importer.loaders.base import BaseLoader, convert_date
-from importer.sql import (INSERT_QUERY)
+from importer.sql import (INSERT_AND_UPDATE_QUERY)
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def load(ctx, infile, table_name):
     # print(f"Loading {period} (small) file into database.  large_file: {large_file}")
     logger.info(f"Loading {infile} into {table_name}")
     loader.connect(**args)
-    loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
+    loader.load_file(INSERT_AND_UPDATE_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
 
     print(f"Data loaded to table: {table_name}")
 
