@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
  
 # setup(
 #     name='importer',    # This is the name of your PyPI-package.
@@ -10,7 +10,8 @@ setup(name='importer',
       version='0.1',
       description='Importer',
       scripts=['./runner-import.py',],
-      packages=['importer.downloaders', 'importer.loaders', 'importer.sql', 'importer.loggers', 'importer.commands'],
+      #packages=['importer.downloaders', 'importer.loaders', 'importer.sql', 'importer.loggers', 'importer.commands'],
+      packages=find_packages(exclude=("lambda",)),
       # data_files=[('./', ['importer/requirements.npi.txt'])],
       # packages=['importer'],
       install_requires=[
