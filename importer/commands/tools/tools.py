@@ -257,6 +257,18 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
 
     if sql:
         create_table_sql(ordered_columns, table_name)
+
+@click.command()
+@click.option('--source-table-name', '-s', required=True, type=click.STRING, help="")
+@click.option('--destination-table-name', '-d', required=True, type=click.STRING, help="")
+@click.pass_context
+def copy_table(ctx, source_table_name, destination_table_name):
+    """
+    Create a copy of a source table.
+    """
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+    loader.copy_table(source_table_name, destination_table_name)
         
 
 tools.add_command(invalid_chars)
@@ -264,3 +276,4 @@ tools.add_command(x2c)
 tools.add_command(preprocess)
 tools.add_command(load)
 tools.add_command(create_table)
+tools.add_command(copy_table)

@@ -108,5 +108,3 @@ INSERT_Q = """
     )
     VALUES( %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s )
 """
-    
-    

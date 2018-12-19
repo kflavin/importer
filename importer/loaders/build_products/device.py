@@ -6,6 +6,7 @@ from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (DELETE_Q)
 from importer.sql.products.device import (RETRIEVE_RECORDS_Q, INSERT_Q, DELTA_RECORDS_Q)
 
+
 logger = logging.getLogger(__name__)
 
 class MedDeviceCompleteLoader(BaseLoader):
@@ -55,14 +56,6 @@ class MedDeviceCompleteLoader(BaseLoader):
 
         return found, not_found
 
-    def _submit_single_q(self, query):
-        try:
-            self.cursor.execute(query)
-        except Exception as e:
-            raise
-
-        rows = list(self.cursor)
-        return rows
         
         # for i in self.cursor:
         #     print(i)
@@ -165,10 +158,10 @@ class MedDeviceCompleteLoader(BaseLoader):
                 logger.info("Check batch for updates {}".format(c+1))
                 # use this for product table updates
                 q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
-                stage = self._submit_single_q(q)
+                stage = super()._submit_single_q(q)
 
                 q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, prod_table_name)
-                prod = self._submit_single_q(q)
+                prod = super()._submit_single_q(q)
 
                 need_updates = []
                 for row in stage:
@@ -185,7 +178,7 @@ class MedDeviceCompleteLoader(BaseLoader):
                     # Delete the row with changes
                     q = self.build_retrieve_query(DELETE_Q, need_updates, prod_table_name)
                     # print(q)
-                    result = self._submit_single_q(q)
+                    result = super()._submit_single_q(q)
                     # print(result)
 
                     # Insert the new row
@@ -209,7 +202,7 @@ class MedDeviceCompleteLoader(BaseLoader):
                 
                 # Retrieve the full record we need from staging
                 q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
-                new_records = self._submit_single_q(q)
+                new_records = super()._submit_single_q(q)
 
                 # print("new records")
                 # print(new)
@@ -221,24 +214,6 @@ class MedDeviceCompleteLoader(BaseLoader):
                     # print(result)
 
         logger.info(f"Inserted {total_insert_count} records")
-
-
-        # for f in found:
-        #     query = RETRIEVE_RECORDS_Q.format(table_name=old_table_name,
-        #         publicdevicerecordkey=f[0], deviceid=f[1], deviceidtype=f[2])
-        #     old = self._submit_single_q(query)
-
-        #     query = RETRIEVE_RECORDS_Q.format(table_name=new_table_name,
-        #         publicdevicerecordkey=f[0], deviceid=f[1], deviceidtype=f[2])
-        #     new = self._submit_single_q(query)
-
-        #     if old != new:
-        #         # insert new recore
-        #         pass
-
-        #     print(old)
-        #     print(new)
-        #     print(old == new)
 
     # def load_directory(self, query, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
     def load_xml_files(self, query, indir, table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):

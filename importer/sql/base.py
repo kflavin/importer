@@ -23,3 +23,11 @@ DELETE_Q = """
   DELETE from `{table_name}` 
   WHERE ( {where_clause} );
 """
+
+COPY_TABLE_DDL = """
+    CREATE TABLE `{new_table_name}` LIKE `{old_table_name}`
+"""
+
+COPY_TABLE_DATA_DML = """
+    INSERT `{new_table_name}` SELECT * FROM `{old_table_name}`
+"""

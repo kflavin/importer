@@ -5,6 +5,8 @@ from mysql.connector.constants import ClientFlag
 import csv
 import pandas as pd
 
+from importer.sql import (COPY_TABLE_DDL, COPY_TABLE_DATA_DML)
+
 logger = logging.getLogger(__name__)
 
 def convert_date(x):
@@ -106,6 +108,17 @@ class BaseLoader(object):
             return None
         else:
             return value
+
+    def _submit_single_q(self, query):
+        try:
+            self.cursor.execute(query)
+            self.cnx.commit()
+        except Exception as e:
+            self.cnx.rollback()
+            raise
+
+        rows = list(self.cursor)
+        return rows
 
     def _submit_batch(self, query, data):
         # logger.debug(query)
@@ -365,3 +378,27 @@ class BaseLoader(object):
     def close(self):
         self.cursor.close()
         self.cnx.close()
+
+    def copy_table(self, source_table_name, dest_table_name):
+        """
+        Copy a table with its data.
+        """
+        logger.info(f"Creating {dest_table_name} from {source_table_name}")
+        try:
+            self._submit_single_q(COPY_TABLE_DDL.format(new_table_name=dest_table_name, old_table_name=source_table_name))
+        except connector.errors.ProgrammingError as e:
+            logger.error(f"Table {dest_table_name} already exists.  Exiting.")
+            return
+        except Exception as e:
+            logger.error("Failed creating table")
+            raise
+
+        try:
+            q = COPY_TABLE_DATA_DML.format(new_table_name=dest_table_name, old_table_name=source_table_name)
+            self._submit_single_q(COPY_TABLE_DATA_DML.format(new_table_name=dest_table_name, old_table_name=source_table_name))
+        except Exception as e:
+            logger.error("Failed inserting data")
+            raise e
+
+        # print(self._submit_single_q("checksum table xfrm_product, staging_product")
+

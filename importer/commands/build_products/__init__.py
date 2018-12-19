@@ -22,3 +22,4 @@ def build_products(ctx): #, batch_size, throttle_size, throttle_time):
 # products.add_command(product)
 # products.add_command(ndc)
 build_products.add_command(device)
+# build_products.add_command(product)

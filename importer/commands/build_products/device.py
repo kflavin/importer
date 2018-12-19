@@ -67,13 +67,22 @@ def preprocess(infile, outfile):
 @click.pass_context
 def delta(ctx, stage_table_name, prod_table_name):
     """
-    Preprocess device files
+    Delta between med device complete staging and prod table.  Update prod table with changes.
     """
     loader = MedDeviceCompleteLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
-    arr = loader.delta_stage_to_prod(stage_table_name, prod_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
-    # print(arr[0])
-    # print(arr[1])
+    loader.delta_stage_to_prod(stage_table_name, prod_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
+@click.command()
+@click.option('--stage-table-name', '-s', required=True, type=click.STRING, help="")
+@click.option('--prod-table-name', '-p', required=True, type=click.STRING, help="")
+@click.pass_context
+def delta(ctx, stage_table_name, prod_table_name):
+    """
+    Delta between med device complete staging and prod table.  Update prod table with changes.
+    """
+    loader = MedDeviceCompleteLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+    loader.delta_stage_to_prod(stage_table_name, prod_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
 
 device.add_command(load)
 device.add_command(preprocess)
