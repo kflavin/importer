@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (DELETE_Q)
-from importer.sql.products.device import (COMPARE_EXISTING_RECORDS_Q, INSERT_Q)
+from importer.sql.products.device import (RETRIEVE_RECORDS_Q, INSERT_Q, DELTA_RECORDS_Q)
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class MedDeviceCompleteLoader(BaseLoader):
 
         yield batch
 
-    def build_compare_query(self, query, rows, table_name):
+    def build_retrieve_query(self, query, rows, table_name):
         where_clause = []
 
         for row in rows:
@@ -127,69 +127,108 @@ class MedDeviceCompleteLoader(BaseLoader):
 
         return query.format(table_name=table_name, where_clause=where_clause_s)
 
-                
-    def build_insert_query(self, query, rows, table_name):
-        cols = []
-        values = ""
+    # def build_insert_query(self, query, rows, table_name):
+    #     cols = []
+    #     values = ""
 
-        # for row in rows[0]:
-            # cols.append("%s")
+    #     # for row in rows[0]:
+    #         # cols.append("%s")
 
-        # print(values)
-        # values = ", ".join(cols)
-        # values = f"( {values} )"
-        # print(values)
+    #     # print(values)
+    #     # values = ", ".join(cols)
+    #     # values = f"( {values} )"
+    #     # print(values)
 
-        return query.format(table_name=table_name, values=values)
+    #     return query.format(table_name=table_name, values=values)
 
-    def delta_stage_to_prod(self, query, stage_table_name, prod_table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
+    def delta_stage_to_prod(self, stage_table_name, prod_table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
         Run a delta between an old table and a new table.  Return two lists of ID's.
             First: New records
             Second: Existing records that require updates
         """
+        logger.info(f"Performing delta update of {stage_table_name} and {prod_table_name}")
         # files = self._load_xml_files(indir)
-        print(f"prod table is: {prod_table_name}")
-        print(f"stage table is: {stage_table_name}")
+        # print(f"prod table is: {prod_table_name}")
+        # print(f"stage table is: {stage_table_name}")
 
-        found, not_found = self._delta_q(query)
+        q = DELTA_RECORDS_Q.format(stage_table=stage_table_name, prod_table=prod_table_name)
 
-        for batch in self._batcher(found, batch_size, throttle_size, throttle_time):
-            # use this for product table updates
-            q = self.build_compare_query(COMPARE_EXISTING_RECORDS_Q, batch, stage_table_name)
-            new = self._submit_single_q(q)
+        found, not_found = self._delta_q(q)
+        # print(found)
+        # print(not_found)
 
-            q = self.build_compare_query(COMPARE_EXISTING_RECORDS_Q, batch, prod_table_name)
-            old = self._submit_single_q(q)
+        total_update_count = 0
+        if found:
+            # These records need to be updated
+            for c, batch in enumerate(self._batcher(found, batch_size, throttle_size, throttle_time)):
+                logger.info("Check batch for updates {}".format(c+1))
+                # use this for product table updates
+                q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
+                stage = self._submit_single_q(q)
 
-            need_updates = []
-            for row in new:
-                if row not in old:
-                    need_updates.append(row)
-                else:
-                    pass
+                q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, prod_table_name)
+                prod = self._submit_single_q(q)
 
-            print(prod_table_name)
-            if need_updates:
-                q = self.build_compare_query(DELETE_Q, need_updates, prod_table_name)
-                print(q)
-                result = self._submit_single_q(q)
-                print(result)
+                need_updates = []
+                for row in stage:
+                    if row not in prod:
+                        # ID exists, but the row has changed
+                        need_updates.append(row)
+                    else:
+                        pass
 
-                # q = self.build_insert_query(INSERT_Q, need_updates, prod_table_name)
-                q = INSERT_Q.format(table_name=prod_table_name)
-                print(q)
-                print(need_updates)
-                result = super()._submit_batch(q, need_updates)
-                print(result)
-        
+                # print(prod_table_name)
+                if need_updates:
+                    logger.info(f"{len(need_updates)} rows need updates")
+                    total_update_count += len(need_updates)
+                    # Delete the row with changes
+                    q = self.build_retrieve_query(DELETE_Q, need_updates, prod_table_name)
+                    # print(q)
+                    result = self._submit_single_q(q)
+                    # print(result)
+
+                    # Insert the new row
+                    # q = self.build_insert_query(INSERT_Q, need_updates, prod_table_name)
+                    q = INSERT_Q.format(table_name=prod_table_name)
+                    # print(q)
+                    # print("need updates")
+                    # print(need_updates)
+                    result = super()._submit_batch(q, need_updates)
+                    # print('result of need updates')
+                    # print(result)
+
+        logger.info(f"Updated {total_update_count} records")
+
+        total_insert_count = 0
+        if not_found:
+            # These are new records that need to be inserted.
+            for c, batch in enumerate(self._batcher(not_found, batch_size, throttle_size, throttle_time)):
+                logger.info(f"Submitting INSERT batch {c+1}")
+                total_insert_count += len(batch)
+                
+                # Retrieve the full record we need from staging
+                q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
+                new_records = self._submit_single_q(q)
+
+                # print("new records")
+                # print(new)
+                
+                if new_records:
+                    q = INSERT_Q.format(table_name=prod_table_name)
+                    result = super()._submit_batch(q, new_records)
+                    # print("result of new insert")
+                    # print(result)
+
+        logger.info(f"Inserted {total_insert_count} records")
+
 
         # for f in found:
-        #     query = COMPARE_EXISTING_RECORDS_Q.format(table_name=old_table_name,
+        #     query = RETRIEVE_RECORDS_Q.format(table_name=old_table_name,
         #         publicdevicerecordkey=f[0], deviceid=f[1], deviceidtype=f[2])
         #     old = self._submit_single_q(query)
 
-        #     query = COMPARE_EXISTING_RECORDS_Q.format(table_name=new_table_name,
+        #     query = RETRIEVE_RECORDS_Q.format(table_name=new_table_name,
         #         publicdevicerecordkey=f[0], deviceid=f[1], deviceidtype=f[2])
         #     new = self._submit_single_q(query)
 

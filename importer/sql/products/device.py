@@ -52,14 +52,14 @@ CREATE_RXV_MED_DEVICE_COMPLETE  = """
 
 DELTA_RECORDS_Q = """
     select a.publicdevicerecordkey, a.deviceid, a.deviceidtype, CASE WHEN b.publicdevicerecordkey IS NULL THEN false ELSE true END as r 
-    from reload_medicaldevicemaster a 
-    left outer join reload_medicaldevicemaster_stage b 
+    from {stage_table} a 
+    left outer join {prod_table} b 
     on a.publicdevicerecordkey = b.publicdevicerecordkey and 
     a.deviceid = b.deviceid and 
     a.deviceidtype = b.deviceidtype
 """
 
-COMPARE_EXISTING_RECORDS_Q = """
+RETRIEVE_RECORDS_Q = """
     SELECT
     `publicdevicerecordkey`,
     `deviceid`,

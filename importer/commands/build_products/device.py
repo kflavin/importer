@@ -5,7 +5,6 @@ import html
 
 from importer.loaders.build_products.device import MedDeviceCompleteLoader, BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
-from importer.sql.products.device import DELTA_RECORDS_Q
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ def delta(ctx, stage_table_name, prod_table_name):
     """
     loader = MedDeviceCompleteLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
-    arr = loader.delta_stage_to_prod(DELTA_RECORDS_Q, stage_table_name, prod_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
+    arr = loader.delta_stage_to_prod(stage_table_name, prod_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
     # print(arr[0])
     # print(arr[1])
 
