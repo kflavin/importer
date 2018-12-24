@@ -3,8 +3,8 @@ import os
 import logging
 
 from importer.loaders.base import BaseLoader, convert_date
-from importer.sql import (INSERT_AND_UPDATE_QUERY)
-
+from importer.commands.products.common import data_loader
+from importer.sql import (INSERT_QUERY)
 
 logger = logging.getLogger(__name__)
 
@@ -15,48 +15,26 @@ def ndc(ctx):
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
-# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
 @click.pass_context
 def load(ctx, infile, table_name):
-    """
-    NPI importer
-    """
-    batch_size = ctx.obj['batch_size']
-    throttle_size = ctx.obj['throttle_size']
-    throttle_time = ctx.obj['throttle_time']
 
-    args = {
-        'user': os.environ.get('db_user'),
-        'password': os.environ.get('db_password'),
-        'host': os.environ.get('db_host'),
-        'database': os.environ.get('db_schema')
-    }
-
-    loader = BaseLoader()
-    loader.column_type_overrides = {
+    column_type_overrides = {
+        'master_id': (lambda x: int(float(x)) if x else None),
         'eff_date': (lambda x: convert_date(x)),
         'end_eff_date': (lambda x: convert_date(x))
     }
-    loader.warnings = True
 
-    # print(f"Loading {period} (small) file into database.  large_file: {large_file}")
-    logger.info(f"Loading {infile} into {table_name}")
-    loader.connect(**args)
-    loader.load_file(INSERT_AND_UPDATE_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
+    data_loader(BaseLoader, INSERT_QUERY, column_type_overrides, ctx, infile, table_name)
+    print(f"NDC data loaded to table: {table_name}")
 
-    print(f"Data loaded to table: {table_name}")
-
-@click.command()
-@click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with NDC Master data")
-@click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
-def preprocess(infile, outfile):
-    """
-    Preprocess NDC data
-    """
-    ndc_loader = BaseLoader()
-    ndc_loader.preprocess(infile, outfile)
-    print(outfile)
+# @click.command()
+# @click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with NDC Master data")
+# @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
+# def preprocess(infile, outfile):
+#     ndc_loader = BaseLoader()
+#     ndc_loader.preprocess(infile, outfile)
+#     print(outfile)
 
 ndc.add_command(load)
-ndc.add_command(preprocess)
+# ndc.add_command(preprocess)

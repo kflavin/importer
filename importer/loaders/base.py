@@ -32,7 +32,7 @@ def convert_date_time(x):
 
 class BaseLoader(object):
 
-    def __init__(self, warnings=True):
+    def __init__(self, warnings=True, batch_size=1000, throttle_size=10_000, throttle_time=3):
         self.cnx = ""
         self.cursor = ""
         self.debug = ""
@@ -40,6 +40,9 @@ class BaseLoader(object):
         self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
         self.column_type_overrides = {}  # Optional dict for functions to transform select columns {'id': int}
         self.all_columns_xform = [] # Optional list of functions to transform all columns.  Run after type overrides.
+        self.batch_size = batch_size
+        self.throttle_size = throttle_size
+        self.throttle_time = throttle_time
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -58,6 +61,9 @@ class BaseLoader(object):
 
         self.cnx = connector.connect(**config)
         self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
+
+    def get_cursor(self, dictionary=False, buffered=False):
+        return self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
     def _clean_values(self, key, value):
         desired_column_type = self.column_type_overrides[key]
@@ -109,10 +115,23 @@ class BaseLoader(object):
         else:
             return value
 
-    def _submit_single_q(self, query):
+    def _query(self, query, cursor=None):
+        if not cursor:
+            cursor = self.cursor
+
+        try:
+            cursor.execute(query)
+        except Exception as e:
+            raise
+
+        rows = list(cursor)
+        return rows
+
+    def _submit_single_q(self, query, commit=True):
         try:
             self.cursor.execute(query)
-            self.cnx.commit()
+            if commit:
+                self.cnx.commit()
         except Exception as e:
             self.cnx.rollback()
             raise
@@ -160,6 +179,46 @@ class BaseLoader(object):
 
         return self.cursor.rowcount
 
+    def _batcher(self, rows):
+        """
+        Return records in batches, and optionally throttle how fast records are returned.
+        """
+        row_count = 0
+        batch = []
+        batch_count = 1
+
+        total_rows_modified = 0
+        throttle_count = 0
+
+        i = 0
+        for row in rows:
+            if row_count > self.batch_size - 1:
+                logger.debug(f"row_count={row_count} batch_size={self.batch_size} and batch={batch}")
+                # Yield the previous batch
+                yield batch
+
+                # Start the new batch
+                batch = []
+                batch.append(row)
+                row_count = 1
+
+                batch_count += 1
+                # break # toggle to load one batch only
+            else:
+                row_count += 1
+                batch.append(row)
+
+            # Put in a sleep timer to throttle how hard we hit the database
+            if self.throttle_time and self.throttle_size and (throttle_count > self.throttle_size - 1):
+                logger.info(f"Sleeping for {self.throttle_time} seconds... row: {i}")
+                time.sleep(int(throttle_time))
+                throttle_count = 0
+            elif self.throttle_time and self.throttle_size:
+                throttle_count += 1
+            i += 1
+
+        yield batch
+
     def build_insert_query(self, query, columns, table_name):
         """
         Construct the INSERT query using a prepared statement.
@@ -181,12 +240,26 @@ class BaseLoader(object):
         query = query.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
 
+    def csv_loader(self, query, table_name, infile, ctx):
+        """
+        replacement for load_file
+        """
+        # unpack context
+        batch_size = ctx.obj.get('batch_size', 1000)
+        throttle_size = ctx.obj.get('throttle_size', 10_000)
+        throttle_time = ctx.obj.get('throttle_time', 3)
+
+        reader = csv.DictReader(open(infile, 'r'))
+        # insert_q = self.build_insert_query(query, self._clean_fields(reader.fieldnames), table_name)
+        logger.debug(query)
+        self.row_loader(query, reader.fieldnames, reader, table_name, batch_size, throttle_size, throttle_time)
+
     def row_loader(self, query, columns, rows, table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
         Replacement for "load_file".  This doesn't assume the file is a CSV, and instead takes a list rows, where
         each row is composed of a dictionary as follows: key is column, and value is row value.
         """
-        logger.info(f"Loading data into {table_name}")
+        logger.info(f"Loading data into table: {table_name}")
         clean_columns = self._clean_fields(columns)
         insert_q = self.build_insert_query(query, clean_columns, table_name)
 
@@ -213,40 +286,21 @@ class BaseLoader(object):
             else:
                 row_count += 1
 
-            # if len(row) != len(clean_columns):
-            #     logger.warn(f"Row {i} elements do not match # of columns {len(row)} != {len(clean_columns)}")
-            #     continue
-            
-            # data = OrderedDict(zip(clean_columns, row))
-            # for key, value in data.items():
-            #     if key in self.column_type_overrides:
-            #         try:
-            #             value = self.column_type_overrides[key](value)
-            #         except Exception as e:
-            #             logger.debug(e)
-            #             logger.debug(f"Could not set value for {key}, default to None")
-            #             value = None
-            #     else:
-            #         # If no value is defined, use null.
-            #         if not value:
-            #             value = None
-            #     data[key] = value
-
-
             data = OrderedDict()
             for key, value in row.items():
                 # Perform column-specific transformations
                 key = self._clean_field(key)
                 if key in self.column_type_overrides:
                     try:
-                        # logger.debug(f"Call {self.column_type_overrides[key](value)} on {key}={value}")
+                        logger.debug(f"Call {self.column_type_overrides[key]} on {key}={value}")
                         value = self.column_type_overrides[key](value)
                     except Exception as e:
-                        # logger.debug(e)
-                        # logger.debug(f"Could not set value for {key}, default to None")
+                        logger.debug(e)
+                        logger.debug(f"Could not set value for {key}, default to None")
                         value = None
                 else:
                     # If no value is defined, use null.
+                    # logger.debug("key not in overrides")
                     if not value:
                         value = None
 
@@ -357,9 +411,9 @@ class BaseLoader(object):
         
         return total_rows_modified
 
-    def preprocess(self, infile, outfile=None, encoding="latin1", sep=None):
+    def preprocess(self, infile, outfile=None, encoding="utf-8", sep=None):
         """
-        Preprocess data
+        Preprocess data and write out a new file in csv format
         """
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
@@ -374,6 +428,7 @@ class BaseLoader(object):
 
         df.columns = [ self._clean_field(col) for col in df.columns]
         df.to_csv(outfile, sep=',', quoting=1, index=False)
+        logger.info(f"File written to {outfile}")
 
     def close(self):
         self.cursor.close()

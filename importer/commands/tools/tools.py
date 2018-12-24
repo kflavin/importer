@@ -10,7 +10,8 @@ from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
                             is_numeric_dtype, is_float_dtype)
 
 from importer.loaders.base import BaseLoader
-from importer.sql.base import INSERT_AND_UPDATE_QUERY
+from importer.loaders.products.base import ProductBaseLoader
+from importer.sql import INSERT_QUERY
 
 # print(logging.Logger.manager.loggerDict)
 
@@ -68,7 +69,7 @@ def load(ctx, infile, table_name):
     }
 
     logger.debug("Loading: query={} table={} infile={} batch_size={} throttle_size={} throttle_time={} \n".format(
-        INSERT_AND_UPDATE_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
+        INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time
     ))
 
     loader = BaseLoader()
@@ -82,7 +83,7 @@ def load(ctx, infile, table_name):
     loader.warnings = True
     logger.info(f"Loading {infile} into {table_name}")
     loader.connect(**args)
-    loader.load_file(INSERT_AND_UPDATE_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
+    loader.load_file(INSERT_QUERY, table_name, infile, batch_size, throttle_size, throttle_time)
 
     print(f"Data loaded to table: {table_name}")
 
@@ -97,7 +98,6 @@ def preprocess(infile, outfile, separator, encoding):
     """
     loader = BaseLoader()
     loader.preprocess(infile, outfile, encoding=encoding, sep=separator)
-    print(outfile)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
@@ -269,6 +269,22 @@ def copy_table(ctx, source_table_name, destination_table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
     loader.copy_table(source_table_name, destination_table_name)
+
+@click.command()
+@click.option('--sql', '-s', required=True, type=click.File('rb'), help="SQL query file")
+@click.option('--left-table-name', '-l', required=True, type=click.STRING, help="")
+@click.option('--right-table-name', '-r', required=True, type=click.STRING, help="")
+@click.pass_context
+def delta(ctx, sql, left_table_name, right_table_name):
+    """
+    Delta between med device complete staging and prod table.  Update prod table with changes.
+    """
+    sql = sql.read().decode("utf-8")
+    print(sql)
+
+    loader = ProductBaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+    loader.delta_table(sql, left_table_name, right_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
         
 
 tools.add_command(invalid_chars)
@@ -277,3 +293,4 @@ tools.add_command(preprocess)
 tools.add_command(load)
 tools.add_command(create_table)
 tools.add_command(copy_table)
+tools.add_command(delta)

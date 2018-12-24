@@ -56,55 +56,6 @@ class MedDeviceCompleteLoader(BaseLoader):
 
         return found, not_found
 
-        
-        # for i in self.cursor:
-        #     print(i)
-
-    # def _submit_multi_q(self, query):
-    #     try:
-    #         self.cursor.execute(query)
-    #     except Exception as e:
-    #         raise
-
-    #     rows = list(self.cursor)
-    #     return rows
-
-    def _batcher(self, rows, batch_size, throttle_size, throttle_time):
-        """
-        Return records in batches, and optionally throttle how fast records are returned.
-        """
-        row_count = 0
-        batch = []
-        batch_count = 1
-
-        total_rows_modified = 0
-        throttle_count = 0
-
-        i = 0
-        for row in rows:
-            if row_count > batch_size - 1:
-                yield batch
-
-                batch = []
-                row_count = 0
-                batch_count += 1
-                # break # toggle to load one batch only
-            else:
-                row_count += 1
-
-            batch.append(row)
-
-            # Put in a sleep timer to throttle how hard we hit the database
-            if throttle_time and throttle_size and (throttle_count > throttle_size - 1):
-                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
-                time.sleep(int(throttle_time))
-                throttle_count = 0
-            elif throttle_time and throttle_size:
-                throttle_count += 1
-            i += 1
-
-        yield batch
-
     def build_retrieve_query(self, query, rows, table_name):
         where_clause = []
 
@@ -119,20 +70,6 @@ class MedDeviceCompleteLoader(BaseLoader):
         # where_clause_s = where_clause_s[:-3]
 
         return query.format(table_name=table_name, where_clause=where_clause_s)
-
-    # def build_insert_query(self, query, rows, table_name):
-    #     cols = []
-    #     values = ""
-
-    #     # for row in rows[0]:
-    #         # cols.append("%s")
-
-    #     # print(values)
-    #     # values = ", ".join(cols)
-    #     # values = f"( {values} )"
-    #     # print(values)
-
-    #     return query.format(table_name=table_name, values=values)
 
     def delta_stage_to_prod(self, stage_table_name, prod_table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
@@ -154,7 +91,7 @@ class MedDeviceCompleteLoader(BaseLoader):
         total_update_count = 0
         if found:
             # These records need to be updated
-            for c, batch in enumerate(self._batcher(found, batch_size, throttle_size, throttle_time)):
+            for c, batch in enumerate(super()._batcher(found, batch_size, throttle_size, throttle_time)):
                 logger.info("Check batch for updates {}".format(c+1))
                 # use this for product table updates
                 q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
@@ -196,7 +133,7 @@ class MedDeviceCompleteLoader(BaseLoader):
         total_insert_count = 0
         if not_found:
             # These are new records that need to be inserted.
-            for c, batch in enumerate(self._batcher(not_found, batch_size, throttle_size, throttle_time)):
+            for c, batch in enumerate(super()._batcher(not_found, batch_size, throttle_size, throttle_time)):
                 logger.info(f"Submitting INSERT batch {c+1}")
                 total_insert_count += len(batch)
                 
@@ -260,10 +197,6 @@ class MedDeviceCompleteLoader(BaseLoader):
             for device in root:
                 if device.tag.endswith("header"):
                     continue
-
-                # # print(dir(device.findall("d:publicDeviceRecordKey", ns)).pop())
-                # pdrk = device.findall("d:publicDeviceRecordKey", ns)[0].text
-                # print(pdrk)
 
                 # Maintain one dict of device elements, and a list of identifer elements
                 identifier_list = []
@@ -329,18 +262,6 @@ class MedDeviceCompleteLoader(BaseLoader):
                                 device_item['phoneExtension'] = i.text
                             if i.tag.endswith("email"):
                                 device_item['email'] = i.text
-                            # print(contact)
-                            # devices[pdrk]['phone'] = contact.findall(f'd:phone', ns)[0].text
-                            # devices[pdrk]['phoneExtension'] = contact.findall(f'd:phoneExtension', ns)[0].text
-                            # devices[pdrk]['email'] = contact.findall(f'd:email', ns)[0].text
-
-
-                        # print("contacts...")
-                        # print(elem)
-                        # #identifiers = elem.findall('./{http://www.fda.gov/cdrh/gudid}identifier/')
-                        # for i in elem.findall(f'd:customerContact/', ns):
-                        #     print("here...")
-                        #     print(i)
 
                     if elem.tag.endswith("deviceDescription"):
                         device_item['deviceDescription'] = elem.text
@@ -354,11 +275,6 @@ class MedDeviceCompleteLoader(BaseLoader):
                         device_item['rx'] = elem.text
                     if elem.tag.endswith("otc"):
                         device_item['otc'] = elem.text
-
-                # put into list format, because that's what row loader expects right now
-                # l = []
-                # for k,v in device_item.items():
-                #     l.append(v)
 
                 # For each identifier, create a separate dict item (db row) to load
                 for i in identifier_list:
@@ -389,9 +305,5 @@ class MedDeviceCompleteLoader(BaseLoader):
 
             super().row_loader(query, columns, devices, table_name, batch_size, throttle_size, throttle_time)
 
-        # print(len(device_item.keys()))
-        # from pprint import pprint
-        # pprint(devices)
-        # print(columns)
         
 
