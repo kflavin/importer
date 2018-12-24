@@ -10,7 +10,7 @@ from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
                             is_numeric_dtype, is_float_dtype)
 
 from importer.loaders.base import BaseLoader
-from importer.loaders.products.base import ProductBaseLoader
+from importer.loaders.products.base import DeltaBaseLoader
 from importer.sql import INSERT_QUERY
 
 # print(logging.Logger.manager.loggerDict)
@@ -270,21 +270,23 @@ def copy_table(ctx, source_table_name, destination_table_name):
     loader.connect(**ctx.obj['db_credentials'])
     loader.copy_table(source_table_name, destination_table_name)
 
-@click.command()
-@click.option('--sql', '-s', required=True, type=click.File('rb'), help="SQL query file")
-@click.option('--left-table-name', '-l', required=True, type=click.STRING, help="")
-@click.option('--right-table-name', '-r', required=True, type=click.STRING, help="")
-@click.pass_context
-def delta(ctx, sql, left_table_name, right_table_name):
-    """
-    Delta between med device complete staging and prod table.  Update prod table with changes.
-    """
-    sql = sql.read().decode("utf-8")
-    print(sql)
+# deprecate
+#
+# @click.command()
+# @click.option('--sql', '-s', required=True, type=click.File('rb'), help="SQL query file")
+# @click.option('--left-table-name', '-l', required=True, type=click.STRING, help="")
+# @click.option('--right-table-name', '-r', required=True, type=click.STRING, help="")
+# @click.pass_context
+# def delta(ctx, sql, left_table_name, right_table_name):
+#     """
+#     Delta between med device complete staging and prod table.  Update prod table with changes.
+#     """
+#     sql = sql.read().decode("utf-8")
+#     print(sql)
 
-    loader = ProductBaseLoader(warnings=ctx.obj['warnings'])
-    loader.connect(**ctx.obj['db_credentials'])
-    loader.delta_table(sql, left_table_name, right_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
+#     loader = DeltaBaseLoader(warnings=ctx.obj['warnings'])
+#     loader.connect(**ctx.obj['db_credentials'])
+#     loader.delta_table(sql, left_table_name, right_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
         
 
 tools.add_command(invalid_chars)
@@ -293,4 +295,4 @@ tools.add_command(preprocess)
 tools.add_command(load)
 tools.add_command(create_table)
 tools.add_command(copy_table)
-tools.add_command(delta)
+# tools.add_command(delta)
