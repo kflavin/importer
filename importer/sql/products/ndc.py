@@ -2,7 +2,7 @@
 # RxVantageNDCMaster
 ######################################
 
-CREATE_NDCMASTER_TABLE = """
+CREATE_NDCMASTER_DDL = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `master_id` INT NOT NULL,

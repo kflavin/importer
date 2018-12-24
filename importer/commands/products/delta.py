@@ -5,11 +5,17 @@ import logging
 
 from importer.loaders.products.base import DeltaBaseLoader
 from importer.sql import DELETE_Q
-from importer.sql.products.delta import (DELTA_NDC_TO_PRODUCT_MASTER_Q as DELTA_Q, 
-                                        RETRIEVE_NDC_Q as RETRIEVE_LEFT_Q,
-                                        RETRIEVE_PRODUCT_MASTER_Q as RETRIEVE_RIGHT_Q,
-                                        INSERT_PRODUCT_MASTER_Q as INSERT_Q,
-                                        ARCHIVE_PRODUCT_MASTER_Q as ARCHIVE_Q)
+from importer.sql.products.delta.ndc_productmaster import (
+    DELTA_NDC_TO_PRODUCT_MASTER_Q as DELTA_Q, 
+    RETRIEVE_NDC_Q as RETRIEVE_LEFT_Q,
+    RETRIEVE_PRODUCT_MASTER_Q as RETRIEVE_RIGHT_Q,
+    INSERT_PRODUCT_MASTER_Q as INSERT_Q,
+    ARCHIVE_PRODUCT_MASTER_Q as ARCHIVE_Q)
+
+from importer.sql.products.delta.productmaster_product import (
+    DELTA_PRODUCTMASTER_TO_PRODUCT_Q,
+    RETRIEVE_PRODUCT_Q,
+    RETRIEVE_PRODUCTMASTER_Q)
 
 logger = logging.getLogger(__name__)
 
@@ -79,14 +85,16 @@ def ndc_to_product_master(ctx, left_table_name, right_table_name, right_table_na
     loader.connect(**ctx.obj['db_credentials'])
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
+
+# Not working yet.  Task 4.1.12
 @click.command()
 @click.option('--left-table-name', '-l', required=True, type=click.STRING, help="")
 @click.option('--right-table-name', '-r', required=True, type=click.STRING, help="")
 @click.option('--right-table-name-archive', '-a', type=click.STRING, help="")
 @click.pass_context
-def product_master_to_product(ctx, left_table_name, right_table_name, right_table_name_archive):
+def productmaster_to_product(ctx, left_table_name, right_table_name, right_table_name_archive):
 
-    join_columns = ["master_id"]
+    join_columns = ["master_id", "master_type"]
     compare_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
     insert_archive_columns = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
     insert_new_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
@@ -105,9 +113,9 @@ def product_master_to_product(ctx, left_table_name, right_table_name, right_tabl
         right_table_name_archive = f"{right_table_name}_archive"
 
     loader_args = {
-        "DELTA_Q": DELTA_Q,
-        "RETRIEVE_LEFT_Q": RETRIEVE_LEFT_Q,
-        "RETRIEVE_RIGHT_Q": RETRIEVE_RIGHT_Q,
+        "DELTA_Q": DELTA_PRODUCTMASTER_TO_PRODUCT_Q,
+        "RETRIEVE_LEFT_Q": RETRIEVE_PRODUCTMASTER_Q,
+        "RETRIEVE_RIGHT_Q": RETRIEVE_PRODUCT_Q,
         "DELETE_Q": DELETE_Q,
         "ARCHIVE_Q": ARCHIVE_Q,
         "INSERT_Q": INSERT_Q,
@@ -131,4 +139,4 @@ def product_master_to_product(ctx, left_table_name, right_table_name, right_tabl
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
 delta.add_command(ndc_to_product_master)
-delta.add_command(product_master_to_product)
+delta.add_command(productmaster_to_product)

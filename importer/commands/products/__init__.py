@@ -5,6 +5,7 @@ from importer.commands.products.product import product
 from importer.commands.products.ndc import ndc
 from importer.commands.products.device import device
 from importer.commands.products.delta import delta
+from importer.commands.products.merge import merge
 
 logger = logging.getLogger(__name__)
 
@@ -27,3 +28,4 @@ products.add_command(product)
 products.add_command(ndc)
 products.add_command(device)
 products.add_command(delta)
+products.add_command(merge)

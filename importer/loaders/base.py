@@ -434,6 +434,18 @@ class BaseLoader(object):
         self.cursor.close()
         self.cnx.close()
 
+    def execute_queries(self, queries, **format_args):
+        query_len = len(queries)
+        commit = False
+
+        for i,query in enumerate(queries):
+            q = query.format(**format_args)
+
+            if i >= query_len - 1:
+                commit = True
+
+            print(self._submit_single_q(q, commit=commit))
+
     def copy_table(self, source_table_name, dest_table_name):
         """
         Copy a table with its data.
