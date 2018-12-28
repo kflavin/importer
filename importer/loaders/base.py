@@ -193,7 +193,7 @@ class BaseLoader(object):
         i = 0
         for row in rows:
             if row_count > self.batch_size - 1:
-                logger.debug(f"row_count={row_count} batch_size={self.batch_size} and batch={batch}")
+                logger.debug(f"row_count={row_count} batch_size={self.batch_size} and batch={len(batch)}")
                 # Yield the previous batch
                 yield batch
 
@@ -218,6 +218,23 @@ class BaseLoader(object):
             i += 1
 
         yield batch
+
+    def _xform_columns(self, columns, xforms):
+        """
+        Perform transformations on a list of columns
+        """
+        new_columns = []
+
+        for col in columns:
+            if col in xforms:
+                if callable(xforms[col]):
+                    new_columns.append(xforms[col](col))
+                else:
+                    new_columns.append(xforms[col])
+            else:
+                new_columns.append(col)
+
+        return new_columns
 
     def build_insert_query(self, query, columns, table_name):
         """
@@ -411,12 +428,13 @@ class BaseLoader(object):
         
         return total_rows_modified
 
-    def preprocess(self, infile, outfile=None, encoding="utf-8", sep=None):
+    def preprocess(self, infile, outfile=None, encoding="utf-8", sep=None, column_xforms=None):
         """
         Preprocess data and write out a new file in csv format
         """
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
+        logger.info(f"Preprocessing {infile} and writing to {outfile}")
 
         if infile.endswith(".xls") or infile.endswith(".xlsx"):
             df = pd.ExcelFile(infile).parse()
@@ -426,7 +444,20 @@ class BaseLoader(object):
             else:
                 df = pd.read_csv(infile, encoding=encoding)
 
+        logger.info("Transforming and cleaning column names.")
+
+        logger.debug(f"Columns: {df.columns}")
+        if column_xforms:
+            df.columns = self._xform_columns(df.columns, column_xforms)
+            print("hello?")
+
+        print("yay")
+        logger.debug(f"Columns after xforms: {df.columns}")
+        print("nay")
+
         df.columns = [ self._clean_field(col) for col in df.columns]
+        logger.debug(f"Columns after cleaning: {df.columns}")
+
         df.to_csv(outfile, sep=',', quoting=1, index=False)
         logger.info(f"File written to {outfile}")
 

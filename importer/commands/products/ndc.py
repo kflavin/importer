@@ -28,13 +28,18 @@ def load(ctx, infile, table_name):
     data_loader(BaseLoader, INSERT_QUERY, column_type_overrides, ctx, infile, table_name)
     print(f"NDC data loaded to table: {table_name}")
 
-# @click.command()
-# @click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with NDC Master data")
-# @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
-# def preprocess(infile, outfile):
-#     ndc_loader = BaseLoader()
-#     ndc_loader.preprocess(infile, outfile)
-#     print(outfile)
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with NDC Master data")
+@click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
+def preprocess(infile, outfile):
+    ndc_loader = BaseLoader()
+    xforms = {
+        "type": "te_type",
+        "drug_id": "ind_drug_id",
+        "status": "ind_status",
+    }
+    ndc_loader.preprocess(infile, outfile, column_xforms=xforms)
+    print(outfile)
 
 ndc.add_command(load)
-# ndc.add_command(preprocess)
+ndc.add_command(preprocess)
