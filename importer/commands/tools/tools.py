@@ -10,7 +10,7 @@ from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
                             is_numeric_dtype, is_float_dtype)
 
 from importer.loaders.base import BaseLoader
-from importer.loaders.products.base import DeltaBaseLoader
+# from importer.loaders.products.base import DeltaBaseLoader
 from importer.sql import INSERT_QUERY
 
 # print(logging.Logger.manager.loggerDict)
@@ -270,7 +270,7 @@ def copy_table(ctx, source_table_name, destination_table_name):
     loader.connect(**ctx.obj['db_credentials'])
     loader.copy_table(source_table_name, destination_table_name)
 
-# deprecate
+# deprecate, this has been moved under product loader
 #
 # @click.command()
 # @click.option('--sql', '-s', required=True, type=click.File('rb'), help="SQL query file")

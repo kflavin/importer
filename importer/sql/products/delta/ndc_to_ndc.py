@@ -38,3 +38,117 @@ RETRIEVE_NDC_Q = """
 		{where_clause}
     )
 """
+
+    # INSERT INTO `{table_name}` (
+    # `master_id`,
+    # `labelername`,
+    # `productndc`,
+    # `proprietaryname`,
+    # `nonproprietaryname`,
+    # `producttypename`,
+    # `marketingcategoryname`,
+    # `definition`,
+    # `te_code`,
+    # `type`,
+    # `interpretation`,
+    # `ndc_exclude_flag`,
+    # `drug_id`,
+    # `ind_drug_name`,
+    # `ind_name`,
+    # `status`,
+    # `phase`,
+    # `ind_detailedstatus`,
+    # `eff_date`,
+    # `end_eff_date`
+
+# add back in definition and interpretation
+INSERT_NDC_Q = """
+    INSERT INTO `{table_name}` (
+    `master_id`,
+    `labelername`,
+    `productndc`,
+    `proprietaryname`,
+    `nonproprietaryname`,
+    `producttypename`,
+    `marketingcategoryname`,
+    `te_code`,
+    `type`,
+    `ndc_exclude_flag`,
+    `drug_id`,
+    `ind_drug_name`,
+    `ind_name`,
+    `status`,
+    `phase`,
+    `ind_detailedstatus`,
+    `eff_date`,
+    `end_eff_date`
+    )
+    VALUES(
+      %(master_id)s,
+      %(labelername)s,
+      %(productndc)s,
+      %(proprietaryname)s,
+      %(nonproprietaryname)s,
+      %(producttypename)s,
+      %(marketingcategoryname)s,
+      %(te_code)s,
+      %(type)s,
+      %(ndc_exclude_flag)s,
+      %(drug_id)s,
+      %(ind_drug_name)s,
+      %(ind_name)s,
+      %(status)s,
+      %(phase)s,
+      %(ind_detailedstatus)s,
+      DATE(NOW()),
+      NULL
+    )
+"""
+
+ARCHIVE_NDC_Q = """
+    INSERT into {archive_table_name} (
+      `id`,
+      `master_id`,
+      `labelername`,
+      `productndc`,
+      `proprietaryname`,
+      `nonproprietaryname`,
+      `producttypename`,
+      `marketingcategoryname`,
+      `definition`,
+      `te_code`,
+      `type`,
+      `interpretation`,
+      `ndc_exclude_flag`,
+      `drug_id`,
+      `ind_drug_name`,
+      `ind_name`,
+      `status`,
+      `phase`,
+      `ind_detailedstatus`,
+      `eff_date`,
+      `end_eff_date`
+    )
+    SELECT `id`,
+          `master_id`,
+          `labelername`,
+          `productndc`,
+          `proprietaryname`,
+          `nonproprietaryname`,
+          `producttypename`,
+          `marketingcategoryname`,
+          `definition`,
+          `te_code`,
+          `type`,
+          `interpretation`,
+          `ndc_exclude_flag`,
+          `drug_id`,
+          `ind_drug_name`,
+          `ind_name`,
+          `status`,
+          `phase`,
+          `ind_detailedstatus`,
+          `eff_date`,
+          DATE(NOW())
+    FROM {table_name} WHERE ({where_clause});
+"""

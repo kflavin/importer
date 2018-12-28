@@ -36,7 +36,7 @@ ON n.proprietaryname = o.proprietaryname;
 """
 )
 
-# Need to add this.  It merges extraneous records
+# Need to add this.  It merges extraneous records with help from the te_code.
 """
 create table test_ndc_reload3 like test_ndc_reload2;
 insert into test_ndc_reload3 select * from test_ndc_reload2 group by productndc,ind_name,te_code,ind_detailedstatus;

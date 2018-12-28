@@ -3,7 +3,7 @@ import click
 import os
 import logging
 
-from importer.loaders.products.base import DeltaBaseLoader
+from importer.loaders.products.delta import DeltaBaseLoader
 from importer.sql import DELETE_Q
 from importer.sql.products.delta.ndc_productmaster import (
     DELTA_NDC_TO_PRODUCT_MASTER_Q as DELTA_Q, 
@@ -18,7 +18,7 @@ from importer.sql.products.delta.productmaster_product import (
     RETRIEVE_PRODUCTMASTER_Q)
 
 from importer.sql.products.delta.ndc_to_ndc import (
-    DELTA_NDC_TO_NDC_Q, RETRIEVE_NDC_Q)
+    DELTA_NDC_TO_NDC_Q, RETRIEVE_NDC_Q, INSERT_NDC_Q, ARCHIVE_NDC_Q)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def delta(ctx, only_new_records, only_updates):
     else:
         ctx.obj['do_inserts'] = ctx.obj['do_updates'] = True
 
-# Task 4.1.1.9
+# Task 4.1.9
 @click.command()
 @click.option('--left-table-name', '-l', required=True, type=click.STRING, help="")
 @click.option('--right-table-name', '-r', required=True, type=click.STRING, help="")
@@ -52,8 +52,8 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
         # Excluding definition and interpretation, b/c I'm not populating those yet.
         # "master_id", "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"
     ]
-    extra_lcols = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
-    insert_new_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
+    extra_lcols = []
+    insert_new_columns = ["master_id", "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"]
     
     xform_left = {
         # "proprietaryname": (lambda x: x.upper() if x else None),
@@ -69,8 +69,8 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
         "RETRIEVE_LEFT_Q": RETRIEVE_NDC_Q,
         "RETRIEVE_RIGHT_Q": RETRIEVE_NDC_Q,
         "DELETE_Q": DELETE_Q,
-        "ARCHIVE_Q": ARCHIVE_Q,
-        "INSERT_Q": INSERT_Q,
+        "ARCHIVE_Q": ARCHIVE_NDC_Q,
+        "INSERT_Q": INSERT_NDC_Q,
         "join_columns": join_columns,
         "compare_columns": compare_columns,
         "extra_lcols": extra_lcols,
@@ -90,6 +90,10 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
     loader.connect(**ctx.obj['db_credentials'])
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
+
+
+
+# 4.1.11
 @click.command()
 @click.option('--left-table-name', '-l', required=True, type=click.STRING, help="")
 @click.option('--right-table-name', '-r', required=True, type=click.STRING, help="")

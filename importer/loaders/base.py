@@ -211,7 +211,7 @@ class BaseLoader(object):
             # Put in a sleep timer to throttle how hard we hit the database
             if self.throttle_time and self.throttle_size and (throttle_count > self.throttle_size - 1):
                 logger.info(f"Sleeping for {self.throttle_time} seconds... row: {i}")
-                time.sleep(int(throttle_time))
+                time.sleep(int(self.throttle_time))
                 throttle_count = 0
             elif self.throttle_time and self.throttle_size:
                 throttle_count += 1
