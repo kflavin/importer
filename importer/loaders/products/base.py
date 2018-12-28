@@ -17,7 +17,8 @@ class DeltaBaseLoader(BaseLoader):
         self.INSERT_Q = kwargs.pop("INSERT_Q")
         self.join_columns = kwargs.pop("join_columns")
         self.compare_columns = kwargs.pop("compare_columns")
-        self.insert_archive_columns = kwargs.pop("insert_archive_columns")
+        self.extra_lcols = kwargs.pop("extra_lcols")
+        self.extra_rcols = kwargs.pop("extra_rcols", [])    # if needed in the future
         self.insert_new_columns = kwargs.pop("insert_new_columns")
         self.xform_left = kwargs.pop("xform_left")
         self.xform_right = kwargs.pop("xform_right")
@@ -110,7 +111,7 @@ class DeltaBaseLoader(BaseLoader):
             subset_rows.append(new_row)
         return subset_rows
 
-    def _rows_needing_updates(self, compare_columns, insert_columns, left, right):
+    def _rows_needing_updates(self, compare_columns, extra_lcols, extra_rcols, left, right):
         """
         Find rows that need updates based on a subset of columns (compare_columns)
         Return a list of rows to insert into the database, and include any additional columns
@@ -123,10 +124,16 @@ class DeltaBaseLoader(BaseLoader):
         for i,row in enumerate(subset_left):
             if row not in subset_right:
                 # ID exists, but the row has changed.  We'll append the new row, but first
-                # see if there are any additional columns from the left table we want to include
-                for col in insert_columns:
+                # see if there are any additional columns from the left table we want to include.
+                # This applies when we're not comparing tables with the same table schema.
+                for col in extra_lcols:
                     if col not in row:
                         row[col] = left[i][col]
+
+                # # if we need to include extra columns from the right table in the future...
+                # for col in extra_rcols:
+                #     if col not in row:
+                #         row[col] = right[i][col]
 
                 need_updates.append(row)
             else:
@@ -172,9 +179,15 @@ class DeltaBaseLoader(BaseLoader):
 
             for i,column in enumerate(columns):
                 if type(row) == dict:
-                    and_clause.append(f"{column}='{row[column]}'")
+                    if row[column]:
+                        and_clause.append(f"{column}='{row[column]}'")
+                    else:
+                        and_clause.append(f"{column} is NULL")
                 else:
-                    and_clause.append(f"{column}='{row[i]}'")
+                    if row[i]:
+                        and_clause.append(f"{column}='{row[i]}'")
+                    else:
+                        and_clause.append(f"{column} is NULL")
             
             and_clause_s = " AND ".join(and_clause)
             where_clause.append(f"({and_clause_s})")
@@ -191,19 +204,19 @@ class DeltaBaseLoader(BaseLoader):
 
             # Get records from left table
             q = self._build_retrieve_query(self.RETRIEVE_LEFT_Q, self.join_columns, batch, self.left_table_name)
-            logger.debug(q)
+            logger.debug(f"RETRIEVE_LEFT_Q: {q}")
             left = super()._query(q, self.get_cursor(dictionary=True))
             self._perform_xform(left, self.xform_left)
             logger.debug(left)
             
             # Get records from right table
             q = self._build_retrieve_query(self.RETRIEVE_RIGHT_Q, self.join_columns, batch, self.right_table_name)
-            logger.debug(q)
+            logger.debug(f"RETRIEVE_RIGHT_Q: {q}")
             right = super()._query(q, self.get_cursor(dictionary=True))
             self._perform_xform(right, self.xform_right)
             logger.debug(right)
 
-            need_updates = self._rows_needing_updates(self.compare_columns, self.insert_archive_columns, left, right)
+            need_updates = self._rows_needing_updates(self.compare_columns, self.extra_lcols, self.extra_rcols, left, right)
 
             if need_updates:
                 logger.info(f"{len(need_updates)} rows need updates")
@@ -212,11 +225,13 @@ class DeltaBaseLoader(BaseLoader):
                 # Archive rows with changes
                 q = self._build_and_or_query(self.ARCHIVE_Q, self.join_columns, 
                     need_updates, table_name=self.right_table_name, archive_table_name=self.right_table_name_archive)
-                
+                logger.debug(f"ARCHIVE_Q: {q}")
+
                 result = super()._submit_single_q(q, commit=False)
 
                 # Delete rows with changes
                 q = self._build_retrieve_query(self.RETRIEVE_RIGHT_Q, self.join_columns, need_updates, self.right_table_name)
+                logger.debug(f"ARCHIVE_Q: {q}")
                 result = super()._submit_single_q(q, commit=False)
 
                 # Insert the new row
@@ -261,8 +276,8 @@ class DeltaBaseLoader(BaseLoader):
         logger.debug(q)
 
         found, not_found = self._delta_q(q)
-        logger.info(f"Check for {len(found)} records for updates, insert {len(not_found)} new records")
-
+        logger.info(f"Check {len(found)} records for updates, insert {len(not_found)} new records")
+        
         if found and do_updates:
             update_count = self.process_found(found)
             logger.info(f"Updated {update_count} records")

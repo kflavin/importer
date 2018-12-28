@@ -435,6 +435,9 @@ class BaseLoader(object):
         self.cnx.close()
 
     def execute_queries(self, queries, **format_args):
+        """
+        Submit multiple queries, commit transaction on final query.
+        """
         query_len = len(queries)
         commit = False
 
@@ -444,7 +447,7 @@ class BaseLoader(object):
             if i >= query_len - 1:
                 commit = True
 
-            print(self._submit_single_q(q, commit=commit))
+            self._submit_single_q(q, commit=commit)
 
     def copy_table(self, source_table_name, dest_table_name):
         """

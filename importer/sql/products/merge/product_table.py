@@ -1,5 +1,7 @@
-# A list of SQL statements to execute
+# Create the new product table.  We'll probably end up creating the new table with a migration, so the create
+# and alter table statements can be removed at that time.
 
+# A list of SQL statements to execute
 PRODUCT_TABLE_MERGE = []
 
 PRODUCT_TABLE_MERGE.append(

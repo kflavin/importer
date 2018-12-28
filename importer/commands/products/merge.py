@@ -18,6 +18,7 @@ def merge(ctx):
 @click.pass_context
 def product_table(ctx, old_table_name, new_table_name, master_table_name):
 
+    logger.info(f"Creating new product table `{new_table_name}` from `{old_table_name}`, using master: `{master_table_name}`")
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
     format_args = {
@@ -26,6 +27,7 @@ def product_table(ctx, old_table_name, new_table_name, master_table_name):
         "product_master": master_table_name
     }
     loader.execute_queries(PRODUCT_TABLE_MERGE, **format_args)
+    logger.info(f"`{new_table_name}` loaded.")
 
 merge.add_command(product_table)
 
