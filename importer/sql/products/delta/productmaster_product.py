@@ -106,7 +106,7 @@ INSERT_PRODUCT_Q = """
 # Archive product table records
 ARCHIVE_PRODUCT_Q = """
     INSERT into {archive_table_name} (
-        `id`,
+        `rx_id`,
         `client_product_id`,
         `master_id`,
         `master_type`,
@@ -126,7 +126,7 @@ ARCHIVE_PRODUCT_Q = """
         `end_date`
         )
     SELECT
-        `id`,
+        `id` as rx_id,
         `client_product_id`,
         `master_id`,
         `master_type`,
