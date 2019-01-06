@@ -28,5 +28,8 @@ CREATE_NDCMASTER_DDL = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`, `ind_name`)
+    KEY `masterid_idx` (`master_id`),
+    KEY `idx_ndc_productndc_te_code_ind_name_ind_detailedstatus` (`productndc`,`te_code`,`ind_name`,`ind_detailedstatus`),
+    KEY `idx_ndc_proprietaryname_nonproprietaryname` (`proprietaryname`,`nonproprietaryname`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """

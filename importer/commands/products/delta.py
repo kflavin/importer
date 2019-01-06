@@ -4,21 +4,31 @@ import os
 import logging
 
 from importer.loaders.products.delta import DeltaBaseLoader
-from importer.sql import DELETE_Q
-from importer.sql.products.delta.ndc_productmaster import (
-    DELTA_NDC_TO_PRODUCT_MASTER_Q as DELTA_Q, 
-    RETRIEVE_NDC_Q as RETRIEVE_LEFT_Q,
-    RETRIEVE_PRODUCT_MASTER_Q as RETRIEVE_RIGHT_Q,
-    INSERT_PRODUCT_MASTER_Q as INSERT_Q,
-    ARCHIVE_PRODUCT_MASTER_Q as ARCHIVE_Q)
 
+# Common queries
+from importer.sql import DELETE_Q
+from importer.sql.products.delta.common import RETRIEVE_PRODUCTMASTER_Q
+
+# NDC to Product master queries
+from importer.sql.products.delta.ndc_productmaster import (
+    DELTA_NDC_TO_PRODUCTMASTER_Q, 
+    RETRIEVE_NDC_GROUPS_Q,
+    INSERT_PRODUCTMASTER_Q,
+    ARCHIVE_PRODUCTMASTER_Q)
+
+# Product master to product queries
 from importer.sql.products.delta.productmaster_product import (
     DELTA_PRODUCTMASTER_TO_PRODUCT_Q,
     RETRIEVE_PRODUCT_Q,
-    RETRIEVE_PRODUCTMASTER_Q)
+    INSERT_PRODUCT_Q,
+    ARCHIVE_PRODUCT_Q)
 
+# NDC to NDC queries
 from importer.sql.products.delta.ndc_to_ndc import (
-    DELTA_NDC_TO_NDC_Q, RETRIEVE_NDC_Q, INSERT_NDC_Q, ARCHIVE_NDC_Q)
+    DELTA_NDC_TO_NDC_Q,
+    RETRIEVE_NDC_Q,
+    INSERT_NDC_Q,
+    ARCHIVE_NDC_Q)
 
 logger = logging.getLogger(__name__)
 
@@ -101,10 +111,12 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
 @click.pass_context
 def ndc_to_product_master(ctx, left_table_name, right_table_name, right_table_name_archive):
 
-    join_columns = ["master_id"]
-    compare_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
-    extra_lcols = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
-    insert_new_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
+    # join_columns = ["master_id"]
+    join_columns = ["proprietaryname", "nonproprietaryname"]
+    compare_columns = ["proprietaryname", "nonproprietaryname"]
+    # extra_lcols = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
+    extra_lcols = []    # additional columns from left table, use for UPDATEs
+    insert_new_columns = ["proprietaryname", "nonproprietaryname"]  # columns to use for INSERTs
     # Upper case the second and third columns (proprietary and non-proprietary name)
     # left_table_transforms = {
     #     2: (lambda x: x.upper() if x else None),
@@ -120,12 +132,12 @@ def ndc_to_product_master(ctx, left_table_name, right_table_name, right_table_na
         right_table_name_archive = f"{right_table_name}_archive"
 
     loader_args = {
-        "DELTA_Q": DELTA_Q,
-        "RETRIEVE_LEFT_Q": RETRIEVE_LEFT_Q,
-        "RETRIEVE_RIGHT_Q": RETRIEVE_RIGHT_Q,
+        "DELTA_Q": DELTA_NDC_TO_PRODUCT_MASTER_Q,
+        "RETRIEVE_LEFT_Q": RETRIEVE_NDC_GROUPS_Q,
+        "RETRIEVE_RIGHT_Q": RETRIEVE_PRODUCTMASTER_Q,
         "DELETE_Q": DELETE_Q,
-        "ARCHIVE_Q": ARCHIVE_Q,
-        "INSERT_Q": INSERT_Q,
+        "ARCHIVE_Q": ARCHIVE_PRODUCT_MASTER_Q,
+        "INSERT_Q": INSERT_PRODUCT_MASTER_Q,
         "join_columns": join_columns,
         "compare_columns": compare_columns,
         "extra_lcols": extra_lcols,
@@ -155,18 +167,36 @@ def ndc_to_product_master(ctx, left_table_name, right_table_name, right_table_na
 def productmaster_to_product(ctx, left_table_name, right_table_name, right_table_name_archive):
 
     join_columns = ["master_id", "master_type"]
-    compare_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
-    extra_lcols = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
-    insert_new_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
-    # Upper case the second and third columns (proprietary and non-proprietary name)
-    # left_table_transforms = {
-    #     2: (lambda x: x.upper() if x else None),
-    #     3: (lambda x: x.upper() if x else None)
+    compare_columns = ["master_id", "master_type", "proprietaryname", "nonproprietaryname"]
+    # extra_lcols = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
+    extra_lcols = []
+    extra_rcols = [
+        "id",
+        "client_product_id",
+        "master_id",
+        "master_type",
+        "proprietaryname",
+        "nonproprietaryname",
+        "drug_type",
+        "source_type",
+        "company_id",
+        "is_admin_approved",
+        "verified_source",
+        "verified_source_id",
+        "created_by",
+        "created_date",
+        "modified_by",
+        "modified_date",
+        "eff_date",
+        "end_date"
+    ]
+    insert_new_columns = ["master_id", "proprietaryname", "nonproprietaryname"] # columns to use for new rows
+    
+    # xform_left = {
+    #     "proprietaryname": (lambda x: x.upper() if x else None),
+    #     "nonproprietaryname": (lambda x: x.upper() if x else None)
     # }
-    xform_left = {
-        "proprietaryname": (lambda x: x.upper() if x else None),
-        "nonproprietaryname": (lambda x: x.upper() if x else None)
-    }
+    xform_left = {}
     xform_right = {}
     
     if not right_table_name_archive:
@@ -177,11 +207,12 @@ def productmaster_to_product(ctx, left_table_name, right_table_name, right_table
         "RETRIEVE_LEFT_Q": RETRIEVE_PRODUCTMASTER_Q,
         "RETRIEVE_RIGHT_Q": RETRIEVE_PRODUCT_Q,
         "DELETE_Q": DELETE_Q,
-        "ARCHIVE_Q": ARCHIVE_Q,
-        "INSERT_Q": INSERT_Q,
+        "ARCHIVE_Q": ARCHIVE_PRODUCT_Q,
+        "INSERT_Q": INSERT_PRODUCT_Q,
         "join_columns": join_columns,
         "compare_columns": compare_columns,
         "extra_lcols": extra_lcols,
+        "extra_rcols": extra_rcols,
         "insert_new_columns": insert_new_columns,
         "xform_left": xform_left,
         "xform_right": xform_right,

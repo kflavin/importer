@@ -5,8 +5,8 @@ l.productndc, l.ind_name, l.te_code, l.ind_detailedstatus
 FROM {left_table_name} l
 LEFT OUTER JOIN {right_table_name} r
 ON l.productndc = r.productndc AND
-l.ind_name = r.ind_name AND
-l.te_code = r.te_code AND
+l.ind_name <=> r.ind_name AND
+l.te_code <=> r.te_code AND
 l.ind_detailedstatus <=> r.ind_detailedstatus
 """
 
