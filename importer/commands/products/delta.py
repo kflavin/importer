@@ -132,12 +132,12 @@ def ndc_to_product_master(ctx, left_table_name, right_table_name, right_table_na
         right_table_name_archive = f"{right_table_name}_archive"
 
     loader_args = {
-        "DELTA_Q": DELTA_NDC_TO_PRODUCT_MASTER_Q,
+        "DELTA_Q": DELTA_NDC_TO_PRODUCTMASTER_Q,
         "RETRIEVE_LEFT_Q": RETRIEVE_NDC_GROUPS_Q,
         "RETRIEVE_RIGHT_Q": RETRIEVE_PRODUCTMASTER_Q,
         "DELETE_Q": DELETE_Q,
-        "ARCHIVE_Q": ARCHIVE_PRODUCT_MASTER_Q,
-        "INSERT_Q": INSERT_PRODUCT_MASTER_Q,
+        "ARCHIVE_Q": ARCHIVE_PRODUCTMASTER_Q,
+        "INSERT_Q": INSERT_PRODUCTMASTER_Q,
         "join_columns": join_columns,
         "compare_columns": compare_columns,
         "extra_lcols": extra_lcols,

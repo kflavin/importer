@@ -6,6 +6,8 @@ from importer.commands.products.ndc import ndc
 from importer.commands.products.device import device
 from importer.commands.products.delta import delta
 from importer.commands.products.merge import merge
+from importer.commands.products.tables import tables
+from importer.commands.products.refresh import refresh
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +25,10 @@ def preprocess(infile, outfile, encoding):
     loader.preprocess(infile, outfile, encoding)
     print(outfile)
 
-
 products.add_command(product)
 products.add_command(ndc)
 products.add_command(device)
 products.add_command(delta)
 products.add_command(merge)
+products.add_command(tables)
+products.add_command(refresh)
