@@ -5,7 +5,7 @@
 CREATE_NDCMASTER_DDL = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
     `id` INT NOT NULL AUTO_INCREMENT,
-    `master_id` INT NOT NULL,
+    `master_id` INT DEFAULT NULL,
     `labelername` varchar(100) DEFAULT NULL,
     `productndc` varchar(20) DEFAULT NULL,
     `proprietaryname` varchar(60) DEFAULT NULL,

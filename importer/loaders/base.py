@@ -43,6 +43,7 @@ class BaseLoader(object):
         self.batch_size = batch_size
         self.throttle_size = throttle_size
         self.throttle_time = throttle_time
+        self.time = False
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -119,15 +120,26 @@ class BaseLoader(object):
         if not cursor:
             cursor = self.cursor
 
+        if self.time:
+            logger.info("Start query")
+            logger.info(query)
+
         try:
             cursor.execute(query)
         except Exception as e:
             raise
 
+        if self.time:
+            logger.info("Query completed.")
+
         rows = list(cursor)
         return rows
 
     def _submit_single_q(self, query, commit=True):
+        if self.time:
+            logger.info("Start query")
+            logger.info(query)
+
         try:
             self.cursor.execute(query)
             if commit:
@@ -135,6 +147,9 @@ class BaseLoader(object):
         except Exception as e:
             self.cnx.rollback()
             raise
+
+        if self.time:
+            logger.info("Query completed.")
 
         rows = list(self.cursor)
         return rows
@@ -149,11 +164,18 @@ class BaseLoader(object):
         # Simple retry
         while count < tries:
             try:
+                if self.time:
+                    logger.info("Start query.")
+                    logger.info(query)
+                
                 # cursor.execute(sql, (arg1, arg2))
                 # Deadlock error here when too many processes run at once.  Implement back off timer.
                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
                 self.cursor.executemany(query, data)
                 self.cnx.commit()
+
+                if self.time:
+                    logger.info("Query completed.")
 
                 if self.cursor.fetchwarnings():
                     for warning in self.cursor.fetchwarnings():

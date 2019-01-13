@@ -63,8 +63,8 @@ def all(ctx):
     loader.connect(**ctx.obj['db_credentials'])
 
     indications_table_name = "refresh_indications"
-    ndc_table_name = "refresh_ndc_products"
-    marketing_table_name = "refresh_marketing"
+    ndc_table_name = "refresh_ndc_product"
+    marketing_table_name = "refresh_marketing_codes"
     orange_table_name = "refresh_orange"
 
     q1 = CREATE_INDICATIONS_DDL.format(table_name=indications_table_name)

@@ -110,6 +110,7 @@ def ndc_create_tables(ctx, target_table_name, source_table_name):
     """
     loader = ctx.obj['loader']
     target_table_name2 = target_table_name + "2"
+    stage_table_name = source_table_name + "_stage"
 
     logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
     q1 = REFRESH_NDC_TABLE_DDL.format(target_table_name=target_table_name, source_table_name=source_table_name)

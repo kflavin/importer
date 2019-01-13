@@ -61,10 +61,10 @@ RETRIEVE_NDC_Q = """
     # `eff_date`,
     # `end_eff_date`
 
+# master_id isn't present until added back from prodmaster complete (4.1.11)
 # add back in definition and interpretation
 INSERT_NDC_Q = """
     INSERT INTO `{table_name}` (
-    `master_id`,
     `labelername`,
     `productndc`,
     `proprietaryname`,
@@ -84,7 +84,6 @@ INSERT_NDC_Q = """
     `end_eff_date`
     )
     VALUES(
-      %(master_id)s,
       %(labelername)s,
       %(productndc)s,
       %(proprietaryname)s,

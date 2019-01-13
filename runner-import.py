@@ -21,7 +21,7 @@ from importer.commands.tools import tools
 @click.option('--warnings/--no-warnings', default=True)
 @click.option('--logs', '-l', default="system", type=click.Choice(["cloudwatch", "system"]), help="[cloudwatch|system] - CW requires aws_region/instance_id env vars to be set.")
 @click.option('--log-group', default="importer-test", help="Cloudwatch log group name")
-@click.option('--time/--no-time', default=True, help="Print times.")
+@click.option('--time/--no-time', default=False, help="Print times.")
 @click.pass_context
 def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, log_group, time):
     ctx.ensure_object(dict)
@@ -31,6 +31,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
     ctx.obj['throttle_size'] = throttle_size
     ctx.obj['throttle_time'] = throttle_time
     ctx.obj['warnings'] = warnings
+    ctx.obj['time'] = time
 
     if debug:
         logger.setLevel(level="DEBUG")
@@ -49,9 +50,8 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         sh = logging.StreamHandler(sys.stdout)
 
         # Add a formatter with time.
-        if time:
-            formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%H:%M:%S")
-            sh.setFormatter(formatter)
+        formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%H:%M:%S")
+        sh.setFormatter(formatter)
 
         sh.setLevel(handler_level)
         logger.addHandler(sh)

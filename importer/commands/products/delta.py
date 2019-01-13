@@ -55,15 +55,16 @@ def delta(ctx, only_new_records, only_updates):
 @click.pass_context
 def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive):
 
+    # we haven't populated master_id at this point.  NDC's are unique on productndc, and related indications (1.1.1)
     join_columns = ["productndc", "ind_name", "te_code", "ind_detailedstatus"]
     # compare_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
     compare_columns = [
-        "master_id", "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "te_code", "type", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"
+        "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "te_code", "type", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"
         # Excluding definition and interpretation, b/c I'm not populating those yet.
         # "master_id", "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"
     ]
     extra_lcols = []
-    insert_new_columns = ["master_id", "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"]
+    insert_new_columns = ["labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"]
     
     xform_left = {
         # "proprietaryname": (lambda x: x.upper() if x else None),
@@ -98,6 +99,7 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
 
     loader = DeltaBaseLoader(**loader_args)
     loader.connect(**ctx.obj['db_credentials'])
+    loader.time = ctx.obj['time']
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
 
@@ -229,6 +231,6 @@ def productmaster_to_product(ctx, left_table_name, right_table_name, right_table
     loader.connect(**ctx.obj['db_credentials'])
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
+delta.add_command(ndc_to_ndc)
 delta.add_command(ndc_to_product_master)
 delta.add_command(productmaster_to_product)
-delta.add_command(ndc_to_ndc)
