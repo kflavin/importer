@@ -324,4 +324,3 @@ class DeltaBaseLoader(BaseLoader):
             insert_count = self.process_not_found(not_found)
             logger.info(f"Inserted {insert_count} records")
 
-

@@ -120,6 +120,9 @@ class BaseLoader(object):
         if not cursor:
             cursor = self.cursor
 
+        logger.debug(query[:1500])
+
+        # remove this?
         if self.time:
             logger.info("Start query")
             logger.info(query)
@@ -136,6 +139,9 @@ class BaseLoader(object):
         return rows
 
     def _submit_single_q(self, query, commit=True):
+        logger.debug(query[:1500])
+
+        # remove this?
         if self.time:
             logger.info("Start query")
             logger.info(query)
@@ -164,6 +170,9 @@ class BaseLoader(object):
         # Simple retry
         while count < tries:
             try:
+                logger.debug(query[:1500])
+
+                # remove this?
                 if self.time:
                     logger.info("Start query.")
                     logger.info(query)

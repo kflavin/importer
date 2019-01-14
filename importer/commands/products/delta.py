@@ -4,6 +4,7 @@ import os
 import logging
 
 from importer.loaders.products.delta import DeltaBaseLoader
+from importer.loaders.base import BaseLoader
 
 # Common queries
 from importer.sql import DELETE_Q
@@ -14,7 +15,8 @@ from importer.sql.products.delta.ndc_productmaster import (
     DELTA_NDC_TO_PRODUCTMASTER_Q, 
     RETRIEVE_NDC_GROUPS_Q,
     INSERT_PRODUCTMASTER_Q,
-    ARCHIVE_PRODUCTMASTER_Q)
+    ARCHIVE_PRODUCTMASTER_Q,
+    MASTER_IDS_TO_NDC_TABLE)
 
 # Product master to product queries
 from importer.sql.products.delta.productmaster_product import (
@@ -231,6 +233,18 @@ def productmaster_to_product(ctx, left_table_name, right_table_name, right_table
     loader.connect(**ctx.obj['db_credentials'])
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
+# Add the master_id back to NDC table.  Task 4.1.11
+@click.command()
+@click.option('--ndc-table-name', '-n', required=True, type=click.STRING, help="")
+@click.option('--product-table-name', '-p', required=True, type=click.STRING, help="")
+@click.pass_context
+def masterid_to_ndc(ctx, ndc_table_name, product_table_name):
+    query = MASTER_IDS_TO_NDC_TABLE.format(ndc_table_name=ndc_table_name, product_table_name=product_table_name)
+    loader = BaseLoader()
+    loader.connect(**ctx.obj['db_credentials'])
+    loader._submit_single_q(query)
+
 delta.add_command(ndc_to_ndc)
 delta.add_command(ndc_to_product_master)
 delta.add_command(productmaster_to_product)
+delta.add_command(masterid_to_ndc)
