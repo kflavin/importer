@@ -482,9 +482,7 @@ class BaseLoader(object):
             df.columns = self._xform_columns(df.columns, column_xforms)
             print("hello?")
 
-        print("yay")
         logger.debug(f"Columns after xforms: {df.columns}")
-        print("nay")
 
         df.columns = [ self._clean_field(col) for col in df.columns]
         logger.debug(f"Columns after cleaning: {df.columns}")

@@ -3,7 +3,8 @@
 # RXV Med Device Master
 ######################################
 
-CREATE_RXV_MED_DEVICE = """
+# CREATE_RXV_MED_DEVICE = """
+CREATE_DEVICE_DDL = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
     `id` INT DEFAULT NULL,
     `deviceid` VARCHAR(50) DEFAULT NULL,
@@ -22,8 +23,11 @@ CREATE_RXV_MED_DEVICE = """
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
-CREATE_RXV_MED_DEVICE_COMPLETE  = """
+# CREATE_RXV_MED_DEVICE_COMPLETE  = """
+CREATE_DEVICEMASTER_DDL  = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+	`rx_id` INT DEFAULT NULL,
 	`deviceid` VARCHAR(50) DEFAULT NULL,
     `publicdevicerecordkey` VARCHAR(50) DEFAULT NULL,
     `deviceidtype` VARCHAR(50) DEFAULT NULL,
@@ -46,7 +50,8 @@ CREATE_RXV_MED_DEVICE_COMPLETE  = """
     `end_eff_date` DATE DEFAULT NULL,
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
-    PRIMARY KEY (`deviceid`)
+    PRIMARY KEY (`id`),
+    KEY `idx_pdrk_deviceid_deviceidtype` (`publicdevicerecordkey`, `deviceid`, `deviceidtype`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 

@@ -4,8 +4,19 @@ import logging
 
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
+from importer.commands.products.common import parseInt
 
 logger = logging.getLogger(__name__)
+
+def parseMixed(value):
+    if value:
+        try:
+            newval = int(float(value))
+        except ValueError as e:
+            newval = value
+    else:
+        return None
+    return newval
 
 @click.group()
 @click.pass_context
@@ -24,6 +35,7 @@ def load(ctx, infile, table_name, complete):
     if complete:
         loader.column_type_overrides = {
             'rx_id': (lambda x: int(float(x)) if x else None),
+            'deviceid': (lambda x: parseMixed(x)),
             'dunsnumber': (lambda x: int(float(x)) if x else None),
             'containsdinumber': (lambda x: int(float(x)) if x else None),
             'pkgquantity': (lambda x: int(float(x)) if x else None),
@@ -36,7 +48,7 @@ def load(ctx, infile, table_name, complete):
     else:
         loader.column_type_overrides = {
             'rx_id': (lambda x: int(float(x)) if x else None),
-            'deviceid': (lambda x: int(float(x)) if x else None),
+            # 'deviceid': (lambda x: parseInt(x)),
             'containsdinumber': (lambda x: int(float(x)) if x else None),
             'dunsnumber': (lambda x: int(float(x)) if x else None),
             'eff_date': (lambda x: convert_date(x)),

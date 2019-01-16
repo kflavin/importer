@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 def device(ctx):
     ctx.ensure_object(dict)
 
+# Deprecated.  Use "products refresh" instead
 @click.command()
 @click.option('--indir', '-i', required=True, type=click.STRING, help="Directory with XML files.")
 # @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")

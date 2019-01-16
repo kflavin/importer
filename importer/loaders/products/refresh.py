@@ -3,16 +3,30 @@ from collections import OrderedDict
 import xml.etree.ElementTree as ET
 
 from importer.loaders.base import BaseLoader, convert_date
-from importer.sql import (DELETE_Q)
-from importer.sql.products.device import (RETRIEVE_RECORDS_Q, INSERT_Q, DELTA_RECORDS_Q)
-
 
 logger = logging.getLogger(__name__)
 
-class MedDeviceCompleteLoader(BaseLoader):
-    """
-    Load Med Device data
-    """
+class RefreshLoader(BaseLoader):
+
+    def __init__(self, *args, **kwargs):
+        # self.DELTA_Q = kwargs.pop("DELTA_Q")
+        # self.RETRIEVE_LEFT_Q = kwargs.pop("RETRIEVE_LEFT_Q")
+        # self.RETRIEVE_RIGHT_Q = kwargs.pop("RETRIEVE_RIGHT_Q")
+        # self.DELETE_Q = kwargs.pop("DELETE_Q")
+        # self.ARCHIVE_Q = kwargs.pop("ARCHIVE_Q")
+        # self.INSERT_Q = kwargs.pop("INSERT_Q")
+        # self.join_columns = kwargs.pop("join_columns")
+        # self.compare_columns = kwargs.pop("compare_columns")
+        # self.extra_lcols = kwargs.pop("extra_lcols")
+        # self.extra_rcols = kwargs.pop("extra_rcols", [])    # if needed in the future
+        # self.insert_new_columns = kwargs.pop("insert_new_columns")
+        # self.xform_left = kwargs.pop("xform_left")
+        # self.xform_right = kwargs.pop("xform_right")
+        # self.left_table_name = kwargs.pop("left_table_name")
+        # self.right_table_name = kwargs.pop("right_table_name")
+        # self.right_table_name_archive = kwargs.pop("right_table_name_archive")
+
+        super().__init__(*args, **kwargs)
 
     def _load_xml_files(self, indir):
         files = []
@@ -35,124 +49,6 @@ class MedDeviceCompleteLoader(BaseLoader):
         logger.debug(files)
         return files
 
-    def _delta_q(self, query):
-        """
-        Return a list of found rows and not found rows.
-        """
-        try:
-            self.cursor.execute(query)
-        except Exception as e:
-            raise
-
-        found = []
-        not_found = []
-        for f in self.cursor:
-            if f[3] == 0:
-                not_found.append(f[:3])
-            elif f[3] == 1:
-                found.append(f[:3])
-            else:
-                logger.warn(f"I don't recognize f[3]={f[3]}!  Skipping...")
-
-        return found, not_found
-
-    def build_retrieve_query(self, query, rows, table_name):
-        where_clause = []
-
-        for row in rows:
-            """
-            row[0]: pdrk, row[1]: deviceid, row[2]: deviceidtype
-            """
-            where_clause.append("(publicdevicerecordkey='{}' AND deviceid='{}' AND deviceidtype='{}')".format(row[0], row[1], row[2]))
-        
-
-        where_clause_s = " OR ".join(where_clause)
-        # where_clause_s = where_clause_s[:-3]
-
-        return query.format(table_name=table_name, where_clause=where_clause_s)
-
-    def delta_stage_to_prod(self, stage_table_name, prod_table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
-        """
-        Run a delta between an old table and a new table.  Return two lists of ID's.
-            First: New records
-            Second: Existing records that require updates
-        """
-        logger.info(f"Performing delta update of {stage_table_name} and {prod_table_name}")
-        # files = self._load_xml_files(indir)
-        # print(f"prod table is: {prod_table_name}")
-        # print(f"stage table is: {stage_table_name}")
-
-        q = DELTA_RECORDS_Q.format(stage_table=stage_table_name, prod_table=prod_table_name)
-
-        found, not_found = self._delta_q(q)
-        # print(found)
-        # print(not_found)
-
-        total_update_count = 0
-        if found:
-            # These records need to be updated
-            for c, batch in enumerate(super()._batcher(found, batch_size, throttle_size, throttle_time)):
-                logger.info("Check batch for updates {}".format(c+1))
-                # use this for product table updates
-                q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
-                stage = super()._submit_single_q(q)
-
-                q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, prod_table_name)
-                prod = super()._submit_single_q(q)
-
-                need_updates = []
-                for row in stage:
-                    if row not in prod:
-                        # ID exists, but the row has changed
-                        need_updates.append(row)
-                    else:
-                        pass
-
-                # print(prod_table_name)
-                if need_updates:
-                    logger.info(f"{len(need_updates)} rows need updates")
-                    total_update_count += len(need_updates)
-                    # Delete the row with changes
-                    q = self.build_retrieve_query(DELETE_Q, need_updates, prod_table_name)
-                    # print(q)
-                    result = super()._submit_single_q(q)
-                    # print(result)
-
-                    # Insert the new row
-                    # q = self.build_insert_query(INSERT_Q, need_updates, prod_table_name)
-                    q = INSERT_Q.format(table_name=prod_table_name)
-                    # print(q)
-                    # print("need updates")
-                    # print(need_updates)
-                    result = super()._submit_batch(q, need_updates)
-                    # print('result of need updates')
-                    # print(result)
-
-        logger.info(f"Updated {total_update_count} records")
-
-        total_insert_count = 0
-        if not_found:
-            # These are new records that need to be inserted.
-            for c, batch in enumerate(super()._batcher(not_found, batch_size, throttle_size, throttle_time)):
-                logger.info(f"Submitting INSERT batch {c+1}")
-                total_insert_count += len(batch)
-                
-                # Retrieve the full record we need from staging
-                q = self.build_retrieve_query(RETRIEVE_RECORDS_Q, batch, stage_table_name)
-                new_records = super()._submit_single_q(q)
-
-                # print("new records")
-                # print(new)
-                
-                if new_records:
-                    q = INSERT_Q.format(table_name=prod_table_name)
-                    result = super()._submit_batch(q, new_records)
-                    # print("result of new insert")
-                    # print(result)
-
-        logger.info(f"Inserted {total_insert_count} records")
-
-    # def load_directory(self, query, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
     def load_xml_files(self, query, indir, table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
         files = self._load_xml_files(indir)
 
@@ -340,5 +236,4 @@ class MedDeviceCompleteLoader(BaseLoader):
 
             super().row_loader(query, columns, devices, table_name, batch_size, throttle_size, throttle_time)
 
-        
-
+    

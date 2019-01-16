@@ -54,7 +54,7 @@ CREATE TABLE `{table_name}` (
   `updated_at` datetime DEFAULT NULL,
    PRIMARY KEY (`id`),
    KEY `idx_reload_orange_trade_name` (`trade_name`),
-    KEY `idx_reload_orange_te_code` (`te_code`)
+   KEY `idx_reload_orange_te_code` (`te_code`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
@@ -86,3 +86,61 @@ CREATE TABLE `{table_name}` (
    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
+
+CREATE_MEDICAL_DEVICE_MASTER_DDL = """
+  CREATE TABLE IF NOT EXISTS `{table_name}` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `primarydi` VARCHAR(50) DEFAULT NULL,
+  `deviceid` VARCHAR(50) DEFAULT NULL,
+  `deviceidtype` VARCHAR(50) DEFAULT NULL,
+  `devicedescription` VARCHAR(3000) DEFAULT NULL,
+  `companyname` VARCHAR(120) DEFAULT NULL,
+  `phone` VARCHAR(20) DEFAULT NULL,
+  `phoneextension` BIGINT DEFAULT NULL,
+  `email` VARCHAR(100) DEFAULT NULL,
+  `brandname` VARCHAR(175) DEFAULT NULL,
+  `dunsnumber` BIGINT DEFAULT NULL,
+  `deviceidissuingagency` VARCHAR(50) DEFAULT NULL,
+  `containsdinumber` VARCHAR(23) DEFAULT NULL,
+  `pkgquantity` INT DEFAULT NULL,
+  `pkgdiscontinuedate` DATE DEFAULT NULL,
+  `pkgstatus` VARCHAR(50) DEFAULT NULL,
+  `pkgtype` VARCHAR(20) DEFAULT NULL,
+  `rx` BOOL DEFAULT NULL,
+  `otc` BOOL DEFAULT NULL,
+  `eff_date` DATE DEFAULT NULL,
+  `end_eff_date` DATE DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+   PRIMARY KEY (`id`),
+   KEY `idx_deviceid_deviceidtype` (`deviceid`, `deviceidtype`)
+  ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8
+"""
+
+# CREATE_MEDICAL_DEVICE_MASTER_DDL = """
+#   CREATE TABLE IF NOT EXISTS `{table_name}` (
+# 	`publicdevicerecordkey` VARCHAR(50) DEFAULT NULL,
+# 	`deviceid` VARCHAR(50) DEFAULT NULL,
+#   `deviceidtype` VARCHAR(50) DEFAULT NULL,
+#   `devicedescription` VARCHAR(3000) DEFAULT NULL,
+#   `companyname` VARCHAR(120) DEFAULT NULL,
+#   `phone` VARCHAR(20) DEFAULT NULL,
+#   `phoneextension` BIGINT DEFAULT NULL,
+#   `email` VARCHAR(100) DEFAULT NULL,
+#   `brandname` VARCHAR(175) DEFAULT NULL,
+#   `dunsnumber` BIGINT DEFAULT NULL,
+#   `deviceidissuingagency` VARCHAR(50) DEFAULT NULL,
+#   `containsdinumber` VARCHAR(23) DEFAULT NULL,
+#   `pkgquantity` INT DEFAULT NULL,
+#   `pkgdiscontinuedate` DATE DEFAULT NULL,
+#   `pkgstatus` VARCHAR(50) DEFAULT NULL,
+#   `pkgtype` VARCHAR(20) DEFAULT NULL,
+#   `rx` BOOL DEFAULT NULL,
+#   `otc` BOOL DEFAULT NULL,
+#   `eff_date` DATE DEFAULT NULL,
+#   `end_eff_date` DATE DEFAULT NULL,
+#   `created_at` datetime DEFAULT NULL,
+#   `updated_at` datetime DEFAULT NULL,
+#   PRIMARY KEY (`publicdevicerecordkey`, `deviceid`, `deviceidtype`)
+#   ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8
+# """

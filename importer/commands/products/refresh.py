@@ -3,12 +3,20 @@ import os
 import logging
 import html
 
-from importer.loaders.build_products.device import MedDeviceCompleteLoader, BaseLoader, convert_date
+from importer.loaders.base import BaseLoader, convert_date
+from importer.loaders.products.refresh import RefreshLoader
 from importer.sql import (INSERT_QUERY)
 from importer.sql.products.refresh.ndc import (REFRESH_NDC_TABLE_DDL, REFRESH_NDC_TABLE_LOAD_INDICATIONS, 
                     REFRESH_NDC_TABLE_DDL, REFRESH_NDC_TABLE_LOAD_ORANGE)
 
 logger = logging.getLogger(__name__)
+
+# def parseInt(value):
+#     try:
+#         value = int(value)
+#     except ValueError as e:
+#         pass
+#     return value
 
 @click.group()
 @click.pass_context
@@ -121,7 +129,50 @@ def ndc_create_tables(ctx, target_table_name, source_table_name):
     loader._submit_single_q(q2)
     logger.info("Finished.")
 
+@click.command()
+@click.option('--indir', '-i', required=True, type=click.STRING, help="Directory with XML files.")
+# @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
+# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
+@click.pass_context
+def load_medical_device(ctx, indir, table_name):
+    """
+    Med Device Loader
+    """
+    batch_size = ctx.obj['batch_size']
+    throttle_size = ctx.obj['throttle_size']
+    throttle_time = ctx.obj['throttle_time']
+    debug = ctx.obj['debug']
+    warnings = ctx.obj['warnings']
+    args = ctx.obj['db_credentials']
+
+    logger.info("Loading: query={} table={} infile={} batch_size={} throttle_size={} throttle_time={} \n".format(
+        INSERT_QUERY, table_name, indir, batch_size, throttle_size, throttle_time
+    ))
+
+    loader = RefreshLoader(warnings=warnings)
+    loader.column_type_overrides = {
+        'rx': (lambda x: True if x.lower() == "true" else False),
+        'otc': (lambda x: True if x.lower() == "true" else False)
+        # 'deviceid': (lambda x: parseInt(x))
+        # 'containsdinumber': (lambda x: float(int(x)) if x else None),
+        # 'eff_date': (lambda x: convert_date(x)),
+        # 'end_eff_date': (lambda x: convert_date(x))
+    }
+    loader.all_columns_xform = [html.unescape]
+    logger.info(f"Loading {indir} into {table_name}")
+    loader.connect(**args)
+    loader.load_xml_files(INSERT_QUERY, indir, table_name, batch_size, throttle_size, throttle_time)
+
+    print(f"Data loaded to table: {table_name}")
+
+# do all
 refresh.add_command(ndc)
+
+# load NDC refresh tables individually
 refresh.add_command(ndc_load_indications)
 refresh.add_command(ndc_load_orange)
 refresh.add_command(ndc_create_tables)
+
+# Load medical device refresh table
+refresh.add_command(load_medical_device)
