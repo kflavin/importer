@@ -270,6 +270,19 @@ def copy_table(ctx, source_table_name, destination_table_name):
     loader.connect(**ctx.obj['db_credentials'])
     loader.copy_table(source_table_name, destination_table_name)
 
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="")
+@click.pass_context
+def drop_table(ctx, table_name):
+    """
+    Create a copy of a source table.
+    """
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    DROP_TABLE_DDL = f"DROP TABLE {table_name}"
+    loader.connect(**ctx.obj['db_credentials'])
+    loader._submit_single_q(DROP_TABLE_DDL)
+    print(f"Dropped table {table_name}")
+
 # deprecate, this has been moved under product loader
 #
 # @click.command()
@@ -295,4 +308,5 @@ tools.add_command(preprocess)
 tools.add_command(load)
 tools.add_command(create_table)
 tools.add_command(copy_table)
+tools.add_command(drop_table)
 # tools.add_command(delta)

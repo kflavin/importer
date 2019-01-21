@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 def products(ctx): #, batch_size, throttle_size, throttle_time):
     ctx.ensure_object(dict)
 
-@click.command()
-@click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with Product Master data")
-@click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
-@click.option('--encoding', default="utf-8", type=click.STRING, help="Encoding of CSV file.  default: utf-8")
-def preprocess(infile, outfile, encoding):
-    loader = BaseLoader()
-    loader.preprocess(infile, outfile, encoding)
-    print(outfile)
+# @click.command()
+# @click.option('--infile', '-i', required=True, type=click.STRING, help="Excel file with Product Master data")
+# @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
+# @click.option('--encoding', default="utf-8", type=click.STRING, help="Encoding of CSV file.  default: utf-8")
+# def preprocess(infile, outfile, encoding):
+#     loader = BaseLoader()
+#     loader.preprocess(infile, outfile, encoding)
+#     print(outfile)
 
 products.add_command(product)
 products.add_command(ndc)

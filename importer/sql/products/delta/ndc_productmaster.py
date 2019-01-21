@@ -66,20 +66,20 @@ RETRIEVE_NDC_GROUPS_Q = """
     ) GROUP BY proprietaryname, nonproprietaryname
 """
 
-# # Retrieve from the product master table to compare with NDC table
-# RETRIEVE_PRODUCT_MASTER_Q = """
-#     SELECT
-#     `master_id`,
-#     `master_type`,
-#     `proprietaryname`,
-#     `nonproprietaryname`,
-#     `eff_date`,
-#     `end_eff_date`
-#     FROM  {table_name}
-#     WHERE (
-# 		{where_clause}
-#     ) GROUP BY master_id
-# """
+# Retrieve from the product master table to compare with NDC table
+RETRIEVE_PRODUCT_MASTER_Q = """
+    SELECT
+    `master_id`,
+    `master_type`,
+    `proprietaryname`,
+    `nonproprietaryname`,
+    `eff_date`,
+    `end_eff_date`
+    FROM  {table_name}
+    WHERE (
+		{where_clause}
+    ) GROUP BY master_id
+"""
 
 # Insert into the product master table
 INSERT_PRODUCTMASTER_Q = """

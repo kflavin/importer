@@ -34,7 +34,7 @@ def load(ctx, infile, table_name, complete):
 
     if complete:
         loader.column_type_overrides = {
-            'rx_id': (lambda x: int(float(x)) if x else None),
+            # 'primarydi': (lambda x: int(float(x)) if x else None),
             'deviceid': (lambda x: parseMixed(x)),
             'dunsnumber': (lambda x: int(float(x)) if x else None),
             'containsdinumber': (lambda x: int(float(x)) if x else None),
@@ -47,7 +47,7 @@ def load(ctx, infile, table_name, complete):
         }
     else:
         loader.column_type_overrides = {
-            'rx_id': (lambda x: int(float(x)) if x else None),
+            # 'rx_id': (lambda x: int(float(x)) if x else None),
             # 'deviceid': (lambda x: parseInt(x)),
             'containsdinumber': (lambda x: int(float(x)) if x else None),
             'dunsnumber': (lambda x: int(float(x)) if x else None),

@@ -3,7 +3,7 @@
 ######################################
 
 CREATE_NDCMASTER_DDL = """
-    CREATE TABLE IF NOT EXISTS `{table_name}` (
+    CREATE TABLE `{table_name}` (
     `id` INT NOT NULL AUTO_INCREMENT,
     `master_id` INT DEFAULT NULL,
     `labelername` varchar(100) DEFAULT NULL,
@@ -14,21 +14,21 @@ CREATE_NDCMASTER_DDL = """
     `marketingcategoryname` varchar(70) DEFAULT NULL,
     `definition` varchar(100) DEFAULT NULL,
     `te_code` varchar(5) DEFAULT NULL,
-    `type` varchar(20) DEFAULT NULL,
+    `te_type` varchar(20) DEFAULT NULL,
     `interpretation` varchar(75) DEFAULT NULL,
     `ndc_exclude_flag` char(1) DEFAULT NULL,
-    `drug_id` varchar(10) DEFAULT NULL,
+    `ind_drug_id` varchar(10) DEFAULT NULL,
     `ind_drug_name` varchar(40) DEFAULT NULL,
     `ind_name` varchar(100) DEFAULT NULL,
-    `status` varchar(20) DEFAULT NULL,
-    `phase` varchar(20) DEFAULT NULL,
+    `ind_status` varchar(20) DEFAULT NULL,
+    `ind_phase` varchar(20) DEFAULT NULL,
     `ind_detailedstatus` varchar(200) DEFAULT NULL,
     `eff_date` datetime DEFAULT NULL,
     `end_eff_date` datetime DEFAULT NULL,
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
-    PRIMARY KEY (`id`, `ind_name`)
-    KEY `masterid_idx` (`master_id`),
+    PRIMARY KEY (`id`, `ind_name`),
+    KEY `idx_masterid` (`master_id`),
     KEY `idx_ndc_productndc_te_code_ind_name_ind_detailedstatus` (`productndc`,`te_code`,`ind_name`,`ind_detailedstatus`),
     KEY `idx_ndc_proprietaryname_nonproprietaryname` (`proprietaryname`,`nonproprietaryname`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;

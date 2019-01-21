@@ -27,9 +27,8 @@ CREATE_DEVICE_DDL = """
 CREATE_DEVICEMASTER_DDL  = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
     `id` INT NOT NULL AUTO_INCREMENT,
-	`rx_id` INT DEFAULT NULL,
+	`primarydi` VARCHAR(50) DEFAULT NULL,
 	`deviceid` VARCHAR(50) DEFAULT NULL,
-    `publicdevicerecordkey` VARCHAR(50) DEFAULT NULL,
     `deviceidtype` VARCHAR(50) DEFAULT NULL,
     `devicedescription` VARCHAR(2000) DEFAULT NULL,
     `companyname` VARCHAR(120) DEFAULT NULL,
@@ -51,7 +50,7 @@ CREATE_DEVICEMASTER_DDL  = """
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY `idx_pdrk_deviceid_deviceidtype` (`publicdevicerecordkey`, `deviceid`, `deviceidtype`)
+    KEY `idx_primarydi_di_ditype` (`primarydi`, `deviceid`, `deviceidtype`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 

@@ -12,3 +12,10 @@ def parseInt(value):
     except ValueError as e:
         newvalue = value
     return newvalue
+
+# The call to float() is because pandas will convert int column to floats, if there are any null values.
+def parseIntOrNone(value):
+    try:
+        return int(float(value))
+    except Exception:
+        return None

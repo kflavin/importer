@@ -261,7 +261,7 @@ def masterid_to_ndc(ctx, ndc_table_name, product_table_name):
 def devicemaster_devicemaster(ctx, left_table_name, right_table_name, right_table_name_archive):
 
     # join_columns = ["master_id"]
-    join_columns = ["deviceid"]
+    join_columns = ["primarydi", "deviceid", "devicetypeid"]
     compare_columns = [
         "deviceid", "publicdevicerecordkey", "deviceidtype", "devicedescription", "companyname", "phone", "phoneextension", "email", "brandname", "dunsnumber", "deviceidissuingagency", "containsdinumber", "pkgquantity", "pkgdiscontinuedate", "pkgstatus", "pkgtype", "rx", "otc"
     ]

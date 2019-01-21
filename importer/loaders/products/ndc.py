@@ -4,31 +4,31 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-class NdcLoader(BaseLoader):
-    """
-    Load NDC Master data
-    """
+# Deprecated, remove
+# class NdcLoader(BaseLoader):
+#     """
+#     Load NDC Master data
+#     """
 
-    # def __init__(self):
-    #     super().__init__()
+#     # def __init__(self):
+#     #     super().__init__()
 
-    def preprocess(self, infile, outfile=None):
-        """
-        Preprocess the NDC Master file.
-        """
+#     def preprocess(self, infile, outfile=None):
+#         """
+#         Preprocess the NDC Master file.
+#         """
 
-        if not outfile:
-            outfile = infile[:infile.rindex(".")] + ".clean.csv"
+#         if not outfile:
+#             outfile = infile[:infile.rindex(".")] + ".clean.csv"
 
-        # HDM has provided us with an Excel file, but this should be generalized to accept CSV for Excel.
-        df = pd.ExcelFile(infile).parse()
+#         df = pd.ExcelFile(infile).parse()
 
-        df.columns = [ super(NdcLoader, self)._clean_field(col) for col in df.columns]
-        df['eff_date'] = df['eff_date'].apply(convert_date)
-        df['end_eff_date'] = df['end_eff_date'].apply(convert_date)
+#         df.columns = [ super(NdcLoader, self)._clean_field(col) for col in df.columns]
+#         df['eff_date'] = df['eff_date'].apply(convert_date)
+#         df['end_eff_date'] = df['end_eff_date'].apply(convert_date)
         
-        df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
+#         df.to_csv(outfile, sep=',', quoting=1, index=False, encoding='utf-8')
 
-        return outfile
+#         return outfile
 
 

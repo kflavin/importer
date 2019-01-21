@@ -171,6 +171,7 @@ class BaseLoader(object):
         while count < tries:
             try:
                 logger.debug(query[:1500])
+                logger.debug(str(data)[:1500])
 
                 # remove this?
                 if self.time:
@@ -324,7 +325,7 @@ class BaseLoader(object):
                 logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
                 
-                logger.debug(batch)
+                logger.debug(str(batch)[:1500])
 
                 batch = []
                 row_count = 0
@@ -340,7 +341,7 @@ class BaseLoader(object):
                 key = self._clean_field(key)
                 if key in self.column_type_overrides:
                     try:
-                        logger.debug(f"Call {self.column_type_overrides[key]} on {key}={value}")
+                        # logger.debug(f"Call {self.column_type_overrides[key]} on {key}={value}")
                         value = self.column_type_overrides[key](value)
                     except Exception as e:
                         logger.debug(e)
@@ -465,7 +466,7 @@ class BaseLoader(object):
         """
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
-        logger.info(f"Preprocessing {infile} and writing to {outfile}")
+        logger.info(f"Preprocessing \"{infile}\" and writing to \"{outfile}\"")
 
         if infile.endswith(".xls") or infile.endswith(".xlsx"):
             df = pd.ExcelFile(infile).parse()
@@ -480,14 +481,13 @@ class BaseLoader(object):
         logger.debug(f"Columns: {df.columns}")
         if column_xforms:
             df.columns = self._xform_columns(df.columns, column_xforms)
-            print("hello?")
 
         logger.debug(f"Columns after xforms: {df.columns}")
 
         df.columns = [ self._clean_field(col) for col in df.columns]
         logger.debug(f"Columns after cleaning: {df.columns}")
 
-        df.to_csv(outfile, sep=',', quoting=1, index=False)
+        df.to_csv(outfile, sep=',', quoting=1, index=False, encoding="utf-8")
         logger.info(f"File written to {outfile}")
 
     def close(self):

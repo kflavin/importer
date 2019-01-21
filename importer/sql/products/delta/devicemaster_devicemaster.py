@@ -9,7 +9,7 @@ DELTA_DEVICEMASTER_DEVICEMASTER_Q = """
 
 RETRIEVE_DEVICEMASTER_Q = """
     SELECT
-    `publicdevicerecordkey`,
+    `primarydi`,
     `deviceid`,
     `deviceidtype`,
     `devicedescription`,
@@ -35,7 +35,7 @@ RETRIEVE_DEVICEMASTER_Q = """
 
 INSERT_DEVICEMASTER_Q = """
     INSERT INTO `{table_name}` (
-    `publicdevicerecordkey`,
+    `primarydi`,
     `deviceid`,
     `deviceidtype`,
     `devicedescription`,
@@ -55,7 +55,7 @@ INSERT_DEVICEMASTER_Q = """
     `otc`
     )
     VALUES(
-      %(publicdevicerecordkey)s,
+      %(primarydi)s,
       %(deviceid)s,
       %(deviceidtype)s,
       %(devicedescription)s,
@@ -83,7 +83,7 @@ INSERT_DEVICEMASTER_Q = """
 ARCHIVE_DEVICEMASTER_Q = """
     INSERT into {archive_table_name} (
     `id`,
-    `publicdevicerecordkey`,
+    `primarydi`,
     `deviceid`,
     `deviceidtype`,
     `devicedescription`,
@@ -103,7 +103,7 @@ ARCHIVE_DEVICEMASTER_Q = """
     `otc`
     )
     SELECT `id`,
-            `publicdevicerecordkey`,
+            `primarydi`,
             `deviceid`,
             `deviceidtype`,
             `devicedescription`,

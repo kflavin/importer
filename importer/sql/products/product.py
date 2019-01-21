@@ -1,20 +1,26 @@
-# # Insert rows into the NPI table
-# INSERT_QUERY = """
-#     INSERT INTO {table_name}
-#     ({cols}, created_at, updated_at)
-#     VALUES ({values}, now(), now())
-#     ON DUPLICATE KEY UPDATE
-#     {on_dupe_values}, updated_at=now()
-# """
-
 ######################################
 # RxVantageNDCMaster
 ######################################
 
+# # Old
+# CREATE_PRODUCT_MASTER_DDL = """
+#     CREATE TABLE IF NOT EXISTS `{table_name}` (
+#     `id` INT NOT NULL AUTO_INCREMENT,
+#     `master_id` INT DEFAULT NULL,
+#     `master_type` VARCHAR(128) DEFAULT NULL,
+#     `proprietaryname` VARCHAR(512) DEFAULT NULL,
+#     `nonproprietaryname` VARCHAR(512) DEFAULT NULL,
+#     `eff_date` DATE DEFAULT NULL,
+#     `end_eff_date` DATE DEFAULT NULL,
+#     `created_at` datetime DEFAULT NULL,
+#     `updated_at` datetime DEFAULT NULL,
+#     PRIMARY KEY (`id`)
+#     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
+# """
+
 CREATE_PRODUCT_MASTER_DDL = """
-    CREATE TABLE IF NOT EXISTS `{table_name}` (
-    `id` INT NOT NULL AUTO_INCREMENT,
-    `master_id` INT DEFAULT NULL,
+    CREATE TABLE `{table_name}` (
+    `master_id` INT NOT NULL AUTO_INCREMENT,
     `master_type` VARCHAR(128) DEFAULT NULL,
     `proprietaryname` VARCHAR(512) DEFAULT NULL,
     `nonproprietaryname` VARCHAR(512) DEFAULT NULL,
@@ -22,7 +28,7 @@ CREATE_PRODUCT_MASTER_DDL = """
     `end_eff_date` DATE DEFAULT NULL,
     `created_at` datetime DEFAULT NULL,
     `updated_at` datetime DEFAULT NULL,
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`master_id`)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
