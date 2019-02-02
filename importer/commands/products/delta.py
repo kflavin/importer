@@ -69,12 +69,12 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
     join_columns = ["productndc", "ind_name", "te_code", "ind_detailedstatus"]
     # compare_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
     compare_columns = [
-        "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "te_code", "type", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"
+        "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "te_code", "te_type", "ndc_exclude_flag", "ind_drug_id", "ind_drug_name", "ind_name", "ind_status", "ind_phase", "ind_detailedstatus"
         # Excluding definition and interpretation, b/c I'm not populating those yet.
         # "master_id", "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"
     ]
     extra_lcols = []
-    insert_new_columns = ["labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "type", "interpretation", "ndc_exclude_flag", "drug_id", "ind_drug_name", "ind_name", "status", "phase", "ind_detailedstatus"]
+    insert_new_columns = ["labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "definition", "te_code", "te_type", "interpretation", "ndc_exclude_flag", "ind_drug_id", "ind_drug_name", "ind_name", "ind_status", "ind_phase", "ind_detailedstatus"]
     
     xform_left = {
         # "proprietaryname": (lambda x: x.upper() if x else None),
