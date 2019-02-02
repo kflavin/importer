@@ -5,6 +5,9 @@ import logging
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql.products.refresh.tables import (CREATE_INDICATIONS_DDL, CREATE_NDC_DDL,
     CREATE_MARKETING_DDL, CREATE_ORANGE_DDL, CREATE_MEDICAL_DEVICE_MASTER_DDL)
+from importer.sql.products.product import (CREATE_PRODUCT_DDL, CREATE_PRODUCT_MASTER_DDL)
+from importer.sql.products.device import CREATE_DEVICEMASTER_DDL
+from importer.sql.products.ndc import CREATE_NDCMASTER_DDL
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +19,7 @@ def create(ctx):
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
-def indications(ctx, table_name):
+def refresh_indications(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
@@ -26,7 +29,7 @@ def indications(ctx, table_name):
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
-def ndc(ctx, table_name):
+def refresh_ndc(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
@@ -36,7 +39,7 @@ def ndc(ctx, table_name):
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
-def marketing(ctx, table_name):
+def refresh_marketing(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
@@ -46,7 +49,7 @@ def marketing(ctx, table_name):
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
-def orange(ctx, table_name):
+def refresh_orange(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
@@ -56,7 +59,7 @@ def orange(ctx, table_name):
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
-def medicaldevice(ctx, table_name):
+def refresh_medicaldevice(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
@@ -65,9 +68,9 @@ def medicaldevice(ctx, table_name):
 
 @click.command()
 @click.pass_context
-def all(ctx):
+def refresh_all(ctx):
     """
-    Create all product refresh tables using default names.
+    Create all refresh tables using default names.
     """
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
@@ -91,9 +94,91 @@ def all(ctx):
 
     print(f"CREATED refresh tables:\n {indications_table_name}\n {ndc_table_name}\n {marketing_table_name}\n {orange_table_name}")
 
-create.add_command(indications)
-create.add_command(ndc)
-create.add_command(marketing)
-create.add_command(orange)
-create.add_command(medicaldevice)
-create.add_command(all)
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def prod_productmaster(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q = CREATE_PRODUCT_MASTER_DDL.format(table_name=table_name)
+    loader._query(q)
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def prod_product(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q = CREATE_PRODUCT_DDL.format(table_name=table_name)
+    loader._query(q)
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def prod_ndc(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=table_name)
+    loader._query(q)
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def prod_medicaldevice(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q = CREATE_DEVICEMASTER_DDL.format(table_name=table_name)
+    loader._query(q)
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def prod_service(ctx, table_name):
+    print("Not implemented.")
+    pass
+
+@click.command()
+@click.pass_context
+def prod_all(ctx):
+    """
+    Create all production tables using default names.
+    """
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    product_table_name = "product"
+    productmaster_table_name = "product_master"
+    devicemaster_table_name = "device_master"
+    servicemaster_table_name = "service_master"
+    ndcmaster_table_name = "ndc_master"
+
+    q1 = CREATE_PRODUCT_DDL.format(table_name=product_table_name)
+    q2 = CREATE_PRODUCT_MASTER_DDL.format(table_name=productmaster_table_name)
+    q3 = CREATE_DEVICEMASTER_DDL.format(table_name=devicemaster_table_name)
+    q4 = CREATE_NDCMASTER_DDL.format(table_name=ndcmaster_table_name)
+    # q5 = CREATE_SERVICE_MASTER_DDL.format(table_name=servicemaster_table_name)
+    loader._query(q1)
+    loader._query(q2)
+    loader._query(q3)
+    loader._query(q4)
+    # loader._query(q5)
+
+# refresh tables
+create.add_command(refresh_indications)
+create.add_command(refresh_ndc)
+create.add_command(refresh_marketing)
+create.add_command(refresh_orange)
+create.add_command(refresh_medicaldevice)
+create.add_command(refresh_all)
+
+# prod tables
+create.add_command(prod_product)
+create.add_command(prod_productmaster)
+create.add_command(prod_ndc)
+create.add_command(prod_medicaldevice)
+create.add_command(prod_service)
+create.add_command(prod_all)
