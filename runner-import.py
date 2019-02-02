@@ -9,7 +9,7 @@ import sys
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
 from importer.commands.products import products
-from importer.commands.build_products import build_products
+# from importer.commands.build_products import build_products
 
 from importer.commands.tools import tools
 
@@ -71,7 +71,9 @@ start.add_command(npi)
 # start.add_command(product)
 start.add_command(products)
 start.add_command(tools)
-start.add_command(build_products)
+
+# Deprecated
+# start.add_command(build_products)
 
 if __name__ == '__main__':
     start()
