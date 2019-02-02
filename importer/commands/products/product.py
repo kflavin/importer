@@ -4,6 +4,7 @@ import logging
 
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
+from importer.sql.products.refresh.product import ALTER_PRODUCT_RELOAD_TABLE
 from importer.sql.products.product import (CREATE_PRODUCT_MASTER_DDL, 
                             CREATE_PRODUCT_DDL, CREATE_PRODUCT_RELOAD_DDL)
 from importer.commands.products.common import data_loader, parseIntOrNone
@@ -36,6 +37,9 @@ def load(ctx, infile, table_name, complete):
         column_type_overrides = {
         'id': (lambda x: parseIntOrNone(x)),
         'master_id': (lambda x: int(float(x)) if x else None),
+        'end_date': (lambda x: convert_date(x)),
+        'created_date': (lambda x: convert_date(x)),
+        'modified_date': (lambda x: convert_date(x)),
         'eff_date': (lambda x: convert_date(x)),
         'end_eff_date': (lambda x: convert_date(x))
     }
@@ -43,7 +47,7 @@ def load(ctx, infile, table_name, complete):
     data_loader(BaseLoader, INSERT_QUERY, column_type_overrides, ctx, infile, table_name)
     print(f"Complete product data loaded to table: {table_name}")
 
-# Deprecated in favor of "products tables create"
+# Same as "products tables create"
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="")
 @click.option('--complete/--no-complete', default=False, help="Complete file, or rx file.")
@@ -60,7 +64,6 @@ def create_table(ctx, table_name, complete):
     loader._submit_single_q(q)
     logger.info("Finished.")
 
-# Deprecated in favor of "products tables create"
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="")
 @click.pass_context
@@ -71,6 +74,17 @@ def create_reload_table(ctx, table_name):
     loader._submit_single_q(q)
     logger.info("Finished.")
 
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="")
+@click.pass_context
+def alter_reload_table(ctx, table_name):
+    loader = ctx.obj['loader']
+    logger.info(f"Creating \"reload\" table {table_name}...")
+    q = ALTER_PRODUCT_RELOAD_TABLE.format(table_name=table_name)
+    loader._submit_single_q(q)
+    logger.info("Finished.")
+
 product.add_command(load)
 product.add_command(create_table)
 product.add_command(create_reload_table)
+product.add_command(alter_reload_table)
