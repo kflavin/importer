@@ -165,8 +165,9 @@ def x2c(ctx, infile):
 @click.option('--varchar-factor', default=1, type=click.INT, help="Factor for creating varchar field.  Defaults to 2x max value length.")
 @click.option('--sql/--no-sql', default=True, help="Display create table SQL.")
 @click.option('--encoding', '-e', default="utf-8", type=click.STRING, help="Character encoding.  Default 'utf-8'")
+@click.option('--separator', '-s', default=",", type=click.STRING, help="CSV separator (optional)")
 @click.pass_context
-def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, encoding):
+def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, encoding, separator):
     """
     Display SQL table create command from a CSV file.
     """
@@ -178,7 +179,7 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
         df = pd.ExcelFile(infile).parse()
     else:
         print("Loading CSV file...")
-        df = pd.read_csv(infile, encoding=encoding)
+        df = pd.read_csv(infile, encoding=encoding, sep=separator)
     
     count = 0
     for column in df.columns:

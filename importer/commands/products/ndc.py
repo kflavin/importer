@@ -38,6 +38,10 @@ def load(ctx, infile, table_name):
 @click.pass_context
 def preprocess(ctx, infile, outfile):
     ndc_loader = BaseLoader()
+
+    # xforms performs transformations on the column names.  
+    # If the value is callable, call it on the column value (key)
+    # Otherwise, just replace with the given value.
     xforms = {
         "Type": "te_type",
         "drug_id": "ind_drug_id",

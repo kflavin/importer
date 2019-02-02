@@ -6,6 +6,17 @@ def data_loader(LoaderType, query, column_type_overrides, ctx, infile, table_nam
     loader.connect(**ctx.obj['db_credentials'])
     loader.csv_loader(query, table_name, infile, ctx)
 
+# The call to float() is because pandas will convert int column to floats, if there are any null values.
+def parseIntOrNone(value):
+    if value:
+        try:
+            newval = int(float(value))
+        except ValueError as e:
+            newval = value
+    else:
+        return None
+    return newval
+
 def parseInt(value):
     try:
         newvalue = int(value)
@@ -13,9 +24,8 @@ def parseInt(value):
         newvalue = value
     return newvalue
 
-# The call to float() is because pandas will convert int column to floats, if there are any null values.
-def parseIntOrNone(value):
-    try:
-        return int(float(value))
-    except Exception:
-        return None
+# def parseIntOrNone(value):
+#     try:
+#         return int(float(value))
+#     except Exception:
+#         return None

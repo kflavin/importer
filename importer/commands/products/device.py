@@ -4,24 +4,18 @@ import logging
 
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
-from importer.commands.products.common import parseInt
+from importer.sql.products.device import CREATE_DEVICE_DDL, CREATE_DEVICEMASTER_DDL
+from importer.commands.products.common import parseInt, parseIntOrNone
 
 logger = logging.getLogger(__name__)
-
-def parseMixed(value):
-    if value:
-        try:
-            newval = int(float(value))
-        except ValueError as e:
-            newval = value
-    else:
-        return None
-    return newval
 
 @click.group()
 @click.pass_context
 def device(ctx):
     ctx.ensure_object(dict)
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+    ctx.obj['loader'] = loader
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file")
@@ -35,22 +29,22 @@ def load(ctx, infile, table_name, complete):
     if complete:
         loader.column_type_overrides = {
             # 'primarydi': (lambda x: int(float(x)) if x else None),
-            'deviceid': (lambda x: parseMixed(x)),
-            'dunsnumber': (lambda x: int(float(x)) if x else None),
-            'containsdinumber': (lambda x: int(float(x)) if x else None),
-            'pkgquantity': (lambda x: int(float(x)) if x else None),
+            'deviceid': (lambda x: parseIntOrNone(x)),
+            'dunsnumber': (lambda x: parseIntOrNone(x)),
+            'containsdinumber': (lambda x: parseIntOrNone(x)),
+            'pkgquantity': (lambda x: parseIntOrNone(x)),
             'rx': (lambda x: True if x.lower() == "true" else False),
             'otc': (lambda x: True if x.lower() == "true" else False),
-            'phoneextension': (lambda x: int(float(x)) if x else None),
+            'phoneextension': (lambda x: parseIntOrNone(x)),
             'eff_date': (lambda x: convert_date(x)),
             'end_eff_date': (lambda x: convert_date(x))
         }
     else:
         loader.column_type_overrides = {
-            # 'rx_id': (lambda x: int(float(x)) if x else None),
+            'rx_id': (lambda x: parseIntOrNone(x)),
             # 'deviceid': (lambda x: parseInt(x)),
-            'containsdinumber': (lambda x: int(float(x)) if x else None),
-            'dunsnumber': (lambda x: int(float(x)) if x else None),
+            'containsdinumber': (lambda x: parseIntOrNone(x)),
+            'dunsnumber': (lambda x: parseIntOrNone(x)),
             'eff_date': (lambda x: convert_date(x)),
             'end_eff_date': (lambda x: convert_date(x))
         }
@@ -59,6 +53,21 @@ def load(ctx, infile, table_name, complete):
     loader.csv_loader(INSERT_QUERY, table_name, infile, ctx)
 
     print(f"Medical device data loaded to table: {table_name}")
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="")
+@click.option('--complete/--no-complete', default=False, help="Complete file, or rx file.")
+@click.pass_context
+def create_table(ctx, table_name, complete):
+    loader = ctx.obj['loader']
+    logger.info(f"Creating table {table_name}...")
+
+    if complete:
+        q = CREATE_DEVICEMASTER_DDL.format(table_name=table_name)
+    else:
+        q = CREATE_DEVICE_DDL.format(table_name=table_name)
+
+    loader._submit_single_q(q)
 
 # def load(ctx, infile, table_name):
 #     """
@@ -109,4 +118,5 @@ def load(ctx, infile, table_name, complete):
 #     print(outfile)
 
 device.add_command(load)
+device.add_command(create_table)
 # device.add_command(preprocess)

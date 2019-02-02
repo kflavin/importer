@@ -2,6 +2,7 @@ import time, itertools, datetime, logging
 from collections import OrderedDict
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
+from pprint import pformat
 import csv
 import pandas as pd
 
@@ -122,10 +123,10 @@ class BaseLoader(object):
 
         logger.debug(query[:1500])
 
-        # remove this?
-        if self.time:
-            logger.info("Start query")
-            logger.info(query)
+        # # remove this?
+        # if self.time:
+        #     logger.info("Start query")
+        #     logger.info(query)
 
         try:
             cursor.execute(query)
@@ -191,6 +192,10 @@ class BaseLoader(object):
                     for warning in self.cursor.fetchwarnings():
                         logger.warn(warning)
                 break
+            except connector.errors.InterfaceError as e:
+                logger.error(query)
+                logger.error(pformat(data[:10]))
+                raise
             except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
                 # print(self.cursor.statement)

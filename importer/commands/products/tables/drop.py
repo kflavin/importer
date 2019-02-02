@@ -65,16 +65,19 @@ def all(ctx):
     ndc_table_name = "refresh_ndc_products"
     marketing_table_name = "refresh_marketing"
     orange_table_name = "refresh_orange"
+    devicemaster_table_name = "refresh_devicemaster"
 
     q1 = DROP_TABLE_DDL.format(table_name=indications_table_name)
     q2 = DROP_TABLE_DDL.format(table_name=ndc_table_name)
     q3 = DROP_TABLE_DDL.format(table_name=marketing_table_name)
     q4 = DROP_TABLE_DDL.format(table_name=orange_table_name)
+    q5 = DROP_TABLE_DDL.format(table_name=devicemaster_table_name)
     try:
         loader._query(q1)
         loader._query(q2)
         loader._query(q3)
         loader._query(q4)
+        loader._query(q5)
     except Exception as e:
         print(e.args)
         print("Could not drop table.  Does the table exist?")
