@@ -19,6 +19,28 @@ def device(ctx):
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file")
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
+@click.pass_context
+def load_gudid_devices(ctx, infile, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+
+    loader.column_type_overrides = {
+        # 'primarydi': (lambda x: int(float(x)) if x else None),
+        'deviceid': (lambda x: parseIntOrNone(x)),
+        'dunsnumber': (lambda x: parseIntOrNone(x)),
+        'containsdinumber': (lambda x: parseIntOrNone(x)),
+        'pkgquantity': (lambda x: parseIntOrNone(x)),
+        'rx': (lambda x: True if x.lower() == "true" else False),
+        'otc': (lambda x: True if x.lower() == "true" else False),
+    }
+
+    loader.connect(**ctx.obj['db_credentials'])
+    loader.csv_loader(INSERT_QUERY, table_name, infile, ctx)
+
+    print(f"Medical device data loaded to table: {table_name}")
+
+@click.command()
+@click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file")
 # @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
 @click.option('--complete/--no-complete', default=False, help="Complete file, or rx file.")
@@ -118,5 +140,6 @@ def create_table(ctx, table_name, complete):
 #     print(outfile)
 
 device.add_command(load)
+device.add_command(load_gudid_devices)
 device.add_command(create_table)
 # device.add_command(preprocess)

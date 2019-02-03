@@ -94,7 +94,7 @@ CREATE_MEDICAL_DEVICE_MASTER_DDL = """
   `deviceid` VARCHAR(50) DEFAULT NULL,
   `deviceidtype` VARCHAR(50) DEFAULT NULL,
   `devicedescription` VARCHAR(3000) DEFAULT NULL,
-  `companyname` VARCHAR(120) DEFAULT NULL,
+  `companyname` VARCHAR(175) DEFAULT NULL,
   `phone` VARCHAR(20) DEFAULT NULL,
   `phoneextension` BIGINT DEFAULT NULL,
   `email` VARCHAR(100) DEFAULT NULL,
@@ -144,3 +144,78 @@ CREATE_MEDICAL_DEVICE_MASTER_DDL = """
 #   PRIMARY KEY (`publicdevicerecordkey`, `deviceid`, `deviceidtype`)
 #   ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8
 # """
+
+
+CREATE_GUDID_CONTACTS_DDL = """
+CREATE TABLE IF NOT EXISTS `{table_name}` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `primarydi` VARCHAR(50) DEFAULT NULL,
+  `phone` VARCHAR(20) DEFAULT NULL,
+  `phoneextension` BIGINT DEFAULT NULL,
+  `email` VARCHAR(100) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
+"""
+
+CREATE_GUDID_IDENTIFERS_DDL = """
+CREATE TABLE IF NOT EXISTS `{table_name}` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `primarydi` VARCHAR(50) DEFAULT NULL,
+  `deviceid` VARCHAR(50) DEFAULT NULL,
+  `deviceidtype` VARCHAR(50) DEFAULT NULL,
+  `deviceidissuingagency` VARCHAR(50) DEFAULT NULL,
+  `containsdinumber` VARCHAR(23) DEFAULT NULL,
+  `pkgquantity` INT DEFAULT NULL,
+  `pkgdiscontinuedate` DATE DEFAULT NULL,
+  `pkgstatus` VARCHAR(50) DEFAULT NULL,
+  `pkgtype` VARCHAR(20) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
+"""
+
+CREATE_GUDID_DEVICES_DDL = """
+CREATE TABLE IF NOT EXISTS `{table_name}` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `primarydi` VARCHAR(50) DEFAULT NULL,
+  `publicdevicerecordkey` VARCHAR(50) DEFAULT NULL,
+  `publicversionstatus` VARCHAR(6) DEFAULT NULL,
+  `devicerecordstatus` VARCHAR(9) DEFAULT NULL,
+  `publicversionnumber` INT DEFAULT NULL,
+  `publicversiondate` DATE DEFAULT NULL,
+  `devicepublishdate` DATE DEFAULT NULL,
+  `devicecommdistributionenddate` DATE DEFAULT NULL,
+  `devicecommdistributionstatus` VARCHAR(30) DEFAULT NULL,
+  `brandname` VARCHAR(175) DEFAULT NULL,
+  `versionmodelnumber` VARCHAR(128) DEFAULT NULL,
+  `catalognumber` VARCHAR(128) DEFAULT NULL,
+  `dunsnumber` BIGINT DEFAULT NULL,
+  `companyname` VARCHAR(175) DEFAULT NULL,
+  `devicecount` INT DEFAULT NULL,
+  `devicedescription` VARCHAR(3000) DEFAULT NULL,
+  `dmexempt` VARCHAR(10) DEFAULT NULL,
+  `premarketexempt` VARCHAR(10) DEFAULT NULL,
+  `devicehctp` VARCHAR(10) DEFAULT NULL,
+  `devicekit` VARCHAR(10) DEFAULT NULL,
+  `devicecombinationproduct` VARCHAR(10) DEFAULT NULL,
+  `singleuse` VARCHAR(10) DEFAULT NULL,
+  `lotbatch` VARCHAR(10) DEFAULT NULL,
+  `serialnumber` VARCHAR(10) DEFAULT NULL,
+  `manufacturingdate` VARCHAR(10) DEFAULT NULL,
+  `expirationdate` VARCHAR(10) DEFAULT NULL,
+  `donationidnumber` VARCHAR(10) DEFAULT NULL,
+  `labeledcontainsnrl` VARCHAR(10) DEFAULT NULL,
+  `labelednonrl` VARCHAR(10) DEFAULT NULL,
+  `mrisafetystatus` VARCHAR(75) DEFAULT NULL,
+  `rx` BOOL DEFAULT NULL,
+  `otc` BOOL DEFAULT NULL,
+  `devicesterile` VARCHAR(10) DEFAULT NULL,
+  `sterilizationpriortouse` VARCHAR(10) DEFAULT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+   PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
+"""

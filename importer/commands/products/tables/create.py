@@ -4,7 +4,8 @@ import logging
 
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql.products.refresh.tables import (CREATE_INDICATIONS_DDL, CREATE_NDC_DDL,
-    CREATE_MARKETING_DDL, CREATE_ORANGE_DDL, CREATE_MEDICAL_DEVICE_MASTER_DDL)
+    CREATE_MARKETING_DDL, CREATE_ORANGE_DDL, CREATE_MEDICAL_DEVICE_MASTER_DDL,
+    CREATE_GUDID_CONTACTS_DDL, CREATE_GUDID_DEVICES_DDL, CREATE_GUDID_IDENTIFERS_DDL)
 from importer.sql.products.product import (CREATE_PRODUCT_DDL, CREATE_PRODUCT_MASTER_DDL)
 from importer.sql.products.device import CREATE_DEVICEMASTER_DDL
 from importer.sql.products.ndc import CREATE_NDCMASTER_DDL
@@ -67,6 +68,57 @@ def refresh_medicaldevice(ctx, table_name):
     loader._query(q)
 
 @click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def refresh_gudid_contacts(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q1 = CREATE_GUDID_CONTACTS_DDL.format(table_name=table_name)
+    loader._query(q1)
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def refresh_gudid_devices(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q2 = CREATE_GUDID_DEVICES_DDL.format(table_name=table_name)
+    loader._query(q2)
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
+@click.pass_context
+def refresh_gudid_identifers(ctx, table_name):
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    q1 = CREATE_GUDID_IDENTIFERS_DDL.format(table_name=table_name)
+    loader._query(q1)
+
+@click.command()
+@click.pass_context
+def refresh_gudid_all(ctx):
+    """
+    Create all gudid refresh tables
+    """
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    loader.connect(**ctx.obj['db_credentials'])
+
+    guid_devices = "refresh_gudid_devices"
+    guid_identifiers = "refresh_gudid_identifiers"
+    guid_contacts = "refresh_gudid_contacts"
+    q6 = CREATE_GUDID_CONTACTS_DDL.format(table_name=guid_contacts)
+    q7 = CREATE_GUDID_DEVICES_DDL.format(table_name=guid_devices)
+    q8 = CREATE_GUDID_IDENTIFERS_DDL.format(table_name=guid_identifiers)
+    loader._query(q6)
+    loader._query(q7)
+    loader._query(q8)
+    print("Created all gudid tables")
+
+
+@click.command()
 @click.pass_context
 def refresh_all(ctx):
     """
@@ -92,7 +144,18 @@ def refresh_all(ctx):
     loader._query(q4)
     loader._query(q5)
 
+    guid_devices = "refresh_gudid_devices"
+    guid_identifiers = "refresh_gudid_identifiers"
+    guid_contacts = "refresh_gudid_contacts"
+    q6 = CREATE_GUDID_CONTACTS_DDL.format(table_name=guid_devices)
+    q7 = CREATE_GUDID_DEVICES_DDL.format(table_name=guid_identifiers)
+    q8 = CREATE_GUDID_IDENTIFERS_DDL.format(table_name=guid_contacts)
+    loader._query(q6)
+    loader._query(q7)
+    loader._query(q8)
+
     print(f"CREATED refresh tables:\n {indications_table_name}\n {ndc_table_name}\n {marketing_table_name}\n {orange_table_name}")
+    print("...and gudid tables")
 
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
@@ -174,6 +237,10 @@ create.add_command(refresh_marketing)
 create.add_command(refresh_orange)
 create.add_command(refresh_medicaldevice)
 create.add_command(refresh_all)
+create.add_command(refresh_gudid_all)
+create.add_command(refresh_gudid_contacts)
+create.add_command(refresh_gudid_devices)
+create.add_command(refresh_gudid_identifers)
 
 # prod tables
 create.add_command(prod_product)

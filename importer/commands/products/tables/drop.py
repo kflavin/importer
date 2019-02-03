@@ -66,12 +66,18 @@ def all(ctx):
     marketing_table_name = "refresh_marketing"
     orange_table_name = "refresh_orange"
     devicemaster_table_name = "refresh_devicemaster"
+    guid_devices = "refresh_gudid_devices"
+    guid_identifiers = "refresh_gudid_identifiers"
+    guid_contacts = "refresh_gudid_contacts"
 
     q1 = DROP_TABLE_DDL.format(table_name=indications_table_name)
     q2 = DROP_TABLE_DDL.format(table_name=ndc_table_name)
     q3 = DROP_TABLE_DDL.format(table_name=marketing_table_name)
     q4 = DROP_TABLE_DDL.format(table_name=orange_table_name)
     q5 = DROP_TABLE_DDL.format(table_name=devicemaster_table_name)
+    q6 = DROP_TABLE_DDL.format(table_name=guid_devices)
+    q7 = DROP_TABLE_DDL.format(table_name=guid_identifiers)
+    q8 = DROP_TABLE_DDL.format(table_name=guid_contacts)
     try:
         loader._query(q1)
         loader._query(q2)
