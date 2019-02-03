@@ -8,6 +8,7 @@ from importer.loaders.products.refresh import RefreshLoader
 from importer.sql import (INSERT_QUERY)
 from importer.sql.products.refresh.ndc import (REFRESH_NDC_TABLE_DDL, REFRESH_NDC_TABLE_LOAD_INDICATIONS, 
                     REFRESH_NDC_TABLE_DDL, REFRESH_NDC_TABLE_LOAD_ORANGE)
+from importer.sql.products.refresh.device import POPULATE_DEVICE_REFRESH_TABLE
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +167,28 @@ def load_medical_device(ctx, indir, table_name):
 
     print(f"Data loaded to table: {table_name}")
 
+@click.command()
+@click.option('--device-table-name', '-d', required=True, type=click.STRING, help="")
+@click.option('--identifier-table-name', '-i', required=True, type=click.STRING, help="")
+@click.option('--contact-table-name', '-c', required=True, type=click.STRING, help="")
+@click.option('--target-table-name', '-t', required=True, type=click.STRING, help="")
+@click.pass_context
+def populate_device_master_refresh(ctx, target_table_name, device_table_name, identifier_table_name, contact_table_name):
+    """
+    Create device master refresh table
+    """
+    logger.info(f"Populating device master refresh table '{target_table_name}'...")
+    print(target_table_name)
+    loader = ctx.obj['loader']
+
+    q = POPULATE_DEVICE_REFRESH_TABLE.format(table_name=target_table_name, device_table_name=device_table_name,
+                        identifier_table_name=identifier_table_name, contact_table_name=contact_table_name)
+
+    logger.debug(q)
+    loader._submit_single_q(q)
+    logger.info("Finished.")
+
+
 # do all
 refresh.add_command(ndc)
 
@@ -176,3 +199,4 @@ refresh.add_command(ndc_create_tables)
 
 # Load medical device refresh table
 refresh.add_command(load_medical_device)
+refresh.add_command(populate_device_master_refresh)
