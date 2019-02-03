@@ -155,7 +155,8 @@ CREATE TABLE IF NOT EXISTS `{table_name}` (
   `email` VARCHAR(100) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-   PRIMARY KEY (`id`)
+   PRIMARY KEY (`id`),
+   KEY `idx_refresh_gudid_contacts_primarydi` (`primarydi`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
@@ -173,7 +174,8 @@ CREATE TABLE IF NOT EXISTS `{table_name}` (
   `pkgtype` VARCHAR(20) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-   PRIMARY KEY (`id`)
+   PRIMARY KEY (`id`),
+   KEY `idx_refresh_gudid_identifiers_primarydi` (`primarydi`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
@@ -216,6 +218,7 @@ CREATE TABLE IF NOT EXISTS `{table_name}` (
   `sterilizationpriortouse` VARCHAR(10) DEFAULT NULL,
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
-   PRIMARY KEY (`id`)
+   PRIMARY KEY (`id`),
+   UNIQUE KEY `idx_refresh_gudid_devices_primarydi` (`primarydi`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
