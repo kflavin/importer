@@ -92,12 +92,13 @@ def load(ctx, infile, table_name):
 @click.option('--outfile', '-o', type=click.STRING, help="CSV filename to write out")
 @click.option('--separator', '-s', type=click.STRING, help="CSV separator (optional)")
 @click.option('--encoding', '-e', default='utf-8', type=click.STRING, help="CSV encoding, default 'utf-8'")
-def preprocess(infile, outfile, separator, encoding):
+@click.option('--drop-columns', '-d', type=click.STRING, help="")
+def preprocess(infile, outfile, separator, encoding, drop_columns):
     """
     Preprocess device files
     """
     loader = BaseLoader()
-    loader.preprocess(infile, outfile, encoding=encoding, sep=separator)
+    loader.preprocess(infile, outfile, encoding=encoding, sep=separator, drop_columns=drop_columns)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with table data")
@@ -227,19 +228,25 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
         else:
             # Look for values that look like dates in 2018/01/01 or 01/01/2018 form
             patterns = [
-                re.compile('^\d{1,2}[-/]\d{1,2}[-/]\d{1,4}$'),
-                re.compile('^\d{1,4}[-/]\d{1,2}[-/]\d{1,2}$')
+                re.compile('^\d{1,2}[-/]\d{1,2}[-/]20\d\d$'),
+                # re.compile('^\d{1,2}[-/]\d{1,2}[-/]\d{1,4}$'),
+                re.compile('^20\d\d[-/]\d{1,2}[-/]\d{1,2}$')
+                # re.compile('^\d{1,4}[-/]\d{1,2}[-/]\d{1,2}$')
             ]
 
-            foundDate = None
+            foundDate = False
             for pattern in patterns:
                 if any(i == True for i in df[column].str.contains(pattern)):
                     foundDate = True
 
+            foundBool = False
             try:
                 maxVal = str(int(df[column].dropna().str.len().max()))
             except:
                 # Could be boolean?
+                # if "otc" in column:
+                #     import pdb; pdb.set_trace()
+                # if all(i.lower == "false" or i.lower() == "true" for i in df[column].dropna()):
                 if any(type(i) == bool for i in df[column].dropna()):
                     maxVal = 0
                 else:
@@ -248,6 +255,9 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
             if foundDate:
                 ordered_columns[column] = {'type': "DATE", 'length': maxVal}
                 print(f"Date, {maxVal:{col_spacing-6}}: {column}")
+            # elif foundBool:
+            #     ordered_columns[column] = {'type': "BOOL", 'length': maxVal}
+            #     print(f"Bool, {maxVal:{col_spacing-6}}: {column}")
             else:
                 ordered_columns[column] = {'type': f"VARCHAR({int(maxVal)*varchar_factor})", 'length': maxVal}
                 print(f"String, {maxVal:{col_spacing-8}}: {column}")

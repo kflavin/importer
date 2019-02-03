@@ -465,7 +465,7 @@ class BaseLoader(object):
         
         return total_rows_modified
 
-    def preprocess(self, infile, outfile=None, encoding="utf-8", sep=None, column_xforms=None):
+    def preprocess(self, infile, outfile=None, encoding="utf-8", sep=None, column_xforms=None, drop_columns=None):
         """
         Preprocess data and write out a new file in csv format
         """
@@ -482,6 +482,13 @@ class BaseLoader(object):
                 df = pd.read_csv(infile, encoding=encoding)
 
         logger.info("Transforming and cleaning column names.")
+
+        if drop_columns:
+            cols_to_drop = [ col.strip() for col in drop_columns.split(",") ]
+            print(df.columns)
+            df.drop(columns=cols_to_drop, inplace=True)
+            print(df.columns)
+
 
         logger.debug(f"Columns: {df.columns}")
         if column_xforms:
