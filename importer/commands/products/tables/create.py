@@ -131,13 +131,13 @@ def refresh_all(ctx):
     ndc_table_name = "refresh_ndc_product"
     marketing_table_name = "refresh_marketing_codes"
     orange_table_name = "refresh_orange"
-    medical_device_table_name = "refresh_medicaldevicemaster"
+    device_master_table_name = "refresh_devicemaster"
 
     q1 = CREATE_INDICATIONS_DDL.format(table_name=indications_table_name)
     q2 = CREATE_NDC_DDL.format(table_name=ndc_table_name)
     q3 = CREATE_MARKETING_DDL.format(table_name=marketing_table_name)
     q4 = CREATE_ORANGE_DDL.format(table_name=orange_table_name)
-    q5 = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=medical_device_table_name)
+    q5 = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=device_master_table_name)
     loader._query(q1)
     loader._query(q2)
     loader._query(q3)

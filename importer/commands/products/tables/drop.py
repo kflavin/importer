@@ -62,7 +62,7 @@ def all(ctx):
     loader.connect(**ctx.obj['db_credentials'])
 
     indications_table_name = "refresh_indications"
-    ndc_table_name = "refresh_ndc_products"
+    ndc_table_name = "refresh_ndc_product"
     marketing_table_name = "refresh_marketing"
     orange_table_name = "refresh_orange"
     devicemaster_table_name = "refresh_devicemaster"
