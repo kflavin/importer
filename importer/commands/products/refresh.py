@@ -51,7 +51,7 @@ def ndc(ctx,
 
     # target_table_name2 is the final table
     # logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
-    q1 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name, old_table_name=source_table_name)
+    q1 = CREATE_TABLE_LIKE_DDL.format(target_table_name=target_table_name, source_table_name=source_table_name)
     # q2 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name2, old_table_name=source_table_name)
     logger.debug(q1)
     # logger.debug(q2)
@@ -138,8 +138,8 @@ def ndc_create_tables(ctx, target_table_name, source_table_name):
     stage_table_name = source_table_name + "_stage"
 
     logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
-    q1 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name, old_table_name=source_table_name)
-    q2 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name2, old_table_name=source_table_name)
+    q1 = CREATE_TABLE_LIKE_DDL.format(target_table_name=target_table_name, source_table_name=source_table_name)
+    q2 = CREATE_TABLE_LIKE_DDL.format(target_table_name=target_table_name2, source_table_name=source_table_name)
     logger.debug(q1)
     logger.debug(q2)
     loader._submit_single_q(q1)

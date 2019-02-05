@@ -9,6 +9,7 @@ from importer.sql.products.refresh.tables import (CREATE_INDICATIONS_DDL, CREATE
 from importer.sql.products.product import (CREATE_PRODUCT_DDL, CREATE_PRODUCT_MASTER_DDL)
 from importer.sql.products.device import CREATE_DEVICEMASTER_DDL
 from importer.sql.products.ndc import CREATE_NDCMASTER_DDL
+from importer.sql.base import (CREATE_TABLE_LIKE_IFNE_DDL)
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +32,17 @@ def refresh_indications(ctx, table_name):
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
 def refresh_ndc(ctx, table_name):
+    archive_table_name = table_name+"_archive"
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
     q = CREATE_NDC_DDL.format(table_name=table_name)
     loader._query(q)
+
+    # Create NDC archive table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=archive_table_name, source_table_name=table_name)
+    )
 
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")

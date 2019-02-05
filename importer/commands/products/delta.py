@@ -113,7 +113,7 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
     loader.time = ctx.obj['time']
 
     loader._submit_single_q(
-        CREATE_TABLE_LIKE_IFNE_DDL.format(new_table_name=right_table_name_archive, old_table_name=right_table_name)
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=right_table_name_archive, source_table_name=right_table_name)
     )
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 

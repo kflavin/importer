@@ -49,9 +49,9 @@ RENAME_TABLE_DDL = """
 """
 
 CREATE_TABLE_LIKE_DDL = """
-    CREATE TABLE {new_table_name} LIKE {old_table_name};
+    CREATE TABLE {target_table_name} LIKE {source_table_name};
 """
 
 CREATE_TABLE_LIKE_IFNE_DDL = """
-    CREATE TABLE IF NOT EXISTS {new_table_name} LIKE {old_table_name};
+    CREATE TABLE IF NOT EXISTS {target_table_name} LIKE {source_table_name};
 """
