@@ -9,7 +9,6 @@ from importer.loaders.base import BaseLoader
 # Common queries
 from importer.sql import DELETE_Q
 from importer.sql.products.delta.common import RETRIEVE_PRODUCTMASTER_Q
-from importer.sql.base import (CREATE_TABLE_LIKE_IFNE_DDL)
 
 # NDC to Product master queries
 from importer.sql.products.delta.ndc_productmaster import (
@@ -111,10 +110,6 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
     loader = DeltaBaseLoader(**loader_args)
     loader.connect(**ctx.obj['db_credentials'])
     loader.time = ctx.obj['time']
-
-    loader._submit_single_q(
-        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=right_table_name_archive, source_table_name=right_table_name)
-    )
     loader.delta_table(ctx.obj['do_updates'], ctx.obj['do_inserts'])
 
 
