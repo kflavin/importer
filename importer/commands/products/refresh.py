@@ -29,13 +29,14 @@ def refresh(ctx):
     ctx.obj['loader'] = loader
 
 @click.command()
-@click.option('--target-table-name', '-t', required=True, type=click.STRING, help="")
+# @click.option('--target-table-name', '-t', required=True, type=click.STRING, help="")
 @click.option('--source-table-name', '-s', required=True, type=click.STRING, help="")
 @click.option('--indications-table-name', '-i', required=True, type=click.STRING, help="")
 @click.option('--ndc-product-table-name', '-n', required=True, type=click.STRING, help="")
 @click.option('--orange-table-name', '-o', required=True, type=click.STRING, help="")
 @click.pass_context
-def ndc(ctx, target_table_name,
+def ndc(ctx, 
+    # target_table_name,
              source_table_name,
              indications_table_name,
              ndc_product_table_name,
@@ -44,17 +45,18 @@ def ndc(ctx, target_table_name,
     Load the full NDC refresh table.
     """
     loader = ctx.obj['loader']
-    target_table_name2 = target_table_name + "2"
-    source_backup_table_name = source_table_name + "_backup"
+    target_table_name = f"{source_table_name}_stage"
+    # target_table_name2 = target_table_name + "2"
+    # source_backup_table_name = source_table_name + "_backup"
 
     # target_table_name2 is the final table
-    logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
+    # logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
     q1 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name, old_table_name=source_table_name)
-    q2 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name2, old_table_name=source_table_name)
+    # q2 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name2, old_table_name=source_table_name)
     logger.debug(q1)
-    logger.debug(q2)
+    # logger.debug(q2)
     loader._submit_single_q(q1)
-    loader._submit_single_q(q2)
+    # loader._submit_single_q(q2)
     logger.info("Finished.")
 
     logger.info("Loading indication data...")
@@ -67,17 +69,21 @@ def ndc(ctx, target_table_name,
     logger.info("Finished.")
 
     logger.info("Loading TE Codes...")
-    q4 = REFRESH_NDC_TABLE_LOAD_ORANGE.format(target_table_name2=target_table_name2,
+    # q4 = REFRESH_NDC_TABLE_LOAD_ORANGE.format(target_table_name2=target_table_name2,
+    #                                      target_table_name=target_table_name,
+    #                                      orange_table_name=orange_table_name)
+    q4 = REFRESH_NDC_TABLE_LOAD_ORANGE.format(
                                          target_table_name=target_table_name,
                                          orange_table_name=orange_table_name)
     logger.debug(q4)
     loader._submit_single_q(q4)
 
     # Remove temporary tables, and set target as the new table
-    DROP_TABLE_DDL.format(table_name=target_table_name)
-    DROP_TABLE_IFE_DDL.format(table_name=source_backup_table_name)
-    RENAME_TABLE_DDL.format(old_table_name=source_table_name, new_table_name=source_backup_table_name)
-    RENAME_TABLE_DDL.format(old_table_name=target_table_name2, new_table_name=source_table_name)
+    # DROP_TABLE_DDL.format(table_name=target_table_name)
+    # loader._submit_single_q(DROP_TABLE_IFE_DDL.format(table_name=source_backup_table_name))
+    # loader._submit_single_q(RENAME_TABLE_DDL.format(old_table_name=source_table_name, new_table_name=source_backup_table_name))
+    # RENAME_TABLE_DDL.format(old_table_name=target_table_name2, new_table_name=source_table_name)
+    # loader._submit_single_q(RENAME_TABLE_DDL.format(old_table_name=target_table_name, new_table_name=source_table_name))
 
     logger.info("Finished.")
 

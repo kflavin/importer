@@ -45,7 +45,7 @@ DROP_TABLE_IFE_DDL = """
 """
 
 RENAME_TABLE_DDL = """
-   RENAME TABLE `{old_table_name}` to `{new_table_name}
+   RENAME TABLE `{old_table_name}` TO `{new_table_name}`
 """
 
 CREATE_TABLE_LIKE_DDL = """

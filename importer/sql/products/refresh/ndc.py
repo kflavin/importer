@@ -58,54 +58,12 @@ ON lower(i.drug_name) = lower(n.proprietaryname);
 # Add te codes from Orange book - 110 seconds (do we need to add nonproprietary name to the join?)
 # te_type may not make sense in this table
 REFRESH_NDC_TABLE_LOAD_ORANGE = """
-INSERT INTO {target_table_name2} (
-    master_id, 
-    labelername, 
-    productndc, 
-    proprietaryname, 
-    nonproprietaryname, 
-    producttypename, 
-    marketingcategoryname, 
-    definition, 
-    te_code, 
-    te_type, 
-    interpretation, 
-    ndc_exclude_flag, 
-    ind_drug_id, 
-    ind_drug_name, 
-    ind_name, 
-    ind_status, 
-    ind_phase, 
-    ind_detailedstatus, 
-    eff_date, 
-    end_eff_date
-)
-SELECT 
-    n.master_id, 
-    n.labelername, 
-    n.productndc, 
-    n.proprietaryname, 
-    n.nonproprietaryname, 
-    n.producttypename, 
-    n.marketingcategoryname, 
-    n.definition, 
-    o.te_code, 
-    n.type, 
-    n.interpretation, 
-    n.ndc_exclude_flag, 
-    n.ind_drug_id, 
-    n.ind_drug_name, 
-    n.ind_name, 
-    n.ind_status, 
-    n.ind_phase, 
-    n.ind_detailedstatus, 
-    n.eff_date, 
-    n.end_eff_date
-FROM {target_table_name} n 
+UPDATE	{target_table_name} n
 LEFT JOIN ( 
     SELECT 
         n2.proprietaryname,
-        o.te_code
+        o.te_code ,
+        o.type
         FROM {orange_table_name} o 
         JOIN {target_table_name} n2 
         ON n2.proprietaryname = o.trade_name 
@@ -113,7 +71,66 @@ LEFT JOIN (
         GROUP BY o.trade_name, o.te_code
     ) o
 ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
+SET n.te_type =  o.type;
 """
+
+# REFRESH_NDC_TABLE_LOAD_ORANGE = """
+# INSERT INTO {target_table_name2} (
+#     master_id, 
+#     labelername, 
+#     productndc, 
+#     proprietaryname, 
+#     nonproprietaryname, 
+#     producttypename, 
+#     marketingcategoryname, 
+#     definition, 
+#     te_code, 
+#     te_type, 
+#     interpretation, 
+#     ndc_exclude_flag, 
+#     ind_drug_id, 
+#     ind_drug_name, 
+#     ind_name, 
+#     ind_status, 
+#     ind_phase, 
+#     ind_detailedstatus, 
+#     eff_date, 
+#     end_eff_date
+# )
+# SELECT 
+#     n.master_id, 
+#     n.labelername, 
+#     n.productndc, 
+#     n.proprietaryname, 
+#     n.nonproprietaryname, 
+#     n.producttypename, 
+#     n.marketingcategoryname, 
+#     n.definition, 
+#     o.te_code, 
+#     n.type, 
+#     n.interpretation, 
+#     n.ndc_exclude_flag, 
+#     n.ind_drug_id, 
+#     n.ind_drug_name, 
+#     n.ind_name, 
+#     n.ind_status, 
+#     n.ind_phase, 
+#     n.ind_detailedstatus, 
+#     n.eff_date, 
+#     n.end_eff_date
+# FROM {target_table_name} n 
+# LEFT JOIN ( 
+#     SELECT 
+#         n2.proprietaryname,
+#         o.te_code
+#         FROM {orange_table_name} o 
+#         JOIN {target_table_name} n2 
+#         ON n2.proprietaryname = o.trade_name 
+#         WHERE o.te_code IS NOT NULL 
+#         GROUP BY o.trade_name, o.te_code
+#     ) o
+# ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
+# """
 
 # # Need to add this.  It merges extraneous records with help from the te_code.
 # """
