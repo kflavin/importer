@@ -39,11 +39,6 @@ def refresh_ndc(ctx, table_name):
     q = CREATE_NDC_DDL.format(table_name=table_name)
     loader._query(q)
 
-    # Create NDC archive table
-    loader._submit_single_q(
-        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=archive_table_name, source_table_name=table_name)
-    )
-
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
@@ -174,6 +169,13 @@ def prod_productmaster(ctx, table_name):
     q = CREATE_PRODUCT_MASTER_DDL.format(table_name=table_name)
     loader._query(q)
 
+    product_master_archive_table_name = table_name + "_archive"
+
+    # Create archive table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=product_master_archive_table_name, source_table_name=table_name)
+    )
+
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
@@ -193,6 +195,13 @@ def prod_ndc(ctx, table_name):
 
     q = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=table_name)
     loader._query(q)
+
+    archive_table_name = table_name + "_archive"
+
+    # Create NDC archive table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=archive_table_name, source_table_name=table_name)
+    )
 
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
@@ -236,6 +245,19 @@ def prod_all(ctx):
     loader._query(q3)
     loader._query(q4)
     # loader._query(q5)
+
+    product_master_archive_table_name = productmaster_table_name + "_archive"
+    ndc_archive_table_name = ndcmaster_table_name + "_archive"
+
+    # Create product master archive
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=product_master_archive_table_name, source_table_name=productmaster_table_name)
+    )
+
+    # Create NDC master archive
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=ndc_archive_table_name, source_table_name=ndcmaster_table_name)
+    )
 
 # refresh tables
 create.add_command(refresh_indications)
