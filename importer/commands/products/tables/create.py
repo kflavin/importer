@@ -193,14 +193,20 @@ def prod_ndc(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
-    q = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=table_name)
+    q = CREATE_NDCMASTER_DDL.format(table_name=table_name)
     loader._query(q)
 
     archive_table_name = table_name + "_archive"
+    stage_table_name = table_name + "_stage"
 
     # Create NDC archive table
     loader._submit_single_q(
         CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=archive_table_name, source_table_name=table_name)
+    )
+
+    # Create NDC stage table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=stage_table_name, source_table_name=table_name)
     )
 
 @click.command()
@@ -248,6 +254,7 @@ def prod_all(ctx):
 
     product_master_archive_table_name = productmaster_table_name + "_archive"
     ndc_archive_table_name = ndcmaster_table_name + "_archive"
+    ndc_stage_table_name = ndcmaster_table_name + "_stage"
 
     # Create product master archive
     loader._submit_single_q(
@@ -257,6 +264,11 @@ def prod_all(ctx):
     # Create NDC master archive
     loader._submit_single_q(
         CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=ndc_archive_table_name, source_table_name=ndcmaster_table_name)
+    )
+
+    # Create NDC stage table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=ndc_stage_table_name, source_table_name=ndcmaster_table_name)
     )
 
 # refresh tables

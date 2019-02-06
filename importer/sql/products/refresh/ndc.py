@@ -62,14 +62,14 @@ UPDATE	{target_table_name} n
 LEFT JOIN ( 
     SELECT 
         n2.proprietaryname,
-        o.te_code ,
+        o.te_code,
         o.type
-        FROM {orange_table_name} o 
-        JOIN {target_table_name} n2 
-        ON n2.proprietaryname = o.trade_name 
-        WHERE o.te_code IS NOT NULL 
-        GROUP BY o.trade_name, o.te_code
-    ) o
+    FROM {orange_table_name} o 
+    JOIN {target_table_name} n2 
+    ON n2.proprietaryname = o.trade_name 
+    WHERE o.te_code IS NOT NULL 
+    GROUP BY o.trade_name, o.te_code
+) o
 ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
 SET n.te_type =  o.type;
 """

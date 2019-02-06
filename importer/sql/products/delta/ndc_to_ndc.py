@@ -1,13 +1,16 @@
 
 DELTA_NDC_TO_NDC_Q = """
 SELECT CASE WHEN r.productndc IS NULL and r.ind_name IS NULL and r.te_code IS NULL and r.ind_detailedstatus IS NULL THEN false ELSE true END AS present, 
-l.productndc, l.ind_name, l.te_code, l.ind_detailedstatus
+    l.productndc, 
+    l.ind_name, 
+    l.te_code, 
+    l.ind_detailedstatus
 FROM {left_table_name} l
 LEFT OUTER JOIN {right_table_name} r
-ON l.productndc = r.productndc AND
-l.ind_name <=> r.ind_name AND
-l.te_code <=> r.te_code AND
-l.ind_detailedstatus <=> r.ind_detailedstatus
+ON l.productndc = r.productndc 
+    AND l.ind_name <=> r.ind_name 
+    AND l.te_code <=> r.te_code 
+    AND l.ind_detailedstatus <=> r.ind_detailedstatus
 """
 
 RETRIEVE_NDC_Q = """
@@ -61,10 +64,11 @@ RETRIEVE_NDC_Q = """
     # `eff_date`,
     # `end_eff_date`
 
-# master_id isn't present until added back from prodmaster complete (4.1.11)
+# master_id won't be present until added back from prodmaster complete (4.1.11)
 # add back in definition and interpretation
 INSERT_NDC_Q = """
     INSERT INTO `{table_name}` (
+    `master_id`,
     `labelername`,
     `productndc`,
     `proprietaryname`,
@@ -84,6 +88,7 @@ INSERT_NDC_Q = """
     `end_eff_date`
     )
     VALUES(
+      %(master_id)s,
       %(labelername)s,
       %(productndc)s,
       %(proprietaryname)s,
@@ -128,7 +133,8 @@ ARCHIVE_NDC_Q = """
       `eff_date`,
       `end_eff_date`
     )
-    SELECT `id`,
+    SELECT 
+          `id`,
           `master_id`,
           `labelername`,
           `productndc`,
@@ -149,5 +155,6 @@ ARCHIVE_NDC_Q = """
           `ind_detailedstatus`,
           `eff_date`,
           DATE(NOW())
-    FROM {table_name} WHERE ({where_clause});
+    FROM {table_name} 
+    WHERE ({where_clause});
 """

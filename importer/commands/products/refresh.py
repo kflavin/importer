@@ -9,7 +9,7 @@ from importer.sql import (INSERT_QUERY)
 from importer.sql.products.refresh.ndc import (REFRESH_NDC_TABLE_LOAD_INDICATIONS, REFRESH_NDC_TABLE_LOAD_ORANGE)
 from importer.sql.products.refresh.device import POPULATE_DEVICE_REFRESH_TABLE
 from importer.sql.base import (DROP_TABLE_DDL, DROP_TABLE_IFE_DDL, RENAME_TABLE_DDL, 
-                CREATE_TABLE_LIKE_DDL, CREATE_TABLE_LIKE_IFNE_DDL)
+                CREATE_TABLE_LIKE_DDL, CREATE_TABLE_LIKE_IFNE_DDL, TRUNCATE_TABLE_DML)
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +51,13 @@ def ndc(ctx,
 
     # target_table_name2 is the final table
     # logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
-    q1 = CREATE_TABLE_LIKE_DDL.format(target_table_name=target_table_name, source_table_name=source_table_name)
+    logger.info("Truncate stage table...")
+    q1 = TRUNCATE_TABLE_DML.format(table_name=target_table_name)
     # q2 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name2, old_table_name=source_table_name)
     logger.debug(q1)
     # logger.debug(q2)
     loader._submit_single_q(q1)
     # loader._submit_single_q(q2)
-    logger.info("Finished.")
-
     logger.info("Loading indication data...")
     q3 = REFRESH_NDC_TABLE_LOAD_INDICATIONS.format(target_table_name   = target_table_name,
                                                    source_table_name   = source_table_name,
@@ -66,8 +65,6 @@ def ndc(ctx,
                                                    ndc_product_table_name  = ndc_product_table_name)
     logger.debug(q3)
     loader._submit_single_q(q3)
-    logger.info("Finished.")
-
     logger.info("Loading TE Codes...")
     # q4 = REFRESH_NDC_TABLE_LOAD_ORANGE.format(target_table_name2=target_table_name2,
     #                                      target_table_name=target_table_name,
@@ -77,14 +74,6 @@ def ndc(ctx,
                                          orange_table_name=orange_table_name)
     logger.debug(q4)
     loader._submit_single_q(q4)
-
-    # Remove temporary tables, and set target as the new table
-    # DROP_TABLE_DDL.format(table_name=target_table_name)
-    # loader._submit_single_q(DROP_TABLE_IFE_DDL.format(table_name=source_backup_table_name))
-    # loader._submit_single_q(RENAME_TABLE_DDL.format(old_table_name=source_table_name, new_table_name=source_backup_table_name))
-    # RENAME_TABLE_DDL.format(old_table_name=target_table_name2, new_table_name=source_table_name)
-    # loader._submit_single_q(RENAME_TABLE_DDL.format(old_table_name=target_table_name, new_table_name=source_table_name))
-
     logger.info("Finished.")
 
 @click.command()

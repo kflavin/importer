@@ -55,3 +55,7 @@ CREATE_TABLE_LIKE_DDL = """
 CREATE_TABLE_LIKE_IFNE_DDL = """
     CREATE TABLE IF NOT EXISTS {target_table_name} LIKE {source_table_name};
 """
+
+TRUNCATE_TABLE_DML = """
+    TRUNCATE TABLE {table_name};
+"""
