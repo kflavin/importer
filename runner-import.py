@@ -6,6 +6,11 @@ import sys
 # import warnings
 # warnings.filterwarnings("ignore", category=RuntimeWarning, module=".*pandas.*|.*numpy.*")
 
+# Ignore numpy warnings, which are due to other packages being compiled against an earlier numpy.
+import warnings
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
+
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
 from importer.commands.products import products
