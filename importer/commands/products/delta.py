@@ -261,13 +261,13 @@ def masterid_to_ndc(ctx, ndc_table_name, product_table_name):
 def devicemaster_devicemaster(ctx, left_table_name, right_table_name, right_table_name_archive):
 
     # join_columns = ["master_id"]
-    join_columns = ["primarydi", "deviceid", "devicetypeid"]
+    join_columns = ["primarydi", "deviceid", "deviceidtype"]
     compare_columns = [
-        "deviceid", "publicdevicerecordkey", "deviceidtype", "devicedescription", "companyname", "phone", "phoneextension", "email", "brandname", "dunsnumber", "deviceidissuingagency", "containsdinumber", "pkgquantity", "pkgdiscontinuedate", "pkgstatus", "pkgtype", "rx", "otc"
+        "primarydi", "deviceid", "deviceidtype", "devicedescription", "companyname", "phone", "phoneextension", "email", "brandname", "dunsnumber", "deviceidissuingagency", "containsdinumber", "pkgquantity", "pkgdiscontinuedate", "pkgstatus", "pkgtype", "rx", "otc"
     ]
     # extra_lcols = ["id", "master_id", "proprietaryname", "nonproprietaryname"]
     extra_lcols = []    # additional columns from left table, use for UPDATEs
-    insert_new_columns = ["deviceid", "publicdevicerecordkey", "deviceidtype", "devicedescription", "companyname", "phone", "phoneextension", "email", "brandname", "dunsnumber", "deviceidissuingagency", "containsdinumber", "pkgquantity", "pkgdiscontinuedate", "pkgstatus", "pkgtype", "rx", "otc"]
+    insert_new_columns = ["primarydi", "deviceid", "publicdevicerecordkey", "deviceidtype", "devicedescription", "companyname", "phone", "phoneextension", "email", "brandname", "dunsnumber", "deviceidissuingagency", "containsdinumber", "pkgquantity", "pkgdiscontinuedate", "pkgstatus", "pkgtype", "rx", "otc"]
 
     xform_left = {
         # "proprietaryname": (lambda x: x.upper() if x else None),
@@ -283,8 +283,8 @@ def devicemaster_devicemaster(ctx, left_table_name, right_table_name, right_tabl
         "RETRIEVE_LEFT_Q": RETRIEVE_DEVICEMASTER_Q,
         "RETRIEVE_RIGHT_Q": RETRIEVE_DEVICEMASTER_Q,
         "DELETE_Q": DELETE_Q,
-        "ARCHIVE_Q": ARCHIVE_PRODUCTMASTER_Q,
-        "INSERT_Q": INSERT_PRODUCTMASTER_Q,
+        "ARCHIVE_Q": ARCHIVE_DEVICEMASTER_Q,
+        "INSERT_Q": INSERT_DEVICEMASTER_Q,
         "join_columns": join_columns,
         "compare_columns": compare_columns,
         "extra_lcols": extra_lcols,

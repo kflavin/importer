@@ -1,6 +1,7 @@
 
 DELTA_NDC_TO_NDC_Q = """
-SELECT CASE WHEN r.productndc IS NULL and r.ind_name IS NULL and r.te_code IS NULL and r.ind_detailedstatus IS NULL THEN false ELSE true END AS present, 
+SELECT 
+    CASE WHEN r.productndc IS NULL and r.ind_name IS NULL and r.te_code IS NULL and r.ind_detailedstatus IS NULL THEN false ELSE true END AS present, 
     l.productndc, 
     l.ind_name, 
     l.te_code, 

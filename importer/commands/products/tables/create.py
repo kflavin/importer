@@ -212,12 +212,26 @@ def prod_ndc(ctx, table_name):
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
 @click.pass_context
-def prod_medicaldevice(ctx, table_name):
+def prod_devicemaster(ctx, table_name):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
 
+    archive_table_name = table_name + "_archive"
+    stage_table_name = table_name + "_stage"
+
     q = CREATE_DEVICEMASTER_DDL.format(table_name=table_name)
     loader._query(q)
+
+    # Create Device Master archive table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=archive_table_name, source_table_name=table_name)
+    )
+
+    # Create Device Master stage table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=stage_table_name, source_table_name=table_name)
+    )
+    print("Created device master tables.")
 
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table to create.")
@@ -254,6 +268,7 @@ def prod_all(ctx):
 
     product_master_archive_table_name = productmaster_table_name + "_archive"
     ndc_archive_table_name = ndcmaster_table_name + "_archive"
+    devicemaster_archive_table_name = devicemaster_table_name + "_archive"
     ndc_stage_table_name = ndcmaster_table_name + "_stage"
 
     # Create product master archive
@@ -266,10 +281,16 @@ def prod_all(ctx):
         CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=ndc_archive_table_name, source_table_name=ndcmaster_table_name)
     )
 
+    # Create Device Master archive table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=devicemaster_archive_table_name, source_table_name=devicemaster_table_name)
+    )
+
     # Create NDC stage table
     loader._submit_single_q(
         CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=ndc_stage_table_name, source_table_name=ndcmaster_table_name)
     )
+    print("Create prod tables")
 
 # refresh tables
 create.add_command(refresh_indications)
@@ -287,6 +308,6 @@ create.add_command(refresh_gudid_identifers)
 create.add_command(prod_product)
 create.add_command(prod_productmaster)
 create.add_command(prod_ndc)
-create.add_command(prod_medicaldevice)
+create.add_command(prod_devicemaster)
 create.add_command(prod_service)
 create.add_command(prod_all)
