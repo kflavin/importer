@@ -56,22 +56,23 @@ ON lower(i.drug_name) = lower(n.proprietaryname);
 # """
 
 # Add te codes from Orange book - 110 seconds (do we need to add nonproprietary name to the join?)
-# te_type may not make sense in this table
+# te_type may not make sense in this table.  The same drug can have different types in the orange book.
 REFRESH_NDC_TABLE_LOAD_ORANGE = """
-UPDATE	{target_table_name} n
-LEFT JOIN ( 
-    SELECT 
-        n2.proprietaryname,
-        o.te_code,
-        o.type
-    FROM {orange_table_name} o 
-    JOIN {target_table_name} n2 
-    ON n2.proprietaryname = o.trade_name 
-    WHERE o.te_code IS NOT NULL 
-    GROUP BY o.trade_name, o.te_code
-) o
-ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
-SET n.te_type =  o.type;
+    UPDATE	{target_table_name} n
+    LEFT JOIN ( 
+        SELECT 
+            n2.proprietaryname,
+            o.te_code,
+            o.type
+        FROM {orange_table_name} o 
+        JOIN {target_table_name} n2 
+        ON n2.proprietaryname = o.trade_name 
+        WHERE o.te_code IS NOT NULL 
+        GROUP BY o.trade_name, o.te_code
+    ) o
+    ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
+    SET n.te_type =  o.type, 
+        n.te_code = o.te_code
 """
 
 # REFRESH_NDC_TABLE_LOAD_ORANGE = """
