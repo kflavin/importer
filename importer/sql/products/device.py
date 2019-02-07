@@ -55,6 +55,50 @@ CREATE_DEVICEMASTER_DDL  = """
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
+CREATE_DEVICEMASTER_STAGE_DML  = """
+INSERT INTO `{table_name}` (
+    primarydi, 
+    deviceid, 
+    deviceidtype, 
+    devicedescription, 
+    companyname, 
+    phone, 
+    phoneextension, 
+    email, 
+    brandname,
+    dunsnumber,
+    deviceidissuingagency,
+    containsdinumber,
+    pkgquantity,
+    pkgdiscontinuedate,
+    pkgstatus,
+    rx,
+    otc
+) select 
+    d.primarydi, 
+    i.deviceid, 
+    i.deviceidtype, 
+    d.devicedescription, 
+    d.companyname, 
+    c.phone, 
+    c.phoneextension, 
+    c.email, 
+    d.brandname,
+    d.dunsnumber,
+    i.deviceidissuingagency,
+    i.containsdinumber,
+    i.pkgquantity,
+    i.pkgdiscontinuedate,
+    i.pkgstatus,
+    d.rx,
+    d.otc
+    FROM `{refresh_devices_table_name}` d
+    JOIN `{refresh_identifiers_table_name}` i
+    ON d.primarydi = i.primarydi
+    LEFT JOIN `{refresh_contacts_table_name}` c
+    ON i.primarydi = c.primarydi;
+"""
+
 # Deprecated
 # DELTA_RECORDS_Q = """
 #     select a.publicdevicerecordkey, a.deviceid, a.deviceidtype, CASE WHEN b.publicdevicerecordkey IS NULL THEN false ELSE true END as r 

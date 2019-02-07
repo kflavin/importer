@@ -4,7 +4,8 @@ import logging
 
 from importer.loaders.base import BaseLoader, convert_date
 from importer.sql import (INSERT_QUERY)
-from importer.sql.products.device import CREATE_DEVICE_DDL, CREATE_DEVICEMASTER_DDL
+from importer.sql.base import TRUNCATE_TABLE_DML
+from importer.sql.products.device import CREATE_DEVICE_DDL, CREATE_DEVICEMASTER_DDL, CREATE_DEVICEMASTER_STAGE_DML
 from importer.commands.products.common import parseInt, parseIntOrNone
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,31 @@ def load_gudid_devices(ctx, infile, table_name):
     loader.csv_loader(INSERT_QUERY, table_name, infile, ctx)
 
     print(f"Medical device data loaded to table: {table_name}")
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
+@click.pass_context
+def load_device_staging_table(ctx, table_name):
+    """
+    Load the device master staging table.
+    """
+    loader = ctx.obj['loader']
+    logger.info(f"Loading device master staging table: `{table_name}`...")
+
+    refresh_devices_table_name = "refresh_gudid_devices"
+    refresh_identifiers_table_name = "refresh_gudid_identifiers"
+    refresh_contacts_table_name = "refresh_gudid_contacts"
+
+    q1 = TRUNCATE_TABLE_DML.format(table_name=table_name)
+    loader._submit_single_q(q1)
+
+    q2 = CREATE_DEVICEMASTER_STAGE_DML.format(table_name=table_name,
+                refresh_devices_table_name=refresh_devices_table_name,
+                refresh_identifiers_table_name=refresh_identifiers_table_name,
+                refresh_contacts_table_name=refresh_contacts_table_name)
+
+    loader._submit_single_q(q2)
+    logger.info("Finished.")
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file")
@@ -142,4 +168,5 @@ def create_table(ctx, table_name, complete):
 device.add_command(load)
 device.add_command(load_gudid_devices)
 device.add_command(create_table)
+device.add_command(load_device_staging_table)
 # device.add_command(preprocess)
