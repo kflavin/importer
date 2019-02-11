@@ -45,6 +45,7 @@ class BaseLoader(object):
         self.throttle_size = throttle_size
         self.throttle_time = throttle_time
         self.time = False
+        self.max_debug_chars = 1500
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -121,7 +122,7 @@ class BaseLoader(object):
         if not cursor:
             cursor = self.cursor
 
-        logger.debug(query[:1500])
+        logger.debug(query[:self.max_debug_chars])
 
         # # remove this?
         # if self.time:
@@ -140,7 +141,7 @@ class BaseLoader(object):
         return rows
 
     def _submit_single_q(self, query, commit=True):
-        logger.debug(query[:1500])
+        logger.debug(query[:self.max_debug_chars])
 
         # remove this?
         if self.time:
@@ -171,8 +172,8 @@ class BaseLoader(object):
         # Simple retry
         while count < tries:
             try:
-                logger.debug(query[:1500])
-                logger.debug(str(data)[:1500])
+                logger.debug(query[:self.max_debug_chars])
+                logger.debug(str(data)[:self.max_debug_chars])
 
                 # remove this?
                 if self.time:
@@ -330,7 +331,7 @@ class BaseLoader(object):
                 logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
                 
-                logger.debug(str(batch)[:1500])
+                logger.debug(str(batch)[:self.max_debug_chars])
 
                 batch = []
                 row_count = 0

@@ -6,7 +6,8 @@ import html
 from importer.loaders.base import BaseLoader, convert_date
 from importer.loaders.products.refresh import RefreshLoader
 from importer.sql import (INSERT_QUERY)
-from importer.sql.products.refresh.ndc import (REFRESH_NDC_TABLE_LOAD_INDICATIONS, REFRESH_NDC_TABLE_LOAD_ORANGE)
+from importer.sql.products.refresh.ndc import (REFRESH_NDC_TABLE_LOAD_INDICATIONS, 
+                REFRESH_NDC_TABLE_LOAD_ORANGE) #, REFRESH_NDC_TABLE_LOAD_MARKETING)
 from importer.sql.products.refresh.device import POPULATE_DEVICE_REFRESH_TABLE
 from importer.sql.base import (DROP_TABLE_DDL, DROP_TABLE_IFE_DDL, RENAME_TABLE_DDL, 
                 CREATE_TABLE_LIKE_DDL, CREATE_TABLE_LIKE_IFNE_DDL, TRUNCATE_TABLE_DML)
@@ -29,15 +30,17 @@ def refresh(ctx):
     ctx.obj['loader'] = loader
 
 @click.command()
-# @click.option('--target-table-name', '-t', required=True, type=click.STRING, help="")
-@click.option('--source-table-name', '-s', required=True, type=click.STRING, help="")
+# @click.option('--source-table-name', '-s', required=True, type=click.STRING, help="")
+@click.option('--target-table-name', '-t', required=True, type=click.STRING, help="")
 @click.option('--indications-table-name', '-i', required=True, type=click.STRING, help="")
 @click.option('--ndc-product-table-name', '-n', required=True, type=click.STRING, help="")
 @click.option('--orange-table-name', '-o', required=True, type=click.STRING, help="")
+# @click.option('--marketing-table-name', '-m', required=True, type=click.STRING, help="")
 @click.pass_context
 def ndc(ctx, 
-    # target_table_name,
-             source_table_name,
+            target_table_name,
+            # source_table_name,
+            #  marketing_table_name,
              indications_table_name,
              ndc_product_table_name,
              orange_table_name):
@@ -45,35 +48,26 @@ def ndc(ctx,
     Load the full NDC refresh table.
     """
     loader = ctx.obj['loader']
-    target_table_name = f"{source_table_name}_stage"
-    # target_table_name2 = target_table_name + "2"
-    # source_backup_table_name = source_table_name + "_backup"
-
-    # target_table_name2 is the final table
-    # logger.info(f"Creating tables {target_table_name} and {target_table_name2}...")
+    # target_table_name = f"{source_table_name}_stage"
     logger.info("Truncate stage table...")
     q1 = TRUNCATE_TABLE_DML.format(table_name=target_table_name)
-    # q2 = CREATE_TABLE_LIKE_DDL.format(new_table_name=target_table_name2, old_table_name=source_table_name)
-    logger.debug(q1)
-    # logger.debug(q2)
     loader._submit_single_q(q1)
-    # loader._submit_single_q(q2)
     logger.info("Loading indication data...")
     q3 = REFRESH_NDC_TABLE_LOAD_INDICATIONS.format(target_table_name   = target_table_name,
-                                                   source_table_name   = source_table_name,
                                                    indications_table_name  = indications_table_name,
                                                    ndc_product_table_name  = ndc_product_table_name)
-    logger.debug(q3)
     loader._submit_single_q(q3)
     logger.info("Loading TE Codes...")
-    # q4 = REFRESH_NDC_TABLE_LOAD_ORANGE.format(target_table_name2=target_table_name2,
-    #                                      target_table_name=target_table_name,
-    #                                      orange_table_name=orange_table_name)
     q4 = REFRESH_NDC_TABLE_LOAD_ORANGE.format(
                                          target_table_name=target_table_name,
                                          orange_table_name=orange_table_name)
-    logger.debug(q4)
     loader._submit_single_q(q4)
+
+    # logger.info("Loading marketing descriptions...")
+    # q5 = REFRESH_NDC_TABLE_LOAD_MARKETING.format(
+    #                                      target_table_name=target_table_name,
+    #                                      marketing_table_name=marketing_table_name)
+    # loader._submit_single_q(q5)
     logger.info("Finished.")
 
 @click.command()

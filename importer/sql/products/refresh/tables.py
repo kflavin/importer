@@ -29,7 +29,8 @@ CREATE TABLE `{table_name}` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
    PRIMARY KEY (`id`),
-   KEY `idx_reload_ndc_product_proprietaryname` (`proprietaryname`)
+   KEY `idx_refresh_ndc_product_proprietaryname` (`proprietaryname`),
+   KEY `idx_refresh_ndc_product_nonproprietaryname` (`nonproprietaryname`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
@@ -53,8 +54,8 @@ CREATE TABLE `{table_name}` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
    PRIMARY KEY (`id`),
-   KEY `idx_reload_orange_trade_name` (`trade_name`),
-   KEY `idx_reload_orange_te_code` (`te_code`)
+   KEY `idx_refresh_orange_trade_name` (`trade_name`),
+   KEY `idx_refresh_orange_te_code` (`te_code`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 
@@ -72,7 +73,7 @@ CREATE TABLE `{table_name}` (
   `created_at` datetime DEFAULT NULL,
   `updated_at` datetime DEFAULT NULL,
    PRIMARY KEY (`id`),
-   KEY `idx_reload_indications_drug_name` (`drug_name`)
+   KEY `idx_refresh_indications_drug_name` (`drug_name`)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8;
 """
 

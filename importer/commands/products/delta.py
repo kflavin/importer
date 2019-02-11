@@ -67,7 +67,6 @@ def ndc_to_ndc(ctx, left_table_name, right_table_name, right_table_name_archive)
 
     # we haven't populated master_id at this point.  NDC's are unique on productndc, and related indications (1.1.1)
     join_columns = ["productndc", "ind_name", "te_code", "ind_detailedstatus"]
-    # compare_columns = ["master_id", "proprietaryname", "nonproprietaryname"]
     compare_columns = [
         "labelername", "productndc", "proprietaryname", "nonproprietaryname", "producttypename", "marketingcategoryname", "te_code", "te_type", "ndc_exclude_flag", "ind_drug_id", "ind_drug_name", "ind_name", "ind_status", "ind_phase", "ind_detailedstatus"
         # Excluding definition and interpretation, b/c I'm not populating those yet.

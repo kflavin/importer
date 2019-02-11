@@ -1,5 +1,3 @@
-REFRESH_NDC_TABLE = []
-
 REFRESH_NDC_TABLE_DDL = """
 CREATE TABLE {target_table_name} LIKE {source_table_name};
 """
@@ -36,8 +34,12 @@ SELECT
     i.detailedstatus
 FROM {indications_table_name} i 
 JOIN {ndc_product_table_name} n 
-ON lower(i.drug_name) = lower(n.proprietaryname);
+ON i.drug_name = n.proprietaryname or i.drug_name = n.nonproprietaryname
 """
+# Change ON from this:
+# ON LOWER(i.drug_name) = LOWER(n.proprietaryname)
+# Collation not case-sensitive, and using the index is much faster.  Also, nonproprietary name also matches
+# the indications table for some drugs.
 
 # # Add master id back in
 # REFRESH_NDC_TABLE_ADD_MASTER_ID = """
@@ -70,71 +72,46 @@ REFRESH_NDC_TABLE_LOAD_ORANGE = """
         WHERE o.te_code IS NOT NULL 
         GROUP BY o.trade_name, o.te_code
     ) o
-    ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
+    ON n.proprietaryname = o.proprietaryname
     SET n.te_type =  o.type, 
         n.te_code = o.te_code
 """
+# Note, removed LOWER to make use of index.  Collation doesn't seem to be case sensitive.
+# ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
 
+# # New
 # REFRESH_NDC_TABLE_LOAD_ORANGE = """
-# INSERT INTO {target_table_name2} (
-#     master_id, 
-#     labelername, 
-#     productndc, 
-#     proprietaryname, 
-#     nonproprietaryname, 
-#     producttypename, 
-#     marketingcategoryname, 
-#     definition, 
-#     te_code, 
-#     te_type, 
-#     interpretation, 
-#     ndc_exclude_flag, 
-#     ind_drug_id, 
-#     ind_drug_name, 
-#     ind_name, 
-#     ind_status, 
-#     ind_phase, 
-#     ind_detailedstatus, 
-#     eff_date, 
-#     end_eff_date
-# )
-# SELECT 
-#     n.master_id, 
-#     n.labelername, 
-#     n.productndc, 
-#     n.proprietaryname, 
-#     n.nonproprietaryname, 
-#     n.producttypename, 
-#     n.marketingcategoryname, 
-#     n.definition, 
-#     o.te_code, 
-#     n.type, 
-#     n.interpretation, 
-#     n.ndc_exclude_flag, 
-#     n.ind_drug_id, 
-#     n.ind_drug_name, 
-#     n.ind_name, 
-#     n.ind_status, 
-#     n.ind_phase, 
-#     n.ind_detailedstatus, 
-#     n.eff_date, 
-#     n.end_eff_date
-# FROM {target_table_name} n 
-# LEFT JOIN ( 
-#     SELECT 
-#         n2.proprietaryname,
-#         o.te_code
+#     UPDATE	{target_table_name} n
+#     LEFT JOIN ( 
+#         SELECT 
+#             n2.proprietaryname,
+#             n2.nonproprietaryname,
+#             o.te_code
 #         FROM {orange_table_name} o 
 #         JOIN {target_table_name} n2 
-#         ON n2.proprietaryname = o.trade_name 
+#         ON (n2.proprietaryname = o.trade_name OR n2.nonproprietaryname = o.trade_name)
 #         WHERE o.te_code IS NOT NULL 
-#         GROUP BY o.trade_name, o.te_code
+#         GROUP BY n2.proprietaryname, n2.nonproprietaryname, o.te_code
 #     ) o
-# ON LOWER(n.proprietaryname) = LOWER(o.proprietaryname)
+#     ON n.proprietaryname = o.proprietaryname AND n.nonproprietaryname = o.nonproprietaryname
+#     SET n.te_code = o.te_code
 # """
 
-# # Need to add this.  It merges extraneous records with help from the te_code.
-# """
-# create table test_ndc_reload3 like test_ndc_reload2;
-# insert into test_ndc_reload3 select * from test_ndc_reload2 group by productndc,ind_name,te_code,ind_detailedstatus;
-# """
+
+REFRESH_NDC_TABLE_LOAD_MARKETING = """
+    UPDATE	{target_table_name} n
+    LEFT JOIN ( 
+        SELECT 
+            n2.proprietaryname,
+            o.te_code,
+            o.type
+        FROM {orange_table_name} o 
+        JOIN {target_table_name} n2 
+        ON n2.proprietaryname = o.trade_name 
+        WHERE o.te_code IS NOT NULL 
+        GROUP BY o.trade_name, o.te_code
+    ) o
+    ON n.proprietaryname = o.proprietaryname
+    SET n.te_type =  o.type, 
+        n.te_code = o.te_code
+"""
