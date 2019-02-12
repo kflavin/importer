@@ -421,7 +421,7 @@ class BaseLoader(object):
                 logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
                 
-                logger.debug(batch)
+                logger.debug(str(batch)[:self.max_debug_chars])
 
                 batch = []
                 row_count = 0
