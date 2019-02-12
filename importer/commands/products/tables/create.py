@@ -139,19 +139,19 @@ def refresh_all(ctx):
     q2 = CREATE_NDC_DDL.format(table_name=ndc_table_name)
     q3 = CREATE_MARKETING_DDL.format(table_name=marketing_table_name)
     q4 = CREATE_ORANGE_DDL.format(table_name=orange_table_name)
-    q5 = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=device_master_table_name)
+    # q5 = CREATE_MEDICAL_DEVICE_MASTER_DDL.format(table_name=device_master_table_name)
     loader._query(q1)
     loader._query(q2)
     loader._query(q3)
     loader._query(q4)
-    loader._query(q5)
+    # loader._query(q5)
 
     guid_devices = "refresh_gudid_devices"
     guid_identifiers = "refresh_gudid_identifiers"
     guid_contacts = "refresh_gudid_contacts"
-    q6 = CREATE_GUDID_CONTACTS_DDL.format(table_name=guid_devices)
-    q7 = CREATE_GUDID_DEVICES_DDL.format(table_name=guid_identifiers)
-    q8 = CREATE_GUDID_IDENTIFERS_DDL.format(table_name=guid_contacts)
+    q6 = CREATE_GUDID_CONTACTS_DDL.format(table_name=guid_contacts)
+    q7 = CREATE_GUDID_DEVICES_DDL.format(table_name=guid_devices)
+    q8 = CREATE_GUDID_IDENTIFERS_DDL.format(table_name=guid_identifiers)
     loader._query(q6)
     loader._query(q7)
     loader._query(q8)
@@ -270,6 +270,7 @@ def prod_all(ctx):
     ndc_archive_table_name = ndcmaster_table_name + "_archive"
     devicemaster_archive_table_name = devicemaster_table_name + "_archive"
     ndc_stage_table_name = ndcmaster_table_name + "_stage"
+    devicemaster_stage_table_name = devicemaster_table_name + "_stage"
 
     # Create product master archive
     loader._submit_single_q(
@@ -289,6 +290,11 @@ def prod_all(ctx):
     # Create NDC stage table
     loader._submit_single_q(
         CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=ndc_stage_table_name, source_table_name=ndcmaster_table_name)
+    )
+
+    # Create Device master stage table
+    loader._submit_single_q(
+        CREATE_TABLE_LIKE_IFNE_DDL.format(target_table_name=devicemaster_stage_table_name, source_table_name=devicemaster_table_name)
     )
     print("Create prod tables")
 

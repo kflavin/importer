@@ -124,6 +124,8 @@ MASTER_IDS_TO_NDC_TABLE = """
     JOIN {product_table_name} p
     ON n.proprietaryname = p.proprietaryname 
         AND n.nonproprietaryname = p.nonproprietaryname
-    SET n.master_id = p.master_id
+    SET 
+        n.master_id = p.master_id,
+        n.updated_at = DATE(NOW())
     WHERE n.master_id IS NULL
 """

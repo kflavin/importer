@@ -43,28 +43,6 @@ RETRIEVE_NDC_Q = """
     )
 """
 
-    # INSERT INTO `{table_name}` (
-    # `master_id`,
-    # `labelername`,
-    # `productndc`,
-    # `proprietaryname`,
-    # `nonproprietaryname`,
-    # `producttypename`,
-    # `marketingcategoryname`,
-    # `definition`,
-    # `te_code`,
-    # `type`,
-    # `interpretation`,
-    # `ndc_exclude_flag`,
-    # `drug_id`,
-    # `ind_drug_name`,
-    # `ind_name`,
-    # `status`,
-    # `phase`,
-    # `ind_detailedstatus`,
-    # `eff_date`,
-    # `end_eff_date`
-
 # master_id won't be present until added back from prodmaster complete (4.1.11)
 # add back in definition and interpretation
 INSERT_NDC_Q = """
@@ -85,7 +63,9 @@ INSERT_NDC_Q = """
     `ind_phase`,
     `ind_detailedstatus`,
     `eff_date`,
-    `end_eff_date`
+    `end_eff_date`,
+    `created_at`,
+    `updated_at`
     )
     VALUES(
       %(labelername)s,
@@ -104,7 +84,9 @@ INSERT_NDC_Q = """
       %(ind_phase)s,
       %(ind_detailedstatus)s,
       DATE(NOW()),
-      NULL
+      NULL,
+      NOW(),
+      NOW()
     )
 """
 
@@ -130,7 +112,9 @@ ARCHIVE_NDC_Q = """
       `ind_phase`,
       `ind_detailedstatus`,
       `eff_date`,
-      `end_eff_date`
+      `end_eff_date`,
+      `created_at`,
+      `updated_at`
     )
     SELECT 
           `id`,
@@ -153,7 +137,10 @@ ARCHIVE_NDC_Q = """
           `ind_phase`,
           `ind_detailedstatus`,
           `eff_date`,
-          DATE(NOW())
+          DATE(NOW()),
+          NULL,
+          NOW(),
+          NOW()
     FROM {table_name} 
     WHERE ({where_clause});
 """
