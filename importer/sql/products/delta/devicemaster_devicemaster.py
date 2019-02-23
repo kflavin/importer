@@ -6,7 +6,7 @@ DELTA_DEVICEMASTER_DEVICEMASTER_Q = """
         l.deviceidtype
     FROM {left_table_name} l
     LEFT OUTER JOIN {right_table_name} r
-    on l.primarydi = r.primarydi AND 
+    ON l.primarydi = r.primarydi AND 
        l.deviceid <=> r.deviceid AND 
        l.deviceidtype <=> r.deviceidtype
 """

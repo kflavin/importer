@@ -32,10 +32,13 @@ SELECT
     i.status, 
     i.phase, 
     i.detailedstatus
-FROM {indications_table_name} i 
-JOIN {ndc_product_table_name} n 
-ON i.drug_name = n.proprietaryname or i.drug_name = n.nonproprietaryname
+FROM {ndc_product_table_name} n
+LEFT JOIN {indications_table_name} i 
+ON i.drug_name = n.proprietaryname
 """
+# This seems to match the HDM data more closely?
+# ON i.drug_name = n.proprietaryname or i.drug_name = n.nonproprietaryname
+
 # Change ON from this:
 # ON LOWER(i.drug_name) = LOWER(n.proprietaryname)
 # Collation not case-sensitive, and using the index is much faster.  Also, nonproprietary name also matches
