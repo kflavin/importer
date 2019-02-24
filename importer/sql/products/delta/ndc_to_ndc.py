@@ -138,7 +138,6 @@ ARCHIVE_NDC_Q = """
           `ind_detailedstatus`,
           `eff_date`,
           DATE(NOW()),
-          NULL,
           NOW(),
           NOW()
     FROM {table_name} 

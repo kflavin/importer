@@ -178,6 +178,7 @@ class DeltaBaseLoader(BaseLoader):
                         and_clause.append(f"{column}='{self.cnx.converter.escape(row[column])}'")
                     else:
                         and_clause.append(f"{column} is NULL")
+                        # and_clause.append(f"coalesce({column}, '') = ''")
                 else:
                     if row[i]:
                         and_clause.append(f"{column}='{self.cnx.converter.escape(row[i])}'")
@@ -185,6 +186,7 @@ class DeltaBaseLoader(BaseLoader):
                         and_clause.append(f"{column} is NULL")
             
             and_clause_s = " AND ".join(and_clause)
+            and_clause_s = "(" + and_clause_s + ")"
             where_clause.append(and_clause_s)
 
         kwargs['where_clause'] = " OR ".join(where_clause)
