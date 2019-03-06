@@ -32,7 +32,7 @@
       {
           "type": "shell",
           "inline":[
-              "sudo yum install -y awscli awslogs gcc python3 python3-pip python3-setuptools python3-libs python3-devel mysql-devel"
+              "sudo yum install -y awscli awslogs gcc python3 python3-pip python3-setuptools python3-libs python3-devel mysql-devel jq"
           ]
       }
   ]

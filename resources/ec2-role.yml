@@ -61,3 +61,8 @@ Properties:
                   -
                     - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
                     - "/*"
+          - Effect: Allow
+            Action:
+              - "sns:Publish"
+            Resource: ${self:custom.snsTopicArn}
+          

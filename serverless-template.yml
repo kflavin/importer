@@ -21,6 +21,7 @@ custom:
   npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
   weeklyImportTimeout: ${env:weekly_import_timeout}
   monthlyImportTimeout: ${env:monthly_import_timeout}
+  snsTopicArn: ${env:aws_sns_topic_arn}
   vpcId: ${env:aws_vpc_id}
   dbHost: ${env:db_host}
   dbPort: 3306
@@ -53,6 +54,7 @@ provider:
     aws_subnets: ${self:custom.awsSubnets}
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
+    aws_sns_topic_arn: ${self:custom.snsTopicArn}
     npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
     monthly_import_timeout: ${self:custom.monthlyImportTimeout}
     weekly_import_timeout: ${self:custom.weeklyImportTimeout}

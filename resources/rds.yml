@@ -4,7 +4,7 @@ Properties:
   VPCSecurityGroups:
     - ${self:custom.awsRdsSecurityGroup}
   Engine: MySQL
-  EngineVersion: 5.6.29
+  EngineVersion: ${self:custom.awsDbEngineVersion}
   MasterUsername: ${self:custom.dbUser}
   MasterUserPassword: ${self:custom.dbPassword}
   PubliclyAccessible: true
