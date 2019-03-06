@@ -6,16 +6,19 @@ sleep 1
 function cleanup {{
   EXIT_CODE=$?
   set +e  # Do not exit immediately on error
-  logger "Halting instance due to a failure: received exit=$EXIT_CODE, line=$1"
+  logger "Halting instance: Last received exit code=$EXIT_CODE, line=$1"
+
+  # Direct link for cloudwatch logs
+  cw_url="https://console.aws.amazon.com/cloudwatch/home?region=${{aws_region:-us-east-1}}#logEventViewer:group=/var/log/cloud-init-output.log;stream=${{instance_id}}"
 
   # Send status to SNS
   if [[ $EXIT_CODE -ne 0 ]]; then
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "Importer EC2 failed.  Instance_ID=$instance_id" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "Importer EC2 failed.  Instance_ID=$instance_id \\r\\n $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "Importer EC2 completed.  Instance_ID=$instance_id" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "Importer EC2 completed.  Instance_ID=$instance_id \\r\\n $cw_url" || true
     fi
   fi
 
@@ -31,7 +34,7 @@ trap 'cleanup $LINENO' EXIT
 
 # Load our environment.  Used by runner.
 # export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
-aws_region=$(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
+export aws_region=$(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 export instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
 set +x
 export db_user=$(aws ssm get-parameters --names "/importer/{environment}/db_user" --region ${{aws_region:-us-east-1}} --with-decryption --query Parameters[0].Value --output text)
