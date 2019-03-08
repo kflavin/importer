@@ -89,14 +89,14 @@ INSERT_NEW_FILE = """
 # Create NPI log table.  Used only for dev, refer to api-ruby migration for accurate table.
 CREATE_NPI_IMPORT_LOG_TABLE = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
-    `id` INT NOT NULL AUTO_INCREMENT,
-    `url` VARCHAR(150) NOT NULL,
-    `environment` VARCHAR(50) NOT NULL,
-    `imported` BOOL DEFAULT FALSE,
-    `attempts` INT DEFAULT 0,
-    `period` CHAR(1),
-    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `url` varchar(255) NOT NULL,
+    `environment` varchar(50) NOT NULL,
+    `imported` tinyint(1) DEFAULT 0,
+    `attempts` int(11) DEFAULT 0,
+    `period` char(1) DEFAULT NULL,
+    `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `url_per_env` (`url`,`environment`)
     )
@@ -105,7 +105,7 @@ CREATE_NPI_IMPORT_LOG_TABLE = """
 # Create NPI table.  Used only for dev, refer to api-ruby migration for accurate table.
 CREATE_NPI_TABLE = """
     CREATE TABLE IF NOT EXISTS `{table_name}` (
-    `id` INT NOT NULL AUTO_INCREMENT,
+    `id` int(11) NOT NULL AUTO_INCREMENT,
     `npi` int(11) NOT NULL,
     `entity_type_code` int(1) DEFAULT NULL,
     `replacement_npi` int(11) DEFAULT NULL,
@@ -144,7 +144,7 @@ CREATE_NPI_TABLE = """
     `provider_business_practice_location_address_fax_number` varchar(20) DEFAULT NULL,
     `provider_enumeration_date` date DEFAULT NULL,
     `last_update_date` date DEFAULT NULL,
-    `npi_deactivation_reason_code` VARCHAR(2),
+    `npi_deactivation_reason_code` varchar(2) DEFAULT NULL,
     `npi_deactivation_date` date DEFAULT NULL,
     `npi_reactivation_date` date DEFAULT NULL,
     `provider_gender_code` varchar(1) DEFAULT NULL,
@@ -171,7 +171,7 @@ CREATE_NPI_TABLE = """
     `healthcare_provider_primary_taxonomy_switch_8` varchar(1) DEFAULT NULL,
     `healthcare_provider_taxonomy_code_9` varchar(10) DEFAULT NULL,
     `healthcare_provider_primary_taxonomy_switch_9` varchar(1) DEFAULT NULL,
-    `healthcare_provider_taxonomy_code_10` VARCHAR (10) DEFAULT NULL,
+    `healthcare_provider_taxonomy_code_10` varchar(10) DEFAULT NULL,
     `healthcare_provider_primary_taxonomy_switch_10` varchar(1) DEFAULT NULL,
     `healthcare_provider_taxonomy_code_11` varchar(10) DEFAULT NULL,
     `healthcare_provider_primary_taxonomy_switch_11` varchar(1) DEFAULT NULL,
@@ -187,16 +187,16 @@ CREATE_NPI_TABLE = """
     `is_organization_subpart` varchar(1) DEFAULT NULL,
     `parent_organization_lbn` varchar(70) DEFAULT NULL,
     `parent_organization_tin` varchar(9) DEFAULT NULL,
-    `authorized_official_name_prefix_text` VARCHAR(5) DEFAULT NULL,
-    `authorized_official_name_suffix_text` VARCHAR(5) DEFAULT NULL,
+    `authorized_official_name_prefix_text` varchar(5) DEFAULT NULL,
+    `authorized_official_name_suffix_text` varchar(5) DEFAULT NULL,
     `authorized_official_credential_text` varchar(20) DEFAULT NULL,
-    `created_at` DATETIME DEFAULT NULL,
-    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `created_at` datetime DEFAULT NULL,
+    `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE (`npi`),
+    UNIQUE KEY `npi` (`npi`),
     KEY `postal_code` (`provider_business_practice_location_address_postal_code`),
     KEY `lastname_postalcode` (`provider_last_name_legal_name`,`provider_business_practice_location_address_postal_code`),
     KEY `firstname_lastname` (`provider_first_name`,`provider_last_name_legal_name`),
     KEY `address_state` (`provider_business_practice_location_address_state_name`)
     )
-    """
+"""

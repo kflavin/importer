@@ -49,7 +49,7 @@ The Lambda functions are cron'd, but you can run them manually as follows.
 
 ```bash
 # Download any available zip files to S3.  Default directly is npi-in/[weekly|monthly]
-./bin/download.sh prod
+./bin/downloader.sh prod
 
 # Load weekly files
 ./bin/weekly.sh prod
@@ -58,7 +58,7 @@ The Lambda functions are cron'd, but you can run them manually as follows.
 ./bin/monthly.sh prod
 
 # Create initial DB and tables.  Dev only.
-sls invoke --function create_db --data '{ "table_name": "'$npi_table_name'", "database": "'$db_schema'" }'
+sls invoke --stage=${STAGE:-dev} --function create_db --data '{ "table_name": "'$npi_table_name'", "log_table_name": "'$npi_log_table_name'", "database": "'$db_schema'" }'
 ```
 
 #### Environment values
