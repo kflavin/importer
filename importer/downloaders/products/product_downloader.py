@@ -1,17 +1,23 @@
 from datetime import date
-from time import sleep
 from urllib.request import urlopen
 import logging
+from zipfile import ZipFile
+import io
+import csv
+import re
 import boto3
 import botocore
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import selenium as se
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
+
 
 class ProductDownloader(object):
     def __init__(self, region=None):
@@ -41,8 +47,18 @@ class ProductDownloader(object):
         return self.url_to_s3(self.indications_url(url), filename, bucket, f"{prefix}/{self.today.year}")
         
     def dl_cms(self, url, bucket, prefix):
-        filename = f"cms_{self.datestr}.zip"
-        return self.url_to_s3(self.cms_url(url), filename, bucket, f"{prefix}/{self.today.year}")
+        original_file = f"cms_original_{self.datestr}.zip"
+        binaryData = urlopen(self.cms_url(url)).read()
+
+        # Upload the original file to S3
+        res1 = self.url_to_s3(io.BytesIO(binaryData), original_file, bucket, f"{prefix}/{self.today.year}", latest=False)
+
+        # Upload the cleaned file to s3
+        cleanedBinaryData = self.clean_cms(binaryData)
+        cleaned_file = f"cms_clean_{self.datestr}.csv"
+        res2 = self.url_to_s3(cleanedBinaryData, cleaned_file, bucket, f"{prefix}/{self.today.year}")
+
+        return True if res1 and res2 else False
 
     def dl_gudid(self, url, bucket, prefix):
         filename = f"gudid_{self.datestr}.zip"
@@ -56,14 +72,25 @@ class ProductDownloader(object):
         filename = f"orangebook_{self.datestr}.zip"
         return self.url_to_s3(self.orange_url(url), filename, bucket, f"{prefix}/{self.today.year}")
 
-    ####################
-    # URL's
-    ####################
+    def dl_marketing_codes(self, url, bucket, prefix):
+        binaryData = urlopen(url).read()
+
+        # Upload the cleaned file to s3
+        cleanedBinaryData = self.clean_marketing_codes(binaryData)
+        cleaned_file = f"marketing_clean_{self.datestr}.csv"
+        res = self.url_to_s3(cleanedBinaryData, cleaned_file, bucket, f"{prefix}/{self.today.year}")
+
+        return True if res else False
+
+    #####################################
+    # Find and return the download URL's
+    #####################################
 
     def gudid_url(self, url):
         html = urlopen(url).read()
         soup = BeautifulSoup(html, 'html.parser')
-        links = soup.select("a[download^=gudid_full_release]")
+        # links = soup.select("a[download^=gudid_full_release]")
+        links = soup.select("a[download^=AccessGUDID_Delimited_Full_Release]")
         return links[0].get('href')
 
     def ndc_url(self, url):
@@ -80,33 +107,49 @@ class ProductDownloader(object):
         return base_url + links[0].get('href')
 
     def drugbank_url(self, url):
-        self.close_all_tabs(self.driver.current_window_handle)
+        self.close_all_other_tabs(self.driver.current_window_handle)
         self.driver.get(url)
-        sleep(1)
-        el = self.driver.find_elements_by_xpath("//div[@id='open-data']//a[substring(@href, string-length(@href) - string-length('all-drugbank-vocabulary') + 1) = 'all-drugbank-vocabulary']")
-        dl_url = el[0].get_attribute('href')
+
+        try:
+            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//div[@id='open-data']//a[substring(@href, string-length(@href) - string-length('all-drugbank-vocabulary') + 1) = 'all-drugbank-vocabulary']"))
+        except TimeoutException:
+            logger.error("Drugbank page failure.")
+            return ""
+
+        dl_url = elems[0].get_attribute('href')
         logger.debug(f"Drugbank URL: {dl_url}")
         return dl_url
 
     def indications_url(self, url):
-        self.close_all_tabs(self.driver.current_window_handle)
+        self.close_all_other_tabs(self.driver.current_window_handle)
+        # self.driver.delete_all_cookies()
         self.driver.get(url)
-        el = self.driver.find_elements_by_xpath("//a[contains(text(), 'Download')]")
-        r = el[0].click()
-        el2 = self.driver.find_elements_by_xpath("//a[@id='downloadFull']")
-        r = el2[0].click()
-        sleep(1)
-        logger.debug(f"Indications URL: {el2[0].get_attribute('href')}")
-        dl_url = el2[0].get_attribute('href')
+
+        try:
+            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//a[contains(text(), 'Download')]"))
+        except TimeoutException:
+            logger.error("Indications page one failure.")
+            return ""
+
+        elems[0].click()
+
+        try:
+            wait = WebDriverWait(self.driver, self.jstimeout)
+            elem = wait.until(element_attribute_populated((By.ID, 'downloadFull'), "href"))
+            dl_url = elem.get_attribute('href')
+        except TimeoutException:
+            logger.error("Indications page two failure.")
+            return ""
+
+        logger.debug(f"Indications URL: {dl_url}")
         return dl_url
 
     def cms_url(self, url):
-        self.close_all_tabs(self.driver.current_window_handle)
+        self.close_all_other_tabs(self.driver.current_window_handle)
         self.driver.get(url)
 
         try:
             elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//div[@class='help-details']//a[substring(@href, string-length(@href) - string-length('DHS-Addendum.zip') + 1) = 'DHS-Addendum.zip']"))
-            # do smth with the found element
         except TimeoutException:
             logger.error("CMS page one failure.")
             return ""
@@ -136,7 +179,7 @@ class ProductDownloader(object):
 
         s3.Object(bucket,f"{latest_prefix}/{latest_file_name}").copy_from(CopySource=f"{bucket}/{prefix}/{filename}")
 
-    def url_to_s3(self, url, filename, bucket, prefix):
+    def url_to_s3(self, url, filename, bucket, prefix, latest=True):
         """
         Download the zip file to the appropriate S3 folder.
         """
@@ -144,7 +187,6 @@ class ProductDownloader(object):
             logger.info(f"No URL provided for {filename}.")
             return False
 
-        zippedFile = urlopen(url)
         # fileName = url.split("/")[-1]
         client = boto3.client('s3')
 
@@ -152,11 +194,20 @@ class ProductDownloader(object):
         latest_filename = "latest." + filename.split(".")[-1]   # keep the file extension
         latest_prefix = "/".join(prefix.split("/")[:-1])        # remove the year
 
+        # Open the URL or expect a file-like object that returns bytes from read()
+        if isinstance(url, str):
+            logger.debug("Using a string URL")
+            fileStream = urlopen(url)
+        else:
+            # print("binary stream")
+            logger.debug("Using an IO object")
+            fileStream = url
+
         # If it's already in our bucket, skip it.
         if not self.exists(bucket, key):
             logger.info(f"Uploading {bucket}/{key}")
             try:
-                client.upload_fileobj(zippedFile, bucket, key)
+                client.upload_fileobj(fileStream, bucket, key)
             except Exception as e:
                 logger.error(f"Error while uploading {filename}: {e}")
                 return False
@@ -164,8 +215,11 @@ class ProductDownloader(object):
             logger.info(f"Skipping {bucket}/{key}, already exists.")
         
         # Update the latest file
-        self.create_latest_file(bucket, prefix, filename, latest_prefix, latest_filename)
-        self.driver.delete_all_cookies()
+        if latest:
+            self.create_latest_file(bucket, prefix, filename, latest_prefix, latest_filename)
+
+        # Not needed?
+        # self.driver.delete_all_cookies()
 
         return True
     
@@ -186,10 +240,89 @@ class ProductDownloader(object):
         
         return True
 
-    def close_all_tabs(self, window_handle):
+    def close_all_other_tabs(self, window_handle):
         for wh in self.driver.window_handles:
             if wh != window_handle:
                 self.driver.switch_to.window(wh)
                 self.driver.close()
 
         self.driver.switch_to.window(window_handle)
+
+    def clean_marketing_codes(self, html):
+        """
+        The marketing codes are in an HTML table, and need parsing.
+        """
+        soup = BeautifulSoup(html, 'html.parser')
+        table = soup.find_all("table")
+        trs = table[0].find_all('tr')
+
+        codes = []
+        for i,tr in enumerate(trs):
+            if len(tr.contents) != 2 :
+                raise Exception(f"Unexpected column in row {i+1} of marketing codes")
+
+            # Skip headers
+            if tr.contents[0].name == 'th':
+                continue
+
+            term, code = tr.contents
+            codes.append((term.text, code.text))
+
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['spl_acceptable_term', 'code'])
+        for code in codes:
+            writer.writerow(code)
+
+        out.seek(0)
+        # get string value and encode as utf-8
+        buffer = io.BytesIO(out.getvalue().encode('utf-8'))
+        return buffer
+
+    def clean_cms(self, binaryData):
+        """
+        CMS file is not parseable and requires manual cleaning.
+        """
+        zipfile = ZipFile(io.BytesIO(binaryData))
+
+        rows = []
+        for filen in zipfile.namelist():
+            if filen.endswith(".txt"):
+                for line in zipfile.open(filen).readlines():
+                    line2 = line.decode('latin1')
+
+                    # Look for lines that start with a 5 character code
+                    m = re.match(r"^(\w{5})\t+([^\t]+)([\t]+)\r\n", line2)
+                    if m:
+                        two = m.group(2)
+                        # Remove quotes
+                        r = two[1:-1] if (two[0] == two[-1]) and two.startswith(("'", '"')) else two
+                        rows.append((m.group(1), r))
+
+        out = io.StringIO()
+        writer = csv.writer(out)
+        writer.writerow(['cpt_code', 'service'])
+        for row in rows:
+            writer.writerow(row)
+
+        out.seek(0)
+        buffer = io.BytesIO(out.getvalue().encode('utf-8'))
+        return buffer
+
+
+class element_attribute_populated(object):
+  """An expectation for checking that an element has a particular css class.
+
+  locator - used to find the element
+  returns the WebElement once it has the particular css class
+  """
+  def __init__(self, locator, attribute):
+    self.locator = locator
+    self.attribute = attribute
+
+  def __call__(self, driver):
+    element = driver.find_element(*self.locator)   # Finding the referenced element
+    if element.get_attribute(self.attribute):
+        return element
+    else:
+        return False
