@@ -11,28 +11,25 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
+  awsDbSubnetGroup: ${env:aws_rds_subnet_group}
+  awsDbEngineVersion: ${env:aws_rds_engine_version}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
-  awsRdsEngine: ${env:aws_rds_engine}
-  awsRdsEngineVersion: ${env:aws_rds_engine_version}
   awsRdsSecurityGroup: ${env:aws_rds_security_group}
   awsInstanceProfile: {Ref: Ec2InstanceProfile}
   awsSubnets: ${env:aws_subnets}
   awsRdsParameterGroup: ${env:aws_rds_parameter_group}
-  awsRdsSubnetGroup: ${env:aws_rds_subnet_group}
-  awsSnsTopicArn: ${env:aws_sns_topic_arn}
   npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
   weeklyImportTimeout: ${env:weekly_import_timeout}
   monthlyImportTimeout: ${env:monthly_import_timeout}
+  snsTopicArn: ${env:aws_sns_topic_arn}
   vpcId: ${env:aws_vpc_id}
   dbHost: {"Fn::GetAtt": ["RDS","Endpoint.Address"]}
   dbPort: {"Fn::GetAtt": ["RDS","Endpoint.Port"]}
   dbUser: ${env:db_user}
   dbPassword: ${env:db_password}
   dbSchema: ${env:db_schema}
-  dbInstance: ${env:db_instance}
-  dbStorage: ${env:db_storage}
   npiTableName: ${env:npi_table_name}
   npiLogTableName: ${env:npi_log_table_name}
   pythonRequirements:
@@ -59,7 +56,7 @@ provider:
     aws_subnets: ${self:custom.awsSubnets}
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
-    aws_sns_topic_arn: ${self:custom.awsSnsTopicArn}
+    aws_sns_topic_arn: ${self:custom.snsTopicArn}
     npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
     monthly_import_timeout: ${self:custom.monthlyImportTimeout}
     weekly_import_timeout: ${self:custom.weeklyImportTimeout}

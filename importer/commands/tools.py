@@ -36,7 +36,7 @@ def create_table_sql(ordered_columns, table_name):
     for col,d in ordered_columns.items():
         print(f"  `{col}` {d['type']} DEFAULT NULL,")
     print("   PRIMARY KEY (`id`)")
-    print(");")
+    print(") ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;")
     print("-- Be sure to verify the column values!")
 
 logger = logging.getLogger(__name__)

@@ -3,20 +3,20 @@ Type: AWS::RDS::DBInstance
 Properties:
   VPCSecurityGroups:
     - ${self:custom.awsRdsSecurityGroup}
-  Engine: ${self:custom.awsRdsEngine}
-  EngineVersion: ${self:custom.awsRdsEngineVersion}
+  Engine: MySQL
+  EngineVersion: ${self:custom.awsDbEngineVersion}
   MasterUsername: ${self:custom.dbUser}
   MasterUserPassword: ${self:custom.dbPassword}
   PubliclyAccessible: true
   DBParameterGroupName: ${self:custom.awsRdsParameterGroup}
-  DBSubnetGroupName: ${self:custom.awsRdsSubnetGroup}
+  DBSubnetGroupName: ${self:custom.awsDbSubnetGroup}
 
   #
   # Big settings
   StorageType: gp2
   # DBInstanceClass: db.m4.large  # just under 15m for monthly data set import
-  DBInstanceClass: ${self:custom.dbInstance}
-  AllocatedStorage: ${self:custom.dbStorage}
+  DBInstanceClass: db.m3.medium
+  AllocatedStorage: 100
   
   # # Small settings
   # StorageType: Standard
