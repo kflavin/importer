@@ -20,6 +20,8 @@ def sp(ctx, db_name): #, batch_size, throttle_size, throttle_time):
     if not db_name:
         ctx.obj['db_name'] = loader._query("select database()")[0][0]
         logger.info(f"Using db {ctx.obj['db_name']}")
+    else:
+        ctx.obj['db_name'] = db_name
 
 sp.add_command(create)
 sp.add_command(drop)

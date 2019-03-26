@@ -55,7 +55,7 @@ def updateall(ctx):
 
     # Drop SP's
     for key,val in sp_names.items():
-        loader._query(DROP_SP.format(procedure_name=val))
+        loader._query(DROP_SP.format(database=ctx.obj['db_name'], procedure_name=val))
 
     # Recreate them
     q1 = SP_CREATE_PRODTABLES.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['create_prod_tables'])
