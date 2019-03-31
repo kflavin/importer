@@ -14,21 +14,21 @@ function cleanup {{
   # Send status to SNS
   if [[ $EXIT_CODE -ne 0 ]]; then
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "Importer EC2 failed.  Instance_ID=$instance_id \\r\\n $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "Importer EC2 failed.  Instance_ID=$instance_id, $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "Importer EC2 completed.  Instance_ID=$instance_id \\r\\n $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "Importer EC2 completed.  Instance_ID=$instance_id, $cw_url" || true
     fi
   fi
 
-  sleep 10  # give some extra time to get all logs to CW
-  while true; do
-    logger "Try to halt..."
-    halt -f -f &
-    sleep 180
-    logger "Still running, try to halt again..."
-  done
+  sleep 10  # give some extra time to get all logs to CW=
+  aws --region ${{aws_region:-us-east-1}} ec2 terminate-instances --instance-ids "${{instance_id}}"
+  EXIT_CODE=$?
+  sleep 180
+  if [[ "$EXIT_CODE" -ne 0 ]]; then
+    aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed to terminate!" --message "Failed to terminate instance, exit code=$EXIT_CODE.  Attempting halt -p.  Please check instance_ID=$instance_id, $cw_url" || true
+  fi
 }}
 trap 'cleanup $LINENO' EXIT
 
