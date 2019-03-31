@@ -16,6 +16,8 @@ ndc_url = "https://www.fda.gov/drugs/informationondrugs/ucm142438.htm"
 orange_url = "https://www.fda.gov/drugs/informationondrugs/ucm129662.htm"
 marketing_codes_url = "https://www.fda.gov/forindustry/datastandards/structuredproductlabeling/ucm162528.htm"
 
+s3_bucket_name = "rxv-product-data"
+
 @click.group()
 @click.pass_context
 def download(ctx):
@@ -26,7 +28,7 @@ def download(ctx):
     ctx.ensure_object(dict)
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="drugbank", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def drugbank(ctx, bucket, prefix):
@@ -34,7 +36,7 @@ def drugbank(ctx, bucket, prefix):
     check_result(d.dl_drugbank(drugbank_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="indications", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def indications(ctx, bucket, prefix):
@@ -42,7 +44,7 @@ def indications(ctx, bucket, prefix):
     check_result(d.dl_indications(indications_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="cms", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def cms(ctx, bucket, prefix):
@@ -50,7 +52,7 @@ def cms(ctx, bucket, prefix):
     check_result(d.dl_cms(cms_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="gudid", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def gudid(ctx, bucket, prefix):
@@ -58,7 +60,7 @@ def gudid(ctx, bucket, prefix):
     check_result(d.dl_gudid(gudid_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="ndc", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def ndc(ctx, bucket, prefix):
@@ -66,7 +68,7 @@ def ndc(ctx, bucket, prefix):
     check_result(d.dl_ndc(ndc_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="orangebook", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def orangebook(ctx, bucket, prefix):
@@ -74,7 +76,7 @@ def orangebook(ctx, bucket, prefix):
     check_result(d.dl_orange(orange_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="marketingcodes", type=click.STRING, help="S3 prefix, no trailing slash.")
 @click.pass_context
 def marketingcodes(ctx, bucket, prefix):
@@ -82,7 +84,7 @@ def marketingcodes(ctx, bucket, prefix):
     check_result(d.dl_marketing_codes(marketing_codes_url, bucket, prefix))
 
 @click.command()
-@click.option('--bucket', '-b', required=False, default="rxvproduct", type=click.STRING, help="S3 bucket")
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.pass_context
 def all(ctx, bucket):
     d = ProductDownloader()

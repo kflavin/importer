@@ -38,39 +38,42 @@ class ProductDownloader(object):
     # File Downloads
     ####################
 
+    def _s3_bucket_key(self, prefix):
+        return f"{prefix}/archive"
+
     def dl_drugbank(self, url, bucket, prefix):
         filename = f"drugbank_{self.datestr}.zip"
-        return self.url_to_s3(self.drugbank_url(url), filename, bucket, f"{prefix}/{self.today.year}")
+        return self.url_to_s3(self.drugbank_url(url), filename, bucket, self._s3_bucket_key(prefix))
 
     def dl_indications(self, url, bucket, prefix):
         filename = f"indications_{self.datestr}.csv"
-        return self.url_to_s3(self.indications_url(url), filename, bucket, f"{prefix}/{self.today.year}")
+        return self.url_to_s3(self.indications_url(url), filename, bucket, self._s3_bucket_key(prefix))
         
     def dl_cms(self, url, bucket, prefix):
         original_file = f"cms_original_{self.datestr}.zip"
         binaryData = urlopen(self.cms_url(url)).read()
 
         # Upload the original file to S3
-        res1 = self.url_to_s3(io.BytesIO(binaryData), original_file, bucket, f"{prefix}/{self.today.year}", latest=False)
+        res1 = self.url_to_s3(io.BytesIO(binaryData), original_file, bucket, self._s3_bucket_key(prefix), latest=False)
 
         # Upload the cleaned file to s3
         cleanedBinaryData = self.clean_cms(binaryData)
         cleaned_file = f"cms_clean_{self.datestr}.csv"
-        res2 = self.url_to_s3(cleanedBinaryData, cleaned_file, bucket, f"{prefix}/{self.today.year}")
+        res2 = self.url_to_s3(cleanedBinaryData, cleaned_file, bucket, self._s3_bucket_key(prefix))
 
         return True if res1 and res2 else False
 
     def dl_gudid(self, url, bucket, prefix):
         filename = f"gudid_{self.datestr}.zip"
-        return self.url_to_s3(self.gudid_url(url), filename, bucket, f"{prefix}/{self.today.year}")
+        return self.url_to_s3(self.gudid_url(url), filename, bucket, self._s3_bucket_key(prefix))
 
     def dl_ndc(self, url, bucket, prefix):
         filename = f"ndc_{self.datestr}.zip"
-        return self.url_to_s3(self.ndc_url(url), filename, bucket, f"{prefix}/{self.today.year}")
+        return self.url_to_s3(self.ndc_url(url), filename, bucket, self._s3_bucket_key(prefix))
 
     def dl_orange(self, url, bucket, prefix):
         filename = f"orangebook_{self.datestr}.zip"
-        return self.url_to_s3(self.orange_url(url), filename, bucket, f"{prefix}/{self.today.year}")
+        return self.url_to_s3(self.orange_url(url), filename, bucket, self._s3_bucket_key(prefix))
 
     def dl_marketing_codes(self, url, bucket, prefix):
         binaryData = urlopen(url).read()
@@ -78,7 +81,7 @@ class ProductDownloader(object):
         # Upload the cleaned file to s3
         cleanedBinaryData = self.clean_marketing_codes(binaryData)
         cleaned_file = f"marketing_clean_{self.datestr}.csv"
-        res = self.url_to_s3(cleanedBinaryData, cleaned_file, bucket, f"{prefix}/{self.today.year}")
+        res = self.url_to_s3(cleanedBinaryData, cleaned_file, bucket, self._s3_bucket_key(prefix))
 
         return True if res else False
 
@@ -235,7 +238,7 @@ class ProductDownloader(object):
             if e.response['Error']['Code'] == "404":
                 return False
             else:
-                logger.warning("Unknown error.")
+                logger.warning(f"Unknown error while checking for {bucket}/{key}")
                 raise
         
         return True
