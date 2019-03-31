@@ -25,6 +25,8 @@ setup(name='importer',
         "pandas==0.23.3",
         "python-dateutil==2.7.3",
         "s3transfer==0.1.13",
-        "six==1.11.0"
+        "six==1.11.0",
+        "selenium==3.141.0",
+        "beautifulsoup4==4.6.0"
       ],
       zip_safe=False)
