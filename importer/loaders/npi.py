@@ -27,13 +27,14 @@ class NpiLoader(object):
     Large file loader: Loads data using LOAD DATA LOCAL INFILE query.
     """
 
-    def __init__(self):
+    def __init__(self, warnings=True):
         """
         Blank constructor, b/c preprocess does not need a db connection.
         """
         self.cnx = ""
         self.cursor = ""
         self.debug = ""
+        self.warnings = warnings
         self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
@@ -43,7 +44,8 @@ class NpiLoader(object):
             'user': user,
             'password': password,
             'host': host,
-            'database': database
+            'database': database,
+            'get_warnings': self.warnings
         }
 
         # Needed for LOAD DATA INFILE LOCAL
@@ -214,7 +216,7 @@ class NpiLoader(object):
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Healthcare Provider Taxonomy Group').columns)]
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Provider License Number').columns)]
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
-        df = pd.read_csv(infile, usecols=col_df.columns, low_memory=False)
+        df = pd.read_csv(infile, usecols=col_df.columns, dtype=self.__get_dtypes(), low_memory=False)
         
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
@@ -223,6 +225,7 @@ class NpiLoader(object):
         df['Provider Enumeration Date'] = df['Provider Enumeration Date'].apply(convert_date)
         df['Last Update Date'] = df['Last Update Date'].apply(convert_date)
         df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(convert_date)
+        df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
         
         # df = pd.read_csv(infile)
@@ -404,3 +407,97 @@ class NpiLoader(object):
         query = MARK_AS_IMPORTED.format(table_name=table_name, id=id)
         self.cursor.execute(query)
         self.cnx.commit()
+
+    def __get_dtypes(self):
+        """
+        The purpose of this ugly looking thing is to deal with the weirdness in how pandas handles int columns.  int columns with null values
+        will be transformed into floats.  This results in unwanted behavior when dealing with things like telephone numbers, which are converted
+        to decimal.  It can be unexpected when there is a column that normally has numeric values, but can also have numeric values.  If a weekly
+        file comes in with all numeric values in this column (and some nulls), they will be treated as decimals, even though the field is normally
+        treated as a string.  To get around this, we manually set the column types on these fields, rather than using the pandas type detection.
+
+        NPI, Entity Type Code, Replacement NPI, and Provider Other Last Name Type Code are not include here, because they are stored as INT in the
+        database.
+        """
+        return {
+            "Employer Identification Number (EIN)": str,
+            "Provider Organization Name (Legal Business Name)": str,
+            "Provider Last Name (Legal Name)": str,
+            "Provider First Name": str,
+            "Provider Middle Name": str,
+            "Provider Name Prefix Text": str,
+            "Provider Name Suffix Text": str,
+            "Provider Credential Text": str,
+            "Provider Other Organization Name": str,
+            "Provider Other Organization Name Type Code": str,
+            "Provider Other Last Name": str,
+            "Provider Other First Name": str,
+            "Provider Other Middle Name": str,
+            "Provider Other Name Prefix Text": str,
+            "Provider Other Name Suffix Text": str,
+            "Provider Other Credential Text": str,
+            "Provider First Line Business Mailing Address": str,
+            "Provider Second Line Business Mailing Address": str,
+            "Provider Business Mailing Address City Name": str,
+            "Provider Business Mailing Address State Name": str,
+            "Provider Business Mailing Address Postal Code": str,
+            "Provider Business Mailing Address Country Code (If outside U.S.)": str,
+            "Provider Business Mailing Address Telephone Number": str,
+            "Provider Business Mailing Address Fax Number": str,
+            "Provider First Line Business Practice Location Address": str,
+            "Provider Second Line Business Practice Location Address": str,
+            "Provider Business Practice Location Address City Name": str,
+            "Provider Business Practice Location Address State Name": str,
+            "Provider Business Practice Location Address Postal Code": str,
+            "Provider Business Practice Location Address Country Code (If outside U.S.)": str,
+            "Provider Business Practice Location Address Telephone Number": str,
+            "Provider Business Practice Location Address Fax Number": str,
+            "Provider Enumeration Date": str,
+            "Last Update Date": str,
+            "NPI Deactivation Reason Code": str,
+            "NPI Deactivation Date": str,
+            "NPI Reactivation Date": str,
+            "Provider Gender Code": str,
+            "Authorized Official Last Name": str,
+            "Authorized Official First Name": str,
+            "Authorized Official Middle Name": str,
+            "Authorized Official Title or Position": str,
+            "Authorized Official Telephone Number": str,
+            "Healthcare Provider Taxonomy Code_1": str,
+            "Healthcare Provider Primary Taxonomy Switch_1": str,
+            "Healthcare Provider Taxonomy Code_2": str,
+            "Healthcare Provider Primary Taxonomy Switch_2": str,
+            "Healthcare Provider Taxonomy Code_3": str,
+            "Healthcare Provider Primary Taxonomy Switch_3": str,
+            "Healthcare Provider Taxonomy Code_4": str,
+            "Healthcare Provider Primary Taxonomy Switch_4": str,
+            "Healthcare Provider Taxonomy Code_5": str,
+            "Healthcare Provider Primary Taxonomy Switch_5": str,
+            "Healthcare Provider Taxonomy Code_6": str,
+            "Healthcare Provider Primary Taxonomy Switch_6": str,
+            "Healthcare Provider Taxonomy Code_7": str,
+            "Healthcare Provider Primary Taxonomy Switch_7": str,
+            "Healthcare Provider Taxonomy Code_8": str,
+            "Healthcare Provider Primary Taxonomy Switch_8": str,
+            "Healthcare Provider Taxonomy Code_9": str,
+            "Healthcare Provider Primary Taxonomy Switch_9": str,
+            "Healthcare Provider Taxonomy Code_10": str,
+            "Healthcare Provider Primary Taxonomy Switch_10": str,
+            "Healthcare Provider Taxonomy Code_11": str,
+            "Healthcare Provider Primary Taxonomy Switch_11": str,
+            "Healthcare Provider Taxonomy Code_12": str,
+            "Healthcare Provider Primary Taxonomy Switch_12": str,
+            "Healthcare Provider Taxonomy Code_13": str,
+            "Healthcare Provider Primary Taxonomy Switch_13": str,
+            "Healthcare Provider Taxonomy Code_14": str,
+            "Healthcare Provider Primary Taxonomy Switch_14": str,
+            "Healthcare Provider Taxonomy Code_15": str,
+            "Healthcare Provider Primary Taxonomy Switch_15": str,
+            "Is Sole Proprietor": str,
+            "Is Organization Subpart": str,
+            "Parent Organization LBN": str,
+            "Parent Organization TIN": str,
+            "Authorized Official Name Prefix Text": str,
+            "Authorized Official Name Suffix Text": str,
+            "Authorized Official Credential Text": str
+        }

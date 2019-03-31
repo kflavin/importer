@@ -100,4 +100,5 @@ package:
     - dist/**
     - "**/**/*.pyc"
     - ".env.*"
+    - ".*"
     - output/**
