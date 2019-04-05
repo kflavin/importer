@@ -61,6 +61,9 @@ class DBHelper(object):
             cursor.close()
             cnx.close()
             return False
+        except Exception as e:
+            print(e)
+            return False
 
         cursor.close()
         cnx.close()
@@ -71,4 +74,15 @@ class DBHelper(object):
 if __name__ == "__main__":
     print("Add to db")
     # add_to_db("myurl", "npi_import_log")
-    imports_ready("npi_import_log", "weekly", 1)
+    # imports_ready("npi_import_log", "weekly", 1)
+    table_name = os.environ.get('npi_log_table_name')
+    region = os.environ.get('aws_region')
+    environment = os.environ.get('environment', "dev")
+    url = "http://test-url"
+    p = 'w'
+    if not table_name or not region or not environment:
+        print("Must provide npi_log_table_name, aws_region in ENV")
+        sys.exit(0)
+
+    rds = DBHelper(region)
+    print(rds.add_to_db(url, table_name, p, environment))

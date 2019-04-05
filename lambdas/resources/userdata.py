@@ -14,11 +14,11 @@ function cleanup {{
   # Send status to SNS
   if [[ $EXIT_CODE -ne 0 ]]; then
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "Importer EC2 failed.  Instance_ID=$instance_id, $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "{environment} importer failed after ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "Importer EC2 completed.  Instance_ID=$instance_id, $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "{environment} importer completed in ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
     fi
   fi
 
@@ -27,7 +27,7 @@ function cleanup {{
   EXIT_CODE=$?
   sleep 180
   if [[ "$EXIT_CODE" -ne 0 ]]; then
-    aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed to terminate!" --message "Failed to terminate instance, exit code=$EXIT_CODE.  Attempting halt -p.  Please check instance_ID=$instance_id, $cw_url" || true
+    aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed to terminate!" --message "Failed to terminate {environment} importer EC2, exit code=$EXIT_CODE.  Attempting halt -p.  Please check instance_ID=$instance_id, $cw_url" || true
   fi
 }}
 trap 'cleanup $LINENO' EXIT
@@ -54,6 +54,7 @@ aws s3 cp s3://{bucket_name}/importer.tar.gz /opt
 pip3 install /opt/importer.tar.gz
 PATH=/usr/local/bin:$PATH
 
+start=$(date +%s)
 # Clean and load CSV file, then mark the object as imported
 timeout {timeout}m runner-import.py -l cloudwatch npi full {init_flag} \
                     -t {table_name} \
@@ -63,6 +64,8 @@ timeout {timeout}m runner-import.py -l cloudwatch npi full {init_flag} \
                     -w /tmp/npi \
                     -u s3://{bucket_name}/{bucket_prefix} \
                     --limit {limit}
+end=$(date +%s)
+export total_time=$((end-start))
 
 # Terminate the instance.  Give extra time for logs to sync.
 sleep 10
