@@ -14,11 +14,11 @@ function cleanup {{
   # Send status to SNS
   if [[ $EXIT_CODE -ne 0 ]]; then
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "{environment} importer failed after ${{runtime}} seconds.  Instance_ID=$instance_id, $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer failed." --message "{environment} importer failed after ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed in ${{runtime}} seconds." --message "{environment} importer completed.  Instance_ID=$instance_id, $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{environment} {period} importer completed." --message "{environment} importer completed in ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
     fi
   fi
 
