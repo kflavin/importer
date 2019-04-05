@@ -18,7 +18,6 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-
 class ProductDownloader(object):
     def __init__(self, region=None):
         options = se.webdriver.ChromeOptions()
@@ -26,6 +25,7 @@ class ProductDownloader(object):
         #options.add_argument('--ignore-certificate-errors')
         options.add_argument('headless')
         self.driver = webdriver.Chrome(options=options)
+        logger.debug("Chrome started")
         self.today = date.today()
         self.datestr = f"{self.today.year}-{self.today.month}-{self.today.day}"
         self.jstimeout = 10
@@ -90,6 +90,7 @@ class ProductDownloader(object):
     #####################################
 
     def gudid_url(self, url):
+        logger.debug("Scraping GUDID")
         html = urlopen(url).read()
         soup = BeautifulSoup(html, 'html.parser')
         # links = soup.select("a[download^=gudid_full_release]")
@@ -97,12 +98,14 @@ class ProductDownloader(object):
         return links[0].get('href')
 
     def ndc_url(self, url):
+        logger.debug("Scraping NDC")
         html = urlopen(url).read()
         soup = BeautifulSoup(html, 'html.parser')
         links = soup.select("a[href$=ndctext.zip]")
         return links[0].get('href')
 
     def orange_url(self, url):
+        logger.debug("Scraping Orange Book")
         html = urlopen(url).read()
         soup = BeautifulSoup(html, 'html.parser')
         links = soup.select("a[href$=.zip]")
@@ -110,6 +113,7 @@ class ProductDownloader(object):
         return base_url + links[0].get('href')
 
     def drugbank_url(self, url):
+        logger.debug("Scraping Drug Bank")
         self.close_all_other_tabs(self.driver.current_window_handle)
         self.driver.get(url)
 
@@ -124,6 +128,7 @@ class ProductDownloader(object):
         return dl_url
 
     def indications_url(self, url):
+        logger.debug("Scraping Indications")
         self.close_all_other_tabs(self.driver.current_window_handle)
         # self.driver.delete_all_cookies()
         self.driver.get(url)
@@ -148,6 +153,7 @@ class ProductDownloader(object):
         return dl_url
 
     def cms_url(self, url):
+        logger.debug("Scraping CMS Services")
         self.close_all_other_tabs(self.driver.current_window_handle)
         self.driver.get(url)
 
@@ -177,8 +183,8 @@ class ProductDownloader(object):
     def create_latest_file(self, bucket, prefix, filename, latest_prefix, latest_file_name):
         s3 = boto3.resource('s3')
         # s3.Object(bucket,'my_file_old').delete()
-        logger.debug(f"Latest: {bucket}/{latest_prefix}/{latest_file_name}")
-        logger.debug(f"Most recent date: {bucket}/{prefix}/{filename}")
+        logger.debug(f"Copy most recent file: {bucket}/{prefix}/{filename}")
+        logger.debug(f"To latest file: {bucket}/{latest_prefix}/{latest_file_name}")
 
         s3.Object(bucket,f"{latest_prefix}/{latest_file_name}").copy_from(CopySource=f"{bucket}/{prefix}/{filename}")
 

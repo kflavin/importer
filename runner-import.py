@@ -62,6 +62,8 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         logger.addHandler(sh)
         logger.info("Sending runner logs to stdout")
 
+    logger.debug("DEBUGGING IS ENABLED")
+
     ctx.obj['db_credentials'] = {
         'user': os.environ.get('db_user'),
         'password': os.environ.get('db_password'),
