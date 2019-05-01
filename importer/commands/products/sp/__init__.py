@@ -4,7 +4,6 @@ import logging
 from importer.loaders.base import BaseLoader
 from importer.commands.products.sp.create import create
 from importer.commands.products.sp.drop import drop
-from importer.commands.products.sp.update import update
 
 logger = logging.getLogger(__name__)
 
@@ -25,4 +24,3 @@ def sp(ctx, db_name): #, batch_size, throttle_size, throttle_time):
 
 sp.add_command(create)
 sp.add_command(drop)
-sp.add_command(update)

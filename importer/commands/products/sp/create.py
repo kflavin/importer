@@ -38,6 +38,17 @@ def sp_create_stagingtables(ctx, procedure_name):
     loader._query(q)
     print("Created SP")
 
+@click.command()
+@click.option('--procedure-name', '-p', required=False, default=None, type=click.STRING, help="")
+@click.pass_context
+def sp_create_views(ctx, procedure_name):
+    loader = ctx.obj['loader']
+    pn = procedure_name if procedure_name else "sp_create_views"
+
+    loader._query(DROP_SP.format(database=ctx.obj['db_name'], procedure_name=pn))
+    q = SP_CREATE_VIEWS.format(database=ctx.obj['db_name'], user=ctx.obj['user'], procedure_name=pn)
+    loader._query(q)
+    print("Created view SP")
 
 @click.command()
 @click.pass_context
@@ -61,9 +72,9 @@ def updateall(ctx):
     q1 = SP_CREATE_PRODTABLES.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['create_prod_tables'])
     q2 = SP_CREATE_STAGINGTABLES.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['create_stage_tables'])
     q3 = SP_CREATE_VIEWS.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['create_view'])
-    q4 = SP_PREP_DEVICEMASTER.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['prep_productkeys'])
-    q5 = SP_PREP_DRUGMASTER.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['prep_devicemaster'])
-    q6 = SP_PREP_PRODUCTKEYS.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['prep_drugmaster'])
+    q4 = SP_PREP_DEVICEMASTER.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['prep_devicemaster'])
+    q5 = SP_PREP_DRUGMASTER.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['prep_drugmaster'])
+    q6 = SP_PREP_PRODUCTKEYS.format(user=ctx.obj['user'], database=ctx.obj['db_name'], procedure_name=sp_names['prep_productkeys'])
 
     loader._query(q1)
     loader._query(q2)
@@ -75,4 +86,5 @@ def updateall(ctx):
 
 create.add_command(sp_prep_productkeys)
 create.add_command(sp_create_stagingtables)
+create.add_command(sp_create_views)
 create.add_command(updateall)
