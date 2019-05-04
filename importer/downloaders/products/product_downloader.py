@@ -73,7 +73,10 @@ class ProductDownloader(object):
 
     def dl_orange(self, url, bucket, prefix):
         filename = f"orangebook_{self.datestr}.zip"
-        return self.url_to_s3(self.orange_url(url), filename, bucket, self._s3_bucket_key(prefix))
+
+        # As of 5/2/2019, we can download from the URL directly and get the latest zip.
+        # return self.url_to_s3(self.orange_url(url), filename, bucket, self._s3_bucket_key(prefix))
+        return self.url_to_s3(url, filename, bucket, self._s3_bucket_key(prefix))
 
     def dl_marketing_codes(self, url, bucket, prefix):
         binaryData = urlopen(url).read()
@@ -104,13 +107,14 @@ class ProductDownloader(object):
         links = soup.select("a[href$=ndctext.zip]")
         return links[0].get('href')
 
-    def orange_url(self, url):
-        logger.debug("Scraping Orange Book")
-        html = urlopen(url).read()
-        soup = BeautifulSoup(html, 'html.parser')
-        links = soup.select("a[href$=.zip]")
-        base_url = "/".join(url.split("/")[:3])
-        return base_url + links[0].get('href')
+    # # As of 5/2/2019, we no longer need to scrape this page.
+    # def orange_url(self, url):
+    #     logger.debug("Scraping Orange Book")
+    #     html = urlopen(url).read()
+    #     soup = BeautifulSoup(html, 'html.parser')
+    #     links = soup.select("a[href$=.zip]")
+    #     base_url = "/".join(url.split("/")[:3])
+    #     return base_url + links[0].get('href')
 
     def drugbank_url(self, url):
         logger.debug("Scraping Drug Bank")

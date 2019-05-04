@@ -1,2 +1,3 @@
+# Only used by the Lambda functions.  The importer build uses setup.py
 mysql-connector==2.2.9
 beautifulsoup4==4.6.0
