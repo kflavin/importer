@@ -94,6 +94,6 @@ BEGIN
 			  `Modified_Date` datetime DEFAULT NULL,
 			  PRIMARY KEY (`Master_Device_ID`),
 			  KEY `idx_device_master_PrimaryDI` (`PrimaryDI`)
-			) ENGINE=InnoDB AUTO_INCREMENT=2815126 DEFAULT CHARSET=utf8mb4;
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 END
 """

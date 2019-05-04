@@ -62,6 +62,7 @@ class BaseLoader(object):
         if clientFlags:
             config['client_flags'] = [ClientFlag.LOCAL_FILES]
 
+        logger.debug(f"Connecting to database: {config}")
         self.cnx = connector.connect(**config)
         self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
@@ -118,7 +119,10 @@ class BaseLoader(object):
         else:
             return value
 
-    def _query(self, query, cursor=None):
+    def _query(self, query, cursor=None, returnCursor=False):
+        """
+        Execute a query.  Optionally pass a cursor.   Return a List (default) or a cursor.
+        """
         if not cursor:
             cursor = self.cursor
 
@@ -137,7 +141,11 @@ class BaseLoader(object):
         if self.time:
             logger.info("Query completed.")
 
-        rows = list(cursor)
+        if not returnCursor:
+            rows = list(cursor)
+        else:
+            rows = cursor
+
         return rows
 
     def _submit_single_q(self, query, commit=True):
@@ -292,6 +300,8 @@ class BaseLoader(object):
         values = values.rstrip().rstrip(",")
         on_dupe_values = on_dupe_values.rstrip().rstrip(",")
 
+        # Values are only inserted if they exist in the query.  For example, if no INSERT ON DUPLICATE UPDATE statement
+        #  is present, then 'on_dupe_values' will be skipped.
         query = query.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
 
@@ -317,6 +327,7 @@ class BaseLoader(object):
         logger.info(f"Loading data into table: {table_name}")
         clean_columns = self._clean_fields(columns)
         insert_q = self.build_insert_query(query, clean_columns, table_name)
+        logger.debug(f"Cleaned columns names: {clean_columns}")
 
         row_count = 0
         batch = []

@@ -1,3 +1,6 @@
+SELECT_Q = """
+    SELECT * from {table_name}
+"""
 
 INSERT_AND_UPDATE_QUERY = """
     INSERT INTO {table_name}
