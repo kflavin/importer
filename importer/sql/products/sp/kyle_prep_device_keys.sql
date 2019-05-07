@@ -1,4 +1,4 @@
-CREATE DEFINER=`myusername`@`%` PROCEDURE `sp_kyle_prep_device_keys`()
+CREATE DEFINER=`myusername`@`%` PROCEDURE `{database}`.`sp_kyle_prep_device_keys`()
 BEGIN
             DROP TABLE IF EXISTS tmp_gmdn_id_generator;
             DROP TABLE IF EXISTS tmp_gmdn_id;

@@ -8,16 +8,77 @@ from importer.sql.products.sp.create_views import SP_CREATE_VIEWS
 from importer.sql.products.sp.prep_product_keys import SP_PREP_PRODUCTKEYS
 from importer.sql.products.sp.prep_device_master import SP_PREP_DEVICEMASTER
 from importer.sql.products.sp.prep_drug_master import SP_PREP_DRUGMASTER
-from importer.sql.products.sp.drop import DROP_SP
 # from importer.sql.base import (CREATE_TABLE_LIKE_IFNE_DDL)
+from importer.commands.products.sp import recreate_sp
 
 logger = logging.getLogger(__name__)
+
+sp_names = {
+        "create_prod_tables": "sp_create_prodtables",
+        "create_staging_tables": "sp_create_staging_tables",
+        "create_view": "sp_create_views",
+        "prep_drug_prodkeys": "sp_productkeys",
+        "prep_devicemaster": "sp_devicemaster",
+        "prep_drug_master": "sp_drugmaster"
+    }
 
 @click.group()
 @click.option('--user', '-u', required=True, type=click.STRING, help="")
 @click.pass_context
 def create(ctx, user):
     ctx.obj['user'] = user
+
+@click.command()
+@click.pass_context
+def create_staging_tables(ctx):
+    recreate_sp("create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
+def create_prod_tables(ctx):
+    recreate_sp("create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
+def create_views(ctx):
+    recreate_sp("prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
+def prep_drug_prodkeys(ctx):
+    recreate_sp("prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
+def prep_drug_master(ctx):
+    recreate_sp("prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
+def prep_device_prodkeys(ctx):
+    recreate_sp("prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
+def prep_device_master(ctx):
+    recreate_sp("prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+
+@click.command()
+@click.pass_context
+def all(ctx):
+    recreate_sp("create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    
+
+#
+# Deprecated functions below
+#
+
 
 @click.command()
 @click.option('--procedure-name', '-p', required=True, type=click.STRING, help="")
@@ -55,15 +116,6 @@ def sp_create_views(ctx, procedure_name):
 def updateall(ctx):
     loader = ctx.obj['loader']
 
-    sp_names = {
-        "create_prod_tables": "sp_create_prodtables",
-        "create_stage_tables": "sp_create_stagetables",
-        "create_view": "sp_create_views",
-        "prep_productkeys": "sp_productkeys",
-        "prep_devicemaster": "sp_devicemaster",
-        "prep_drugmaster": "sp_drugmaster"
-    }
-
     # Drop SP's
     for key,val in sp_names.items():
         loader._query(DROP_SP.format(database=ctx.obj['db_name'], procedure_name=val))
@@ -88,3 +140,12 @@ create.add_command(sp_prep_productkeys)
 create.add_command(sp_create_stagingtables)
 create.add_command(sp_create_views)
 create.add_command(updateall)
+
+# New functions
+create.add_command(create_staging_tables)
+create.add_command(create_prod_tables)
+create.add_command(prep_drug_prodkeys)
+create.add_command(prep_drug_master)
+create.add_command(prep_device_prodkeys)
+create.add_command(prep_device_master)
+create.add_command(all)

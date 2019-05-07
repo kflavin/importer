@@ -1,4 +1,4 @@
-CREATE DEFINER=`{myusername}`@`%` PROCEDURE `sp_Prep_Drug_ProdKeys`()
+CREATE DEFINER=`{user}`@`%` PROCEDURE `{database}`.`sp_prep_drug_prodkeys`()
 BEGIN
 		    #Prepare ProductKeys based on records which exist in stage_drugVocabulary
 			

@@ -72,6 +72,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         'database': os.environ.get('db_schema'),
         'debug': debug
     }
+    logger.info(f"Connecting to: {os.environ.get('db_host')}")
     
         
 start.add_command(npi)

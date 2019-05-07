@@ -1,4 +1,4 @@
-CREATE DEFINER=`{myusername}`@`%` PROCEDURE `sp_Prep_Drug_Master`()
+CREATE DEFINER=`{user}`@`%` PROCEDURE `{database}`.`sp_prep_drug_master`()
 BEGIN
 
 			SELECT @max_dtEffective := MAX(Eff_Date) FROM drug_master WHERE end_eff_date IS NULL;

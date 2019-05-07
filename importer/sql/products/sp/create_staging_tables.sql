@@ -1,7 +1,5 @@
-SP_CREATE_STAGINGTABLES = """
-CREATE DEFINER=`{user}`@`%` PROCEDURE `sp_Create_StagingTables`()
+CREATE DEFINER=`{user}`@`%` PROCEDURE `sp_create_staging_tables`()
 BEGIN
-
 ########################################################################
 # STAGING TABLES
 ########################################################################
@@ -221,4 +219,3 @@ BEGIN
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 		
 END
-"""

@@ -1,4 +1,4 @@
-CREATE DEFINER=`{myusername}`@`%` PROCEDURE `sp_Prep_Device_Master`()
+CREATE DEFINER=`{user}`@`%` PROCEDURE `{database}`.`sp_prep_device_master`()
 BEGIN
 					               
 		DROP TABLE IF EXISTS tmp_prod_device_master;
@@ -40,9 +40,9 @@ BEGIN
 		WHERE 
 				End_Eff_Date is NULL;
 		
-		DROP INDEX idx_device_master_PrimaryDI ON rxvantage_dev_rk.device_master;
+		DROP INDEX idx_device_master_PrimaryDI ON device_master;
 		
-		CREATE INDEX idx_device_master_PrimaryDI ON rxvantage_dev_rk.device_master (PrimaryDI);
+		CREATE INDEX idx_device_master_PrimaryDI ON device_master (PrimaryDI);
 
 		/*JOIN 
 				tmp_product_keys t 
@@ -52,28 +52,28 @@ BEGIN
 
 #-Product Code------------------------------------------
 
-		DROP TABLE IF EXISTS rxvantage_dev_rk.tmp_product_code;                    
+		DROP TABLE IF EXISTS tmp_product_code;                    
 				
-		CREATE TABLE rxvantage_dev_rk.tmp_product_code (
+		CREATE TABLE tmp_product_code (
 			ProductKey_ID mediumint(9) NOT NULL ,
 			Product_ID varchar(50),
 			Product_Type varchar(50),
 			Product_code varchar(10)
 		) ;
 		
-		CREATE INDEX idx_tmp_product_code_product_ID ON rxvantage_dev_rk.tmp_product_code (product_ID);
+		CREATE INDEX idx_tmp_product_code_product_ID ON tmp_product_code (product_ID);
 		
 		INSERT INTO tmp_product_code (ProductKey_ID,Product_ID,Product_Code)
 		SELECT 
 				DISTINCT ProductKey_ID,Product_ID,Product_Code
 		FROM 
-				rxvantage_dev_rk.product_keys
+				product_keys
 		WHERE 
 				IFNULL(PRODUCT_ID,'') <> '' and Product_Type = 'MEDICAL DEVICES' ;
 		
 #-Stage Device Master------------------------------------------
 
-		DROP TABLE IF EXISTS rxvantage_dev_rk.tmp_stage_device_master;
+		DROP TABLE IF EXISTS tmp_stage_device_master;
 				
 		CREATE TABLE tmp_stage_device_master (
 			  Device_ID varchar(50) DEFAULT NULL,
@@ -92,7 +92,7 @@ BEGIN
 		);
 #warnings
 		#Insert Data using Staging Tables            
-		INSERT INTO rxvantage_dev_rk.tmp_stage_device_master(
+		INSERT INTO tmp_stage_device_master(
 				Device_ID,PrimaryDI,DeviceID_Type,DeviceIDIssuingAgency,
 				DeviceDescription,ContainsDINumber,CompanyName,
 				#Phone,PhoneExtension,Email,
@@ -104,12 +104,12 @@ BEGIN
 				DeviceDescription,ContainsDINumber,CompanyName,#Phone,PhoneExtension,Email,
 				BrandName,DunsNumber,PkgQuantity,PkgDiscontinueDate,PkgType
 				#CURDATE(),DATE_ADD(CURDATE(),INTERVAL 20 YEAR),0  
-		FROM rxvantage_dev_rk.stage_fda_device d 	
-		JOIN rxvantage_dev_rk.stage_fda_identifiers i ON d.primaryDI = i.PrimaryDI;	
+		FROM stage_fda_device d 	
+		JOIN stage_fda_identifiers i ON d.primaryDI = i.PrimaryDI;	
 
 #-Stage Device Master Final------------------------------------------
 
-		DROP TABLE IF EXISTS rxvantage_dev_rk.tmp_stage_device_master_final;
+		DROP TABLE IF EXISTS tmp_stage_device_master_final;
 
 		CREATE TABLE tmp_stage_device_master_final (
 			  ProductKey_ID mediumint(9) DEFAULT NULL,
@@ -129,7 +129,7 @@ BEGIN
 			  PkgStatus varchar(50) DEFAULT NULL
 		);
 		
-		INSERT INTO rxvantage_dev_rk.tmp_stage_device_master_final(
+		INSERT INTO tmp_stage_device_master_final(
 				ProductKey_ID,Device_ID,Product_Code,PrimaryDI,DeviceID_Type,DeviceIDIssuingAgency,
 				DeviceDescription,ContainsDINumber,CompanyName,
 				#Phone,PhoneExtension,Email,
@@ -141,13 +141,13 @@ BEGIN
 				BrandName,DunsNumber,PkgQuantity,PkgDiscontinueDate,PkgType
 				#CURDATE(),DATE_ADD(CURDATE(),INTERVAL 20 YEAR),0  
 		FROM tmp_stage_device_master d 
-		JOIN rxvantage_dev_rk.tmp_product_code p ON d.primaryDI = p.product_ID;
+		JOIN tmp_product_code p ON d.primaryDI = p.product_ID;
 		
 #-Stage Device Master , records to Invalidate------------------------------------------
 
-		DROP TABLE IF EXISTS rxvantage_dev_rk.tmp_stage_device_master_RecordstoInvalidate;
+		DROP TABLE IF EXISTS tmp_stage_device_master_RecordstoInvalidate;
 
-		CREATE TABLE rxvantage_dev_rk.tmp_stage_device_master_RecordstoInvalidate (
+		CREATE TABLE tmp_stage_device_master_RecordstoInvalidate (
 			  ProductKey_ID mediumint(9) DEFAULT NULL,
 			  Device_ID varchar(50) DEFAULT NULL,
 			  Product_Code varchar(10) DEFAULT NULL,
@@ -165,15 +165,15 @@ BEGIN
 			  PkgStatus varchar(50) DEFAULT NULL
 		);
 		
-		CREATE INDEX idx_stage_device_master_1 ON rxvantage_dev_rk.tmp_stage_device_master_RecordstoInvalidate 
+		CREATE INDEX idx_stage_device_master_1 ON tmp_stage_device_master_RecordstoInvalidate 
 		(Device_ID,DeviceID_Type,Product_Code,PrimaryDI);
 
-		CREATE INDEX idx_tmp_prod_device_master_1 ON rxvantage_dev_rk.tmp_prod_device_master 
+		CREATE INDEX idx_tmp_prod_device_master_1 ON tmp_prod_device_master 
 		(Device_ID,DeviceID_Type,Product_Code,PrimaryDI);
 		
 		SET SESSION optimizer_switch='block_nested_loop=off';
 		
-		INSERT INTO rxvantage_dev_rk.tmp_stage_device_master_RecordstoInvalidate(
+		INSERT INTO tmp_stage_device_master_RecordstoInvalidate(
 				ProductKey_ID,Device_ID,Product_Code,PrimaryDI,DeviceID_Type,DeviceIDIssuingAgency,
 				DeviceDescription,ContainsDINumber,CompanyName,
 				#Phone,PhoneExtension,Email,
@@ -183,8 +183,8 @@ BEGIN
 				s.DeviceIDIssuingAgency,s.DeviceDescription,s.ContainsDINumber,s.CompanyName,							
 				s.BrandName,s.DunsNumber,s.PkgQuantity,s.PkgDiscontinueDate,s.PkgType
 		FROM 
-				rxvantage_dev_rk.tmp_stage_device_master_final s JOIN 
-				rxvantage_dev_rk.tmp_prod_device_master k 		 
+				tmp_stage_device_master_final s JOIN 
+				tmp_prod_device_master k 		 
 		ON
 				s.Device_ID 			= k.Device_ID 				AND
 				s.DeviceID_Type			= k.DeviceID_Type 			AND
@@ -208,8 +208,8 @@ BEGIN
 #-Delete all records from stage which already exists in prod-----------------------------
 
 		DELETE t.* FROM 
-		   rxvantage_dev_rk.tmp_stage_device_master_final t JOIN 
-		   rxvantage_dev_rk.tmp_prod_device_master k 
+		   tmp_stage_device_master_final t JOIN 
+		   tmp_prod_device_master k 
 		ON 
 			t.Device_ID 	= k.Device_ID 		AND
 			t.DeviceID_Type	= k.DeviceID_Type 	AND
@@ -218,7 +218,7 @@ BEGIN
 			
 		
 #-Insert only new records in prod-----------------------------
-		INSERT INTO rxvantage_dev_rk.device_master(
+		INSERT INTO device_master(
 				Device_ID,PrimaryDI,DeviceID_Type,DeviceIDIssuingAgency,
 				DeviceDescription,ContainsDINumber,CompanyName,							
 				BrandName,DunsNumber,PkgQuantity,PkgDiscontinueDate,PkgType,
@@ -229,12 +229,12 @@ BEGIN
 				#Phone,PhoneExtension,Email,
 				BrandName,DunsNumber,PkgQuantity,PkgDiscontinueDate,PkgType,
 				CURDATE(),NULL,0    
-		FROM rxvantage_dev_rk.tmp_stage_device_master_final ;
+		FROM tmp_stage_device_master_final ;
 
 
  #-Update existing records which exist in prod but has different values-----------------------------
-		UPDATE rxvantage_dev_rk.device_master d
-		JOIN rxvantage_dev_rk.tmp_stage_device_master_RecordstoInvalidate r ON
+		UPDATE device_master d
+		JOIN tmp_stage_device_master_RecordstoInvalidate r ON
 			d.Device_ID 	= s.Device_ID 		AND
 			d.DeviceID_Type	= s.DeviceID_Type 	AND
 			d.Product_Code  = s.Product_Code 	AND
@@ -243,7 +243,7 @@ BEGIN
 			d.End_Eff_Date = CURDATE();
  
  #-Insert records which has changed values in prod-----------------------------
-		INSERT INTO rxvantage_dev_rk.device_master(
+		INSERT INTO device_master(
 				Device_ID,PrimaryDI,DeviceID_Type,DeviceIDIssuingAgency,
 				DeviceDescription,ContainsDINumber,CompanyName,							
 				BrandName,DunsNumber,PkgQuantity,PkgDiscontinueDate,PkgType,
@@ -254,6 +254,6 @@ BEGIN
 				BrandName,DunsNumber,PkgQuantity,PkgDiscontinueDate,PkgType,
 				Product_Code,ProductKey_ID,
 				CURDATE(),NULL,0    
-		FROM rxvantage_dev_rk.tmp_stage_device_master_RecordstoInvalidate ;
+		FROM tmp_stage_device_master_RecordstoInvalidate ;
             
 END

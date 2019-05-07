@@ -1,9 +1,24 @@
 import click
 import logging
+import os
+
+def load_sql(fileName):
+    return open(os.path.join(SP_DIR, fileName + ".sql")).read()
+
+def recreate_sp(sql_file_name, loader, user, database):
+    sp_name = f"sp_{sql_file_name}"
+    q = load_sql(sql_file_name).format(database=database, user=user)
+    drop_q = DROP_SP.format(database=database, procedure_name=sp_name)
+    logger.info(f"Dropping {database}.{sp_name}")
+    loader._query(drop_q)
+    logger.info(f"Creating {database}.{sp_name}")
+    loader._query(q)
 
 from importer.loaders.base import BaseLoader
 from importer.commands.products.sp.create import create
 from importer.commands.products.sp.drop import drop
+from importer.sql.products.sp.drop import DROP_SP
+from importer import SP_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +33,7 @@ def sp(ctx, db_name): #, batch_size, throttle_size, throttle_time):
 
     if not db_name:
         ctx.obj['db_name'] = loader._query("select database()")[0][0]
-        logger.info(f"Using db {ctx.obj['db_name']}")
+        logger.debug(f"Using db {ctx.obj['db_name']}")
     else:
         ctx.obj['db_name'] = db_name
 
