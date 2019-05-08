@@ -1,4 +1,4 @@
-CREATE DEFINER=`{user}`@`%` PROCEDURE `sp_create_staging_tables`()
+CREATE DEFINER=`{user}`@`%` PROCEDURE `{database}`.`sp_create_staging_tables`()
 BEGIN
 ########################################################################
 # STAGING TABLES

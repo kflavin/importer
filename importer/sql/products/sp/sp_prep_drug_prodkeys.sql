@@ -123,7 +123,6 @@ BEGIN
 				    Product_ID varchar(50),
 				    Product_Type varchar(50),
 				    Product_Name varchar(226) DEFAULT NULL,  
-                    Product_Code varchar(10) DEFAULT NULL,
 				    ProprietaryName varchar(400) DEFAULT NULL,
 				    NonProprietaryName varchar(512) DEFAULT NULL
 			) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
@@ -137,13 +136,12 @@ BEGIN
 				    Product_ID varchar(50),
 				    Product_Type varchar(50),
 				    Product_Name varchar(226) DEFAULT NULL,  
-                    Product_Code varchar(10) DEFAULT NULL,
 				    ProprietaryName varchar(400) DEFAULT NULL,
 				    NonProprietaryName varchar(512) DEFAULT NULL
 			) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
             
-            INSERT INTO tmp_product_keys_final_toCompare (Product_ID,Product_Type,Product_Name,Product_Code,ProprietaryName,NonProprietaryName)
-            SELECT Product_ID,Product_Type,Product_Name,Product_Code,ProprietaryName,NonProprietaryName
+            INSERT INTO tmp_product_keys_final_toCompare (Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName)
+            SELECT Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName
             FROM {prod_db}.product_keys where Product_Type = 'DRUGS';
             
             #select * from tmp_product_keys_final where ProprietaryName = 'Headache' and nonproprietaryName = 'CIMICIFUGA RACEMOSA, GELSEMIUM SEMPERVIRENS, RHUS TOX';
