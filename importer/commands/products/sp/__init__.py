@@ -9,9 +9,10 @@ def recreate_sp(sql_file_name, loader, user, database, prod_db):
     sp_name = sql_file_name
     q = load_sql(sql_file_name).format(database=database, user=user, prod_db=prod_db)
     drop_q = DROP_SP.format(database=database, procedure_name=sp_name)
-    logger.info(f"Dropping {database}.{sp_name}")
+    logger.info(f"Recreating {database}.{sp_name}")
+    # logger.info(f"Dropping {database}.{sp_name}")
     loader._query(drop_q)
-    logger.info(f"Creating {database}.{sp_name}")
+    # logger.info(f"Creating {database}.{sp_name}")
     loader._query(q)
 
 from importer.loaders.base import BaseLoader
