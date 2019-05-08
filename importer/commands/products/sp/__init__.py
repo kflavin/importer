@@ -5,9 +5,9 @@ import os
 def load_sql(fileName):
     return open(os.path.join(SP_DIR, fileName + ".sql")).read()
 
-def recreate_sp(sql_file_name, loader, user, database):
-    sp_name = f"sp_{sql_file_name}"
-    q = load_sql(sql_file_name).format(database=database, user=user)
+def recreate_sp(sql_file_name, loader, user, database, prod_db):
+    sp_name = sql_file_name
+    q = load_sql(sql_file_name).format(database=database, user=user, prod_db=prod_db)
     drop_q = DROP_SP.format(database=database, procedure_name=sp_name)
     logger.info(f"Dropping {database}.{sp_name}")
     loader._query(drop_q)
