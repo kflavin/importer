@@ -11,7 +11,7 @@ from pandas.api.types import (is_string_dtype, is_int64_dtype, is_integer,
 
 from importer.loaders.base import BaseLoader
 # from importer.loaders.products.base import DeltaBaseLoader
-from importer.sql import INSERT_QUERY
+from importer.sql import INSERT_QUERY, COLUMN_ENCODING_DML
 
 # print(logging.Logger.manager.loggerDict)
 
@@ -286,13 +286,45 @@ def copy_table(ctx, source_table_name, destination_table_name):
 @click.pass_context
 def drop_table(ctx, table_name):
     """
-    Create a copy of a source table.
+    Drop a table
     """
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     DROP_TABLE_DDL = f"DROP TABLE {table_name}"
     loader.connect(**ctx.obj['db_credentials'])
     loader._submit_single_q(DROP_TABLE_DDL)
     print(f"Dropped table {table_name}")
+
+
+@click.command()
+@click.option('--table-name', '-t', required=True, type=click.STRING, help="")
+@click.option('--encoding', '-e', required=False, default="ASCII", type=click.STRING, help="")
+@click.option('--column', '-c', required=True, type=click.STRING, help="")
+@click.option('--count-only', '-o', required=False, default=True, type=click.BOOL, help="")
+@click.pass_context
+def check_encoding(ctx, table_name, encoding, column, count_only):
+    """
+    Check table column encodings.  Useful for finding multibyte data, which requires utf8, rather than latin1.
+    """
+    loader = BaseLoader(warnings=ctx.obj['warnings'])
+    print(f"Checking table: {table_name}")
+
+    columns = column.strip().split(",")
+
+    max_col_len = max([ len(c) for c in columns ])
+    if count_only:
+        print(f"{'Column:':{max_col_len}s} Count:")
+
+    for col in columns:
+        q = COLUMN_ENCODING_DML.format(table_name=table_name, encoding=encoding, column=col)
+        loader.connect(**ctx.obj['db_credentials'])
+        r = loader._query(q)
+
+        if count_only:
+            print(f"{col:{max_col_len}s} {len(r)}")
+        else:
+            print(col)
+            for entry in r:
+                print(entry)
 
 # deprecate, this has been moved under product loader
 #
@@ -320,4 +352,5 @@ tools.add_command(load)
 tools.add_command(create_table)
 tools.add_command(copy_table)
 tools.add_command(drop_table)
+tools.add_command(check_encoding)
 # tools.add_command(delta)

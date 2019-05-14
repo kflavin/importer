@@ -62,3 +62,9 @@ CREATE_TABLE_LIKE_IFNE_DDL = """
 TRUNCATE_TABLE_DML = """
     TRUNCATE TABLE {table_name};
 """
+
+COLUMN_ENCODING_DML = """
+SELECT {column}
+  FROM {table_name}
+ WHERE {column} <> CONVERT({column} USING {encoding});
+ """
