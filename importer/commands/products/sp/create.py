@@ -78,6 +78,12 @@ def truncate_stage_tables(ctx):
 
 @click.command()
 @click.pass_context
+def create_views(ctx):
+    # recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_create_views", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+
+@click.command()
+@click.pass_context
 def all(ctx):
     # recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
     # recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
@@ -95,6 +101,7 @@ def all(ctx):
     recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
     recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
     recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_create_views", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
     
 
 
@@ -106,4 +113,5 @@ create.add_command(prep_device_prodkeys)
 create.add_command(prep_device_master)
 create.add_command(prep_service_keys)
 create.add_command(truncate_stage_tables)
+create.add_command(create_views)
 create.add_command(all)
