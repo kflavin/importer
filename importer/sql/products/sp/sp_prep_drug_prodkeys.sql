@@ -142,7 +142,8 @@ BEGIN
             
             INSERT INTO tmp_product_keys_final_toCompare (Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName)
             SELECT Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName
-            FROM {prod_db}.product_keys where Product_Type = 'DRUGS';
+            FROM product_keys where Product_Type = 'DRUGS';
+            -- FROM prod_db.product_keys where Product_Type = 'DRUGS';
             
             #select * from tmp_product_keys_final where ProprietaryName = 'Headache' and nonproprietaryName = 'CIMICIFUGA RACEMOSA, GELSEMIUM SEMPERVIRENS, RHUS TOX';
 	/*-----------------------------------------------------------------------------------------	
@@ -170,10 +171,16 @@ BEGIN
     
 			#make a copy
             INSERT INTO tmp_product_list_new SELECT * FROM tmp_product_list; 
+
+			-- DELETE t.* FROM 
+			-- tmp_product_list 	t JOIN 
+			-- prod_db.product_keys		k ON 
+			-- 	t.proprietaryName 		= k.proprietaryName AND 
+			-- 	t.nonproprietaryName 	= k.nonproprietaryName;
             
 			DELETE t.* FROM 
 			tmp_product_list 	t JOIN 
-			{prod_db}.product_keys		k ON 
+			product_keys		k ON 
 				t.proprietaryName 		= k.proprietaryName AND 
 				t.nonproprietaryName 	= k.nonproprietaryName;
 			            
@@ -207,12 +214,18 @@ BEGIN
       --------------------------------------------------------------------------------------------*/
 			SET SESSION optimizer_switch='block_nested_loop=off';
             
-            TRUNCATE TABLE tmp_product_keys_final;            
+            TRUNCATE TABLE tmp_product_keys_final;
+
+			-- INSERT INTO  tmp_product_keys_final(Product_Name,Product_ID,ProprietaryName,NonProprietaryName)
+            -- SELECT DISTINCT v.Product_Name,Product_ID,x.proprietaryName,synonym
+        	-- FROM tmp_productSynonyms x
+			-- JOIN prod_db.product_keys v 
+			-- ON   x.proprietaryName 		= v.proprietaryName or x.nonproprietaryName 	= v.nonproprietaryName;            
 			
 			INSERT INTO  tmp_product_keys_final(Product_Name,Product_ID,ProprietaryName,NonProprietaryName)
             SELECT DISTINCT v.Product_Name,Product_ID,x.proprietaryName,synonym
         	FROM tmp_productSynonyms x
-			JOIN {prod_db}.product_keys v 
+			JOIN product_keys v 
 			ON   x.proprietaryName 		= v.proprietaryName or x.nonproprietaryName 	= v.nonproprietaryName;
             
             
@@ -222,7 +235,8 @@ BEGIN
 				t.proprietaryName 		= k.proprietaryName AND 
 				t.nonproprietaryName 	= k.nonproprietaryName;
             
-            INSERT INTO  {prod_db}.product_keys(Product_Name,Product_ID,Product_Type,ProprietaryName,NonProprietaryName ,Eff_Date,End_Eff_Date,Created_By)
+            -- INSERT INTO  prod_db.product_keys(Product_Name,Product_ID,Product_Type,ProprietaryName,NonProprietaryName ,Eff_Date,End_Eff_Date,Created_By)
+            INSERT INTO product_keys(Product_Name,Product_ID,Product_Type,ProprietaryName,NonProprietaryName ,Eff_Date,End_Eff_Date,Created_By)
             SELECT DISTINCT Product_Name,Product_ID,'DRUGS' as Product_Type,ProprietaryName,NonProprietaryName,curdate(),NULL ,0 from tmp_product_keys_final;
 			
             DROP TABLE IF EXISTS tmp_druglist;

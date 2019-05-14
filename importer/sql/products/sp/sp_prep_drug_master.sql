@@ -1,7 +1,8 @@
 CREATE DEFINER=`{user}`@`%` PROCEDURE `{database}`.`sp_prep_drug_master`()
 BEGIN
 
-			SELECT @max_dtEffective := MAX(Eff_Date) FROM {prod_db}.drug_master WHERE end_eff_date IS NULL;
+			-- SELECT @max_dtEffective := MAX(Eff_Date) FROM prod_db.drug_master WHERE end_eff_date IS NULL;
+			SELECT @max_dtEffective := MAX(Eff_Date) FROM drug_master WHERE end_eff_date IS NULL;
 
             DROP TABLE IF EXISTS tmp_product_keys;
             
@@ -13,10 +14,15 @@ BEGIN
 				    ProprietaryName varchar(226) DEFAULT NULL,
 				    NonProprietaryName varchar(512) DEFAULT NULL
 			) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
+
+			-- INSERT INTO tmp_product_keys (ProductKey_ID,Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName)
+            -- SELECT ProductKey_ID,Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName 
+            -- FROM prod_db.product_keys 
+            -- WHERE IFNULL(PRODUCT_ID,'') <> '' and Eff_Date > @max_dtEffective and Product_Type = 'DRUGS' and ifnull(ProprietaryName,'') <> '';
 			
             INSERT INTO tmp_product_keys (ProductKey_ID,Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName)
             SELECT ProductKey_ID,Product_ID,Product_Type,Product_Name,ProprietaryName,NonProprietaryName 
-            FROM {prod_db}.product_keys 
+            FROM product_keys 
             WHERE IFNULL(PRODUCT_ID,'') <> '' and Eff_Date > @max_dtEffective and Product_Type = 'DRUGS' and ifnull(ProprietaryName,'') <> '';
             
             DROP TABLE IF EXISTS tmp_drug_master_tocompare;
@@ -56,7 +62,8 @@ BEGIN
 					d.ProductTypeName, d.Source_Type,d.Company_ID, d.Marketing_Cat_Name, d.Marketing_Cat_Name_Desc, 
                     d.TE_Code,d.Interpretation,d.TE_Type, d.NDC_Exclude_Flag,d.Ind_Drug_ID,d.Ind_Drug_Name,Ind_Name,d.Ind_Status,
                     d.Ind_NCT,d.Ind_Phase,d.Ind_DetailedStatus
-			FROM {prod_db}.drug_master d join tmp_product_keys t on d.Ind_Drug_ID = t.product_id;
+			FROM drug_master d join tmp_product_keys t on d.Ind_Drug_ID = t.product_id;
+			-- FROM prod_db.drug_master d join tmp_product_keys t on d.Ind_Drug_ID = t.product_id;
 			
             #SELECT * FROM tmp_drug_master_tocompare limit 100;
             
@@ -232,7 +239,8 @@ BEGIN
                    ; 
             #993,793
             
-            INSERT INTO {prod_db}.drug_master(
+            -- INSERT INTO prod_db.drug_master(
+            INSERT INTO drug_master(
 					  ProductKey_ID,Client_Product_ID,LabelerName,ProductNDC,ProprietaryName,NonProprietaryName,ProductTypeName,
 					  Marketing_Cat_Name,Marketing_Cat_Name_Desc,TE_Code,TE_Type,NDC_Exclude_Flag,
 					  Ind_Drug_Name,Ind_Drug_ID,Ind_Name,Ind_Status,Ind_NCT,Ind_Phase,Ind_DetailedStatus,

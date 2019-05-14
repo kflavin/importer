@@ -15,68 +15,87 @@ logger = logging.getLogger(__name__)
 
 @click.group()
 @click.option('--user', '-u', required=True, type=click.STRING, help="")
-@click.option('--prod_db', '-d', required=True, type=click.STRING, help="")
+# @click.option('--prod_db', '-d', required=True, type=click.STRING, help="")
 @click.pass_context
-def create(ctx, user, prod_db):
+# def create(ctx, user, prod_db):
+def create(ctx, user):
     ctx.obj['user'] = user
-    ctx.obj['prod_db'] = prod_db
+    # ctx.obj['prod_db'] = prod_db
 
 @click.command()
 @click.pass_context
 def create_staging_tables(ctx):
-    recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def create_prod_tables(ctx):
-    recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def create_views(ctx):
-    recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def prep_drug_prodkeys(ctx):
-    recreate_sp("sp_prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def prep_drug_master(ctx):
-    recreate_sp("sp_prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def prep_device_prodkeys(ctx):
-    recreate_sp("sp_prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def prep_device_master(ctx):
-    recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def prep_service_keys(ctx):
-    recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def truncate_stage_tables(ctx):
-    recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
 @click.command()
 @click.pass_context
 def all(ctx):
-    recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
-    recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    # recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
+    recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_create_prod_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_prep_drug_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_prep_drug_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_prep_device_prodkeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_prep_device_master", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_prep_servicekeys", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
+    
 
 
 create.add_command(create_staging_tables)
