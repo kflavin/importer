@@ -34,6 +34,9 @@ class ProductDownloader(object):
             # change this to autodetect region based on EC2 instance
             self.region = "us-east-1"
 
+    def quit(self):
+        self.driver.quit()
+
     ####################
     # File Downloads
     ####################

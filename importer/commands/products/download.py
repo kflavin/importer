@@ -36,6 +36,7 @@ def download(ctx):
 def drugbank(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_drugbank(drugbank_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -44,6 +45,7 @@ def drugbank(ctx, bucket, prefix):
 def indications(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_indications(indications_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -52,6 +54,7 @@ def indications(ctx, bucket, prefix):
 def cms(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_cms(cms_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -60,6 +63,7 @@ def cms(ctx, bucket, prefix):
 def gudid(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_gudid(gudid_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -68,6 +72,7 @@ def gudid(ctx, bucket, prefix):
 def ndc(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_ndc(ndc_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -76,6 +81,7 @@ def ndc(ctx, bucket, prefix):
 def orangebook(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_orange(orange_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -84,6 +90,7 @@ def orangebook(ctx, bucket, prefix):
 def marketingcodes(ctx, bucket, prefix):
     d = ProductDownloader()
     check_result(d.dl_marketing_codes(marketing_codes_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -124,6 +131,8 @@ def all(ctx, bucket):
         check_result(d.dl_marketing_codes(marketing_codes_url, bucket, "marketingcodes"))
     except Exception as e:
         handle_exception(e, "Failed to download marketing codes file but continuing...")
+
+    d.quit()
 
 def check_result(result):
     if result:
