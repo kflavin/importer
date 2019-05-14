@@ -29,15 +29,12 @@ BEGIN
 			`DeaSchedule` varchar(20) DEFAULT NULL,
 			`NDC_Exclude_Flag` char(1) DEFAULT NULL,
 			`Listing_Record_Certified_Through` varchar(20) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			PRIMARY KEY (`ProductID`),
 			KEY `idx_NDC_proprietaryName` (`ProprietaryName`),
-			KEY `idx_NDC_nonproprietaryName` (`NonProprietaryName`(512)),
-			KEY `stage_ndc_product_1` (`ProprietaryName`(226))
+			KEY `idx_NDC_nonproprietaryName` (`NonProprietaryName`),
+			KEY `stage_ndc_product_1` (`ProprietaryName`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-			#drop index idx_NDC_proprietaryName on stage_ndc_product;
-			CREATE INDEX idx_NDC_proprietaryName ON stage_ndc_product (proprietaryName(400));
-			CREATE INDEX idx_NDC_nonproprietaryName ON stage_ndc_product (nonproprietaryName(512));
 
 		### STAGE_ORANGEBOOK_PRODUCT ########################################################################################
 
@@ -58,11 +55,9 @@ BEGIN
 			`RS` varchar(20) DEFAULT NULL,
 			`Type` varchar(10) DEFAULT NULL,
 			`Applicant_Full_Name` varchar(500) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			KEY `idx_OB_product_ProprietaryName` (`Trade_Name`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-			#drop index idx_OB_product_ProprietaryName on stage_orangebook_product
-			CREATE INDEX idx_OB_product_ProprietaryName ON stage_orangebook_product (Trade_Name(400));
 
 		### STAGE_FDA_DEVICE ################################################################################################
 
@@ -103,8 +98,9 @@ BEGIN
 			`OTC` varchar(50) DEFAULT NULL,
 			`DeviceSterile` varchar(50) DEFAULT NULL,
 			`SterilizationPriorToUse` varchar(100) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			PRIMARY KEY (`PrimaryDI`),
-			KEY `idx_stage_fda_device_primaryDI` (`PrimaryDI`(30))
+			KEY `idx_stage_fda_device_primaryDI` (`PrimaryDI`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         
         #Select Count(*),PrimaryDI from stage_fda_device group by PrimaryDI having count(*) > 1;
@@ -123,10 +119,9 @@ BEGIN
 			`PkgDiscontinueDate` varchar(50) DEFAULT NULL,
 			`PkgStatus` varchar(50) DEFAULT NULL,
 			`PkgType` varchar(50) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			KEY `idx_stage_fda_Contacts_PrimaryDI` (`PrimaryDI`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-			
-            CREATE INDEX idx_stage_fda_Contacts_PrimaryDI ON stage_fda_identifiers (PrimaryDI(200));
         
         
         ### STAGE_FDA_CONTACTS ################################################
@@ -138,10 +133,9 @@ BEGIN
 			`Phone` varchar(20) DEFAULT NULL,
 			`PhoneExtension` varchar(50) DEFAULT NULL,
 			`Email` varchar(500) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			KEY `idx_stage_fda_Contacts_PrimaryDI` (`PrimaryDI`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-			CREATE INDEX idx_stage_fda_Contacts_PrimaryDI ON stage_fda_contacts (PrimaryDI(200));
             
 		### STAGE_MARKETINGCODES #############################################
        
@@ -149,7 +143,8 @@ BEGIN
 		
 			CREATE TABLE `stage_marketingcodes` (
 			`SplAcceptableTerm` varchar(400) DEFAULT NULL,
-			`Code` varchar(10) DEFAULT NULL
+			`Code` varchar(10) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 		### STAGE_INDICATIONS ###############################################
@@ -165,12 +160,10 @@ BEGIN
 			`Status` varchar(50) DEFAULT NULL,
 			`Phase` varchar(50) DEFAULT NULL,
 			`DetailedStatus` varchar(500) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			KEY `idx_Stage_Ind_Drug_Name` (`Drug_Name`),
 			KEY `idx_Stage_Drug_ID` (`Drug_ID`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-			
-			CREATE INDEX idx_Stage_Ind_Drug_Name ON stage_indications (Drug_Name(100));
-            CREATE INDEX idx_Stage_Drug_ID ON stage_indications (Drug_ID);
 
 		### STAGE_DRUGVOCABULARY ###############################################
 				
@@ -183,7 +176,8 @@ BEGIN
 			`CAS` varchar(100) DEFAULT NULL,
 			`UNII` varchar(100) DEFAULT NULL,
 			`Synonyms` varchar(500) DEFAULT NULL,
-			`Standard_InChI_Key` varchar(500) DEFAULT NULL
+			`Standard_InChI_Key` varchar(500) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             
             ### STAGE_CMS_SERVICE ###############################################
@@ -192,7 +186,8 @@ BEGIN
             
             CREATE TABLE `stage_cms_service` (
 			`cpt_code` varchar(10) DEFAULT NULL,
-			`service` varchar(184) DEFAULT NULL
+			`service` varchar(184) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             
             ### STAGE_FDA_GMDN ###############################################
@@ -203,19 +198,9 @@ BEGIN
 			`PrimaryDI` varchar(30) DEFAULT NULL,
 			`gmdnPTName` varchar(128) DEFAULT NULL,
 			`gmdnPTDefinition` varchar(1024) DEFAULT NULL,
+			`created_at` datetime DEFAULT NULL,
 			KEY `idx_tmp_gmdn_PrimaryDI` (`PrimaryDI`),
 			KEY `idx_tmp_gmdn_gmdnPTName` (`gmdnPTName`)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            
-            ### STAGE_FDA_GMDN ###############################################
-            
-            DROP TABLE IF EXISTS `stage_fda_productcodes`;
-            
-            CREATE TABLE `stage_fda_productcodes` (
-			`PrimaryDI` varchar(30) DEFAULT NULL,
-			`productCode` varchar(3) DEFAULT NULL,
-			`productCodeName` varchar(128) DEFAULT NULL,
-			KEY `idx_stage_fda_productcodes_PrimaryDI_productCode` (`PrimaryDI`,`productCode`)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 		
 END
