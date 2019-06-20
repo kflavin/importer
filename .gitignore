@@ -1,3 +1,5 @@
+.*
+
 # environment specific files
 data/*
 .env.*
@@ -19,3 +21,10 @@ sandbox/*
 # Editors
 *.swp
 *.vscode
+
+
+# Serverless files
+serverless-*.yml
+serverless.yml
+!serverless-template-dev.yml
+!serverless-template.yml

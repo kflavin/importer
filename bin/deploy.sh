@@ -12,12 +12,12 @@ if [ -e "serverless.yml" ]; then
     rm -f serverless.yml
 fi
 
-#ln -s "serverless-$STAGE.yml" serverless.yml
-if [ ! -f "serverless-$STAGE.yml" ]; then
-    echo "No serverless file exists for \"$STAGE\".  Please create serverless-$STAGE.yml"
+#ln -s "serverless-template-$STAGE.yml" serverless.yml
+if [ ! -f "serverless-template-$STAGE.yml" ]; then
+    echo "No serverless file exists for \"$STAGE\".  Please create serverless-template-$STAGE.yml"
     exit 1
 fi
-cp "serverless-$STAGE.yml" serverless.yml
+cp "serverless-template-$STAGE.yml" serverless.yml
 
 if [ ! -f ".env.$STAGE" ]; then
     echo "No environment file exists for $STAGE.  Please create .env.$STAGE"
@@ -30,5 +30,5 @@ source .env.$STAGE
 #echo "----- Build Runner -----"
 #python setup.py sdist
 
-echo "----- Deploying to $STAGE using serverless-$STAGE.yml -----"
+echo "----- Deploying to $STAGE using serverless-template-$STAGE.yml -----"
 sls deploy --stage=$STAGE $*

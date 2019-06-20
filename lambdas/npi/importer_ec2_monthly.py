@@ -28,6 +28,7 @@ def handler(event, context):
     log_table_name = os.environ.get('npi_log_table_name')
     timeout = os.environ.get('monthly_import_timeout', '30')
     bucket_name = os.environ.get("aws_s3_bucket")
+    sns_topic_arn = os.environ.get("aws_sns_topic_arn")
 
     ec2 = EC2Helper(region, period)
     rds = DBHelper(region)
@@ -53,7 +54,8 @@ def handler(event, context):
                                       period=period,
                                       timeout=timeout,
                                       init_flag=init_flag,
-                                      limit=1)
+                                      limit=1,
+                                      sns_topic_arn=sns_topic_arn)
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
