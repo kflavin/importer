@@ -29,7 +29,7 @@ sp_create_initial_tables:BEGIN
         LEAVE sp_create_initial_tables;
     END IF;
 
-    SET @@SESSION.group_concat_max_len = 2048;
+    SET @@SESSION.group_concat_max_len = 4096;
 
     # Get the size of the generic_name column to make sure we don't overrun it.
     SET @maxlen_generic_name = (SELECT character_maximum_length

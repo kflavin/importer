@@ -14,6 +14,7 @@ BEGIN
     FROM information_schema.columns
     WHERE table_schema = database() AND table_name = 'products' AND column_name = 'generic_name');
 
+    SET @@SESSION.group_concat_max_len = 4096;
 
 	DROP TABLE IF EXISTS tmp_products_toCompare;
     CREATE TABLE tmp_products_toCompare like products;
@@ -23,7 +24,7 @@ BEGIN
     DROP TABLE IF EXISTS tmp_products;
 	CREATE TABLE tmp_products like products;
 
-    select 'START UNION';
+    SELECT 'CREATE tmp_products FROM RXNORM DATA';
     # Bring the new data from RXNORM into tmp_products
     INSERT INTO tmp_products (`name`, `generic_name`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `approver_id`, `creator_id`, `deleter_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT DISTINCT t2.BrandName as Name,
@@ -71,8 +72,8 @@ BEGIN
 
     SELECT 'INSERT INTO TMP_PRODUCT_SYNONYMS';
 
-    INSERT INTO tmp_product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `created_at`)
-    SELECT brand_rxcui, STR, @CREATOR_ID, NOW() from stage_rxnconso t3 JOIN (
+    INSERT INTO tmp_product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`)
+    SELECT brand_rxcui, STR, @CREATOR_ID, @UPDATER_ID, NOW(), NOW() from stage_rxnconso t3 JOIN (
 	SELECT name,t1.rxcui_id as brand_rxcui,t2.rxcui2 as generic_rxcui FROM tmp_products2 t1 JOIN stage_rxnrel t2 on t1.rxcui_id = t2.rxcui1 WHERE (RELA='precise_ingredient_of' or RELA='has_tradename') and is_generic = 0
 	) t4 on t3.rxcui = t4.generic_rxcui WHERE (TTY='SY' or TTY='TMSY' or TTY='PIN' or TTY='IN') and  SAB='RXNORM';
 
@@ -82,9 +83,8 @@ BEGIN
 
     SELECT 'INSERT NEW SYNONYMS';
 	# Insert new records into the product_synonyms table
-    INSERT INTO product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `created_at`)
-    SELECT `rxcui_id`, `synonym`, `creator_id`, NOW() from tmp_product_synonyms;
-
+    INSERT INTO product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`)
+    SELECT `rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at` from tmp_product_synonyms;
 
 END;
 

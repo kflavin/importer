@@ -13,10 +13,9 @@ BEGIN
     SET @UKNOWN_CATEGORY_ID = 5;
     SET @DRUG_CATEGORY_ID = 1;
     SET @VACCINE_CATEGORY_ID = 8;
+    SET @maxlen_generic_name = 884;
 
-    SET @maxlen_generic_name = (SELECT character_maximum_length
-    FROM information_schema.columns
-    WHERE table_schema = database() AND table_name = 'products' AND column_name = 'generic_name');
+    SET @@SESSION.group_concat_max_len = 4096;
 
     DROP TABLE IF EXISTS tmp_products_toCompare;
 
@@ -79,7 +78,7 @@ BEGIN
     EXECUTE stmt1;
     DEALLOCATE PREPARE stmt1;
 
-    SELECT 'PREPARE SYNONYMS';
+    SELECT 'CREATE tmp_product_synonyms_toCompare';
     # Make a copy of the synonyms 
     DROP TABLE IF EXISTS tmp_product_synonyms_toCompare;
     SET @s = CONCAT('CREATE TABLE tmp_product_synonyms_toCompare like ', prodDb ,'product_synonyms');
@@ -87,6 +86,7 @@ BEGIN
     EXECUTE stmt1;
     DEALLOCATE PREPARE stmt1;
 
+    SELECT 'INSERT INTO tmp_product_synonyms_toCompare';
     # Make a copy of the products table for comparison.
     SET @s = CONCAT('INSERT INTO tmp_product_synonyms_toCompare SELECT * FROM ', prodDb ,'product_synonyms');
     PREPARE stmt1 FROM @s;
@@ -97,9 +97,8 @@ BEGIN
     CREATE TABLE tmp_product_synonyms like tmp_product_synonyms_toCompare;
     
     SELECT 'INSERT INTO tmp_product_synonyms';
-
-    INSERT INTO tmp_product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `created_at`)
-    SELECT brand_rxcui, STR, @CREATOR_ID, NOW() from stage_rxnconso t3 JOIN (
+    INSERT INTO tmp_product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`)
+    SELECT brand_rxcui, STR, @CREATOR_ID, @UPDATER_ID, NOW(), NOW() from stage_rxnconso t3 JOIN (
     SELECT name,t1.rxcui_id as brand_rxcui,t2.rxcui2 as generic_rxcui FROM tmp_products2 t1 JOIN stage_rxnrel t2 on t1.rxcui_id = t2.rxcui1 WHERE (RELA='precise_ingredient_of' or RELA='has_tradename') and is_generic = 0
     ) t4 on t3.rxcui = t4.generic_rxcui WHERE (TTY='SY' or TTY='TMSY' or TTY='PIN' or TTY='IN') and  SAB='RXNORM';
     
@@ -108,8 +107,8 @@ BEGIN
 
     SELECT 'INSERT NEW SYNONYMS';
     SET @s = CONCAT('INSERT INTO ', prodDb, 'product_synonyms'
-        '(`rxcui_id`, `synonym`, `creator_id`, `created_at`) ',
-        'SELECT `rxcui_id`, `synonym`, `creator_id`, NOW() from tmp_product_synonyms'
+        '(`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`) ',
+        'SELECT `rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at` from tmp_product_synonyms'
         );
     PREPARE stmt1 FROM @s;
     EXECUTE stmt1;
