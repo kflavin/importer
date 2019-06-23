@@ -1,4 +1,4 @@
-create definer = myusername@`%` procedure sp_create_stage_tables()
+create procedure sp_create_stage_tables()
 BEGIN
     CREATE TABLE `stage_rxnconso` (
       `RXCUI` varchar(8) NOT NULL,
@@ -43,3 +43,4 @@ BEGIN
       KEY `idx_RXNREL_RXCUI1_RXCUI2_RELA` (`RXCUI1`,`RELA`,`RXCUI2`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 END;
+
