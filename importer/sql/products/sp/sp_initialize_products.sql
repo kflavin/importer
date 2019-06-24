@@ -2,7 +2,10 @@ create procedure sp_initialize_products()
 sp_create_initial_tables:BEGIN
 
     # This SP performs the initial migration from the old "product" table to the new "products" table.
-    # It should only be run once.
+    # It should only be run once.  It will do the following:
+    #   - Load old product table with the same id's (where records do not have a match in RXNORM)
+    #   - Load new data from RXNORM
+    #   - Update tables dependent on old `product` table id with new id in the `products` table (if the row was merged)
         
     SET SQL_SAFE_UPDATES = 0;
     SET FOREIGN_KEY_CHECKS = 0; # There are FK checks that fail.
@@ -20,7 +23,7 @@ sp_create_initial_tables:BEGIN
     SET @product_synonym_rows := (SELECT count(1) FROM product_synonyms);
     SET @user_products_rows = (SELECT count(1) FROM user_products);
 
-    # Sanity checks.  Don't rerun.
+    # Sanity checks.  Don't rerun if these tables have data.
     IF @products_rows > 0 OR
         @products_to_product_rows > 0 OR
         @product_synonym_rows > 0 OR
@@ -29,6 +32,7 @@ sp_create_initial_tables:BEGIN
         LEAVE sp_create_initial_tables;
     END IF;
 
+    # For generic names that have many ingredients
     SET @@SESSION.group_concat_max_len = 4096;
 
     # Get the size of the generic_name column to make sure we don't overrun it.
@@ -39,7 +43,8 @@ sp_create_initial_tables:BEGIN
     DROP TABLE IF EXISTS tmp_products;
     CREATE TABLE tmp_products like products;
 
-    # Initial load of RXNORM data.  Generic names longer than @maxlen_generic_name are truncated to match the column width.
+    # Initial load of RXNORM data.  Generic names longer than @maxlen_generic_name are truncated to match the column 
+    # width.  Only 2 rows overrun the column (Prevnar).
     SELECT 'LOAD TMP_PRODUCTS';
     INSERT INTO tmp_products (`name`, `generic_name`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `approver_id`, `creator_id`, `deleter_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT DISTINCT t2.BrandName as Name,
@@ -55,7 +60,7 @@ sp_create_initial_tables:BEGIN
     UNION
     SELECT DISTINCT STR as Name, STR as GenericName, RXCUI, 'RXNORM', @DRUG_CATEGORY_ID, 1, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%' ;
 
-    # Anything with "vaccine", put in the VACCINE category
+    # Put anything with "vaccine" in the name in the VACCINE category
     UPDATE tmp_products
     SET product_category_id = @VACCINE_CATEGORY_ID
     WHERE name LIKE '%vaccine%' or generic_name LIKE '%vaccine%';
@@ -78,6 +83,8 @@ sp_create_initial_tables:BEGIN
       KEY `idx_tmp_products_cleaned_name_generic_name` (`name`,`generic_name`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+    # Normalize names in the product table by removing non-alphanumerics.  This gets several hundred more matches
+    # with the RXNORM data.
     SELECT 'NORMALIZE NAMES';
     # Normalize names in product and tmp_products for comparison
     INSERT INTO tmp_product_cleaned (`id`, `name`, `generic_name`)
@@ -110,7 +117,7 @@ sp_create_initial_tables:BEGIN
     INSERT INTO products (`name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
     SELECT `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at` FROM tmp_products;
 
-    # Build lookup table
+    # Build lookup table.
     DROP TABLE IF EXISTS tmp_products_to_product;
     CREATE TABLE tmp_products_to_product like products_to_product;
 
@@ -150,9 +157,9 @@ sp_create_initial_tables:BEGIN
     UPDATE appointment_products t1 JOIN products_to_product t2 ON t1.product_id = t2.old_id
     SET t1.product_id = t2.new_id;
 
-    ################################################################
-    # Populate new tables with new ID's.  These  are re-used tables
-    ################################################################
+    ####################################################################
+    # Populate existing tables with new ID's.  These  are re-used tables
+    ####################################################################
 
     SELECT 'UPDATE company_import_product_mappings TABLE WITH NEW PRODUCT_ID';
     INSERT INTO company_import_product_mappings (`id`, `company_id`, `import_client_product_id`, `target_product_id`,

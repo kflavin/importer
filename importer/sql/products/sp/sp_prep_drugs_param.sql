@@ -1,7 +1,9 @@
 create procedure sp_prep_drugs_param(IN prodDb varchar(255))
 BEGIN
 
-    # prodDb specifies where to find the products table
+    # This SP loads RXNORM data into the products table.  It is scheduled to run monthly through Talend.
+    
+    # prodDb specifies where the prod DB lives.  This is the database with the app tables.
     IF IFNULL(prodDb,'') <> '' THEN SET prodDb = CONCAT(prodDb, '.'); ELSE SET prodDb = ''; END IF;
     SELECT CONCAT('PROD DB=', prodDb);
 
@@ -31,7 +33,7 @@ BEGIN
     EXECUTE stmt1;
     DEALLOCATE PREPARE stmt1;
 
-    # Create a temporary table like products, for new data.
+    # Create a temporary table like products, for new RXNORM data.
     DROP TABLE IF EXISTS tmp_products;
     CREATE TABLE tmp_products like tmp_products_toCompare;
     
