@@ -8,6 +8,7 @@ plugins:
 
 custom:
   environment: ${opt:stage, self:provider.stage}
+  version: ${opt:version, 'na'}
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
@@ -38,10 +39,12 @@ custom:
     prod: true
   scripts:
     hooks:
-      'deploy:finalize': bash bin/stage_all.sh ${self:custom.environment}
+      'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
 
 provider:
   name: aws
+  stackTags:
+    version: ${self:custom.version}
   region: ${self:custom.awsRegion}
   runtime: python3.6
   environment:
