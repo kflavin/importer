@@ -2,7 +2,7 @@ create procedure sp_prep_drugs_param(IN prodDb varchar(255))
 BEGIN
 
     # This SP loads RXNORM data into the products table.  It is scheduled to run monthly through Talend.
-    
+
     # prodDb specifies where the prod DB lives.  This is the database with the app tables.
     IF IFNULL(prodDb,'') <> '' THEN SET prodDb = CONCAT(prodDb, '.'); ELSE SET prodDb = ''; END IF;
     SELECT CONCAT('PROD DB=', prodDb);
@@ -67,7 +67,7 @@ BEGIN
     SELECT 'UPDATE VACCINES IN tmp_products WITH VACCINE CATEGORY';
     # Anything with "vaccine" in the name, set to category 8 (vaccine)
     UPDATE tmp_products
-    SET product_category_id = 8
+    SET product_category_id = @VACCINE_CATEGORY_ID
     WHERE name LIKE '%vaccine%' or generic_name LIKE '%vaccine%';
 
     SELECT 'INSERT INTO products FROM tmp_products';
@@ -81,7 +81,7 @@ BEGIN
     DEALLOCATE PREPARE stmt1;
 
     SELECT 'CREATE tmp_product_synonyms_toCompare';
-    # Make a copy of the synonyms 
+    # Make a copy of the synonyms table
     DROP TABLE IF EXISTS tmp_product_synonyms_toCompare;
     SET @s = CONCAT('CREATE TABLE tmp_product_synonyms_toCompare like ', prodDb ,'product_synonyms');
     PREPARE stmt1 FROM @s;
@@ -89,7 +89,7 @@ BEGIN
     DEALLOCATE PREPARE stmt1;
 
     SELECT 'INSERT INTO tmp_product_synonyms_toCompare';
-    # Make a copy of the products table for comparison.
+    # Populate it with current product_synonyms table for comparison.
     SET @s = CONCAT('INSERT INTO tmp_product_synonyms_toCompare SELECT * FROM ', prodDb ,'product_synonyms');
     PREPARE stmt1 FROM @s;
     EXECUTE stmt1;
@@ -99,12 +99,14 @@ BEGIN
     CREATE TABLE tmp_product_synonyms like tmp_product_synonyms_toCompare;
     
     SELECT 'INSERT INTO tmp_product_synonyms';
+    # USE TTY=SY|TMSY|PIN|IN for synonyms.  The other TTY's mix in dosage, strength, etc.
     INSERT INTO tmp_product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT brand_rxcui, STR, @CREATOR_ID, @UPDATER_ID, NOW(), NOW() from stage_rxnconso t3 JOIN (
     SELECT name,t1.rxcui_id as brand_rxcui,t2.rxcui2 as generic_rxcui FROM tmp_products2 t1 JOIN stage_rxnrel t2 on t1.rxcui_id = t2.rxcui1 WHERE (RELA='precise_ingredient_of' or RELA='has_tradename') and is_generic = 0
     ) t4 on t3.rxcui = t4.generic_rxcui WHERE (TTY='SY' or TTY='TMSY' or TTY='PIN' or TTY='IN') and  SAB='RXNORM';
     
     SELECT 'DELETE FROM SYNONYMS';
+    # Delete all but the new records.
     DELETE t1 FROM tmp_product_synonyms t1 JOIN tmp_product_synonyms_toCompare t2 ON t1.rxcui_id = t2.rxcui_id;
 
     SELECT 'INSERT NEW SYNONYMS';

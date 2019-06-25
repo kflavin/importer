@@ -43,7 +43,7 @@ sp_create_initial_tables:BEGIN
     DROP TABLE IF EXISTS tmp_products;
     CREATE TABLE tmp_products like products;
 
-    # Initial load of RXNORM data.  Generic names longer than @maxlen_generic_name are truncated to match the column 
+    # Initial load of RXNORM data.  Generic names longer than @maxlen_generic_name are truncated to match the column
     # width.  Only 2 rows overrun the column (Prevnar).
     SELECT 'LOAD TMP_PRODUCTS';
     INSERT INTO tmp_products (`name`, `generic_name`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `approver_id`, `creator_id`, `deleter_id`, `updater_id`, `created_at`, `updated_at`)
@@ -58,7 +58,7 @@ sp_create_initial_tables:BEGIN
       ) t1 JOIN stage_rxnrel t2 ON t1.RXCUI = t2.RXCUI1 WHERE RELA='has_tradename'
     ) t2 ON t3.RXCUI = t2.GenericRXCUI WHERE SAB='RXNORM' AND TTY='IN' GROUP BY BrandRXCUI
     UNION
-    SELECT DISTINCT STR as Name, STR as GenericName, RXCUI, 'RXNORM', @DRUG_CATEGORY_ID, 1, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%' ;
+    SELECT DISTINCT STR as Name, STR as GenericName, RXCUI, 'RXNORM', @DRUG_CATEGORY_ID, 1, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%';  # exclude Generics that have commas in the name
 
     # Put anything with "vaccine" in the name in the VACCINE category
     UPDATE tmp_products
@@ -109,11 +109,11 @@ sp_create_initial_tables:BEGIN
     WHERE id not in (SELECT t1.id as old_id FROM tmp_product_cleaned t1 JOIN tmp_products_cleaned t2 ON t1.name = t2.name);  # WHERE finds old_id with name matches
 
     SELECT 'INSERT UNKNOWNS';
-    # Insert the "unknowns" into the new product table
+    # Insert the "unknowns" into the new product table.  Insert these before the RXNORM data, so they keep the same ID's.
     INSERT INTO products SELECT * FROM tmp_products_unknown;
 
     SELECT 'INSERT RXNORM';
-    # Insert the RXNORM data into the new product table
+    # Insert the RXNORM data into the new product table.
     INSERT INTO products (`name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
     SELECT `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at` FROM tmp_products;
 
