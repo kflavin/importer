@@ -8,7 +8,7 @@ sp_create_initial_tables:BEGIN
     #   - Update tables dependent on old `product` table id with new id in the `products` table (if the row was merged)
         
     SET SQL_SAFE_UPDATES = 0;
-    SET FOREIGN_KEY_CHECKS = 0; # There are FK checks that fail.
+#     SET FOREIGN_KEY_CHECKS = 0; # There are FK checks that fail.
 
     SET @CREATOR_ID = 1;
     SET @UPDATER_ID = 1;
@@ -105,17 +105,23 @@ sp_create_initial_tables:BEGIN
     SELECT 'INSERT TMP_PRODUCTS_UNKNOWNS';
     # Build "unknowns" table.  These are rows that don't match anything in RXNORM
     INSERT INTO tmp_products_unknown (`id`, `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
-    SELECT id, Name, Generic_Name, '', null, 'USER', @UKNOWN_CATEGORY_ID, @CREATOR_ID, `Created_Date`, @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
+    SELECT id, Name, Generic_Name, '', null, 'USER', @UKNOWN_CATEGORY_ID, COALESCE(`Created_By`, @CREATOR_ID), COALESCE(`Created_Date`, NOW()), @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
     WHERE id not in (SELECT t1.id as old_id FROM tmp_product_cleaned t1 JOIN tmp_products_cleaned t2 ON t1.name = t2.name);  # WHERE finds old_id with name matches
+
+    SELECT 'FIX CREATOR_ID''S';
+    DROP TABLE IF EXISTS tmp_products_unknown_fix_creator_id;
+    CREATE TABLE tmp_products_unknown_fix_creator_id like products;  # Same table, without FK's
+    INSERT INTO tmp_products_unknown_fix_creator_id SELECT * FROM tmp_products_unknown;
+    UPDATE tmp_products_unknown_fix_creator_id set creator_id=@CREATOR_ID where creator_id not in (select id from user);
 
     SELECT 'INSERT UNKNOWNS';
     # Insert the "unknowns" into the new product table.  Insert these before the RXNORM data, so they keep the same ID's.
-    INSERT INTO products SELECT * FROM tmp_products_unknown;
+    INSERT INTO products SELECT * FROM tmp_products_unknown_fix_creator_id;
 
     SELECT 'INSERT RXNORM';
     # Insert the RXNORM data into the new product table.
-    INSERT INTO products (`name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
-    SELECT `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at` FROM tmp_products;
+    INSERT INTO products (`name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
+    SELECT `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at` FROM tmp_products;
 
     # Build lookup table.
     DROP TABLE IF EXISTS tmp_products_to_product;
@@ -142,27 +148,46 @@ sp_create_initial_tables:BEGIN
 
     SELECT 'UPDATE user_products TABLE WITH NEW PRODUCT_ID';
     # Update user mappings.  Fails FK checks.
-    INSERT INTO user_products (`id`, `user_id`, `product_id`, `creator_id`, `created_at`, `updater_id`, `updated_at`)
+    DROP TABLE IF EXISTS tmp_user_products;
+    CREATE TABLE tmp_user_products like user_products;  # Same table, without FK's
+    INSERT INTO tmp_user_products (`id`, `user_id`, `product_id`, `creator_id`, `created_at`, `updater_id`, `updated_at`)
     SELECT `id`, `Rep_ID`, `Product_ID`, COALESCE(`Created_By`, @CREATOR_ID), COALESCE(`Created_Date`, NOW()), @UPDATER_ID, NOW() FROM rep_product;
 
-    UPDATE user_products t1 JOIN products_to_product t2 ON t1.product_id = t2.old_id
+    UPDATE tmp_user_products t1 JOIN products_to_product t2 ON t1.product_id = t2.old_id
     SET t1.product_id = t2.new_id;
+
+    UPDATE tmp_user_products set creator_id=1 where creator_id not in (select id from user);
+    UPDATE tmp_user_products set updater_id=1 where updater_id not in (select id from user);
+
+    # Final table
+    INSERT INTO user_products SELECT * FROM tmp_user_products;
+
 
     # Fails FK checks
     SELECT 'UPDATE appointment_products TABLE WITH NEW PRODUCT_ID';
-    INSERT INTO appointment_products (`id`, `appointment_id`, `product_id`, `created_at`, `creator_id`, `updater_id`, `updated_at`)
+    DROP TABLE IF EXISTS tmp_appointment_products;
+    CREATE TABLE tmp_appointment_products like appointment_products;  # Same table, without FK's
+    INSERT INTO tmp_appointment_products (`id`, `appointment_id`, `product_id`, `created_at`, `creator_id`, `updater_id`, `updated_at`)
     SELECT `id`, `appointment_id`, `product_id`,
            COALESCE(`created_at`, NOW()), COALESCE(`creator_id`, @CREATOR_ID), @UPDATER_ID, NOW() FROM appointment_product;
 
-    UPDATE appointment_products t1 JOIN products_to_product t2 ON t1.product_id = t2.old_id
+    UPDATE tmp_appointment_products t1 JOIN products_to_product t2 ON t1.product_id = t2.old_id
     SET t1.product_id = t2.new_id;
 
+    UPDATE tmp_appointment_products set creator_id=1 where creator_id not in (select id from user);
+    UPDATE tmp_appointment_products set updater_id=1 where updater_id not in (select id from user);
+
+    # Final table
+    INSERT INTO appointment_products SELECT * FROM tmp_appointment_products;
+
     ####################################################################
-    # Populate existing tables with new ID's.  These  are re-used tables
+    # Populate existing tables with new ID's.  These are re-used tables
     ####################################################################
 
     SELECT 'UPDATE company_import_product_mappings TABLE WITH NEW PRODUCT_ID';
-    INSERT INTO company_import_product_mappings (`id`, `company_id`, `import_client_product_id`, `target_product_id`,
+    DROP TABLE IF EXISTS tmp_company_import_product_mappings;
+    CREATE TABLE tmp_company_import_product_mappings like company_import_product_mappings;  # Same table, without FK's
+    INSERT INTO tmp_company_import_product_mappings (`id`, `company_id`, `import_client_product_id`, `target_product_id`,
                 `creator_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT t1.`id`, `company_id`, `import_client_product_id`, COALESCE(t2.new_id, `target_product_id`),
            COALESCE(`creator_id`, @CREATOR_ID), @UPDATER_ID, COALESCE(`created_at`, NOW()), NOW()
@@ -170,9 +195,19 @@ sp_create_initial_tables:BEGIN
     LEFT JOIN products_to_product t2 ON t1.target_product_id = t2.old_id
     ORDER BY t1.id DESC;
 
+    # Fix potential FK problems
+    UPDATE tmp_company_import_product_mappings set creator_id=1 where creator_id not in (select id from user);
+    UPDATE tmp_company_import_product_mappings set updater_id=1 where updater_id not in (select id from user);
+
+    # Final table
+    INSERT INTO company_import_product_mappings SELECT * FROM tmp_company_import_product_mappings;
+
+
 
     SELECT 'UPDATE company_products TABLE WITH NEW PRODUCT_ID';
-    INSERT INTO company_products (`id`, `company_id`, `company_division_id`, `product_id`, `is_default`, `creator_id`,
+    DROP TABLE IF EXISTS tmp_company_products;
+    CREATE TABLE tmp_company_products like company_products;  # Same table, without FK's
+    INSERT INTO tmp_company_products (`id`, `company_id`, `company_division_id`, `product_id`, `is_default`, `creator_id`,
                                   `updater_id`, `created_at`, `updated_at`)
     SELECT t1.`id`, `company_id`, `company_division_id`, COALESCE(t2.`new_id`, t1.`product_id`), `is_default`,
            COALESCE(`creator_id`, @CREATOR_ID), @UPDATER_ID, COALESCE(`created_at`, NOW()), NOW()
@@ -180,10 +215,20 @@ sp_create_initial_tables:BEGIN
     LEFT JOIN products_to_product t2 ON t1.product_id = t2.old_id
     ORDER BY t1.id DESC;
 
+    # Fix potential FK problems
+    UPDATE tmp_company_products set creator_id=1 where creator_id not in (select id from user);
+    UPDATE tmp_company_products set updater_id=1 where updater_id not in (select id from user);
+
+    # Final table
+    INSERT INTO company_products SELECT * FROM tmp_company_products;
+
+
 
     # Fails FK constraints
     SELECT 'UPDATE sample_request_products TABLE WITH NEW PRODUCT_ID';
-    INSERT INTO sample_request_products (`id`, `sample_request_id`, `product_id`, `creator_id`, `updater_id`,
+    DROP TABLE IF EXISTS tmp_sample_request_products;
+    CREATE TABLE tmp_sample_request_products like sample_request_products;  # Same table, without FK's
+    INSERT INTO tmp_sample_request_products (`id`, `sample_request_id`, `product_id`, `creator_id`, `updater_id`,
                                          `created_at`, `updated_at`)
     SELECT t1.`id`, `sample_request_id`, COALESCE(t2.`new_id`, t1.`product_id`),
            COALESCE(`creator_id`, @CREATOR_ID), @UPDATER_ID, COALESCE(`created_at`, NOW()), NOW()
@@ -191,16 +236,34 @@ sp_create_initial_tables:BEGIN
     LEFT JOIN products_to_product t2 ON t1.product_id = t2.old_id
     ORDER BY t1.id DESC;
 
+    # Fix potential FK problems
+    UPDATE tmp_sample_request_products set creator_id=1 where creator_id not in (select id from user);
+    UPDATE tmp_sample_request_products set updater_id=1 where updater_id not in (select id from user);
+
+    # Final table
+    INSERT INTO sample_request_products SELECT * FROM tmp_sample_request_products;
+
+
+
     # Fails FK constraints, there are appointments that don't exist.
     SELECT 'UPDATE snapshot_appointment_user_products TABLE WITH NEW PRODUCT_ID';
-    INSERT INTO snapshot_appointment_user_products (`id`, `appointment_id`, `user_id`, `product_id`, `type`,
+    DROP TABLE IF EXISTS tmp_snapshot_appointment_user_products;
+    CREATE TABLE tmp_snapshot_appointment_user_products like snapshot_appointment_user_products;  # Same table, without FK's
+    INSERT INTO tmp_snapshot_appointment_user_products (`id`, `appointment_id`, `user_id`, `product_id`, `type`,
                          `creator_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT t1.`id`, `appointment_id`, `user_id`, COALESCE(t2.`new_id`, t1.`product_id`), `type`,
            @CREATOR_ID, @UPDATER_ID, COALESCE(`created_at`, NOW()), NOW()
     FROM deprecated_snapshot_appointment_user_products t1
     LEFT JOIN products_to_product t2 ON t1.product_id = t2.old_id;
+
+    # Fix potential FK problems
+    UPDATE tmp_snapshot_appointment_user_products set creator_id=1 where creator_id not in (select id from user);
+    UPDATE tmp_snapshot_appointment_user_products set updater_id=1 where updater_id not in (select id from user);
+
+    # Final table
+    INSERT INTO snapshot_appointment_user_products SELECT * FROM tmp_snapshot_appointment_user_products;
     
-    SET FOREIGN_KEY_CHECKS = 1;
+#     SET FOREIGN_KEY_CHECKS = 1;
 
 #     # Cleanup
 #     DROP TABLE tmp_products_to_product;
