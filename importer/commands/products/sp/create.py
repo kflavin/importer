@@ -24,6 +24,16 @@ def create(ctx, user):
 
 @click.command()
 @click.pass_context
+def sp_rxnorm(ctx):
+    loader = ctx.obj['loader']
+
+    #loader._query(q1)
+    #loader._query(q2)
+    #loader._query(q3)
+    print("SP's updated")
+
+@click.command()
+@click.pass_context
 def create_staging_tables(ctx):
     # recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
     recreate_sp("sp_create_staging_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
@@ -76,6 +86,7 @@ def truncate_stage_tables(ctx):
     # recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
     recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
+<<<<<<< HEAD
 @click.command()
 @click.pass_context
 def create_views(ctx):
@@ -115,3 +126,6 @@ create.add_command(prep_service_keys)
 create.add_command(truncate_stage_tables)
 create.add_command(create_views)
 create.add_command(all)
+
+create.add_command(sp_rxnorm)
+
