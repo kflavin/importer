@@ -17,6 +17,7 @@ ndc_url = "https://www.fda.gov/drugs/informationondrugs/ucm142438.htm"
 # orange_url = "https://www.fda.gov/drugs/informationondrugs/ucm129662.htm"
 orange_url = "https://www.fda.gov/media/76860/download"  # New URL as of 5/2/2019
 marketing_codes_url = "https://www.fda.gov/forindustry/datastandards/structuredproductlabeling/ucm162528.htm"
+rxnorm_url = "https://www.nlm.nih.gov/research/umls/rxnorm/docs/rxnormfiles.html"
 
 s3_bucket_name = "rxv-product-data"
 
@@ -28,6 +29,15 @@ def download(ctx):
     will overwrite the "latest" file, but skip duplicate "date" files.
     """
     ctx.ensure_object(dict)
+
+@click.command()
+@click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
+@click.option('--prefix', '-p', required=False, default="rxnorm", type=click.STRING, help="S3 prefix, no trailing slash.")
+@click.pass_context
+def rxnorm(ctx, bucket, prefix):
+    d = ProductDownloader()
+    check_result(d.dl_rxnorm(rxnorm_url, bucket, prefix))
+    d.quit()
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
@@ -98,6 +108,11 @@ def marketingcodes(ctx, bucket, prefix):
 def all(ctx, bucket):
     d = ProductDownloader()
     try:
+        check_result(d.dl_rxnorm(rxnorm_url, bucket, "rxnorm"))
+    except Exception as e:
+        handle_exception(e, "Failed to download rxnorm file but continuing...")
+
+    try:
         check_result(d.dl_drugbank(drugbank_url, bucket, "drugbank"))
     except Exception as e:
         handle_exception(e, "Failed to download drug bank file but continuing...")
@@ -134,16 +149,19 @@ def all(ctx, bucket):
 
     d.quit()
 
+
 def check_result(result):
     if result:
         logger.info("Download complete.")
     else:
         logger.info("Download failed.")
 
+
 def handle_exception(e, msg):
     logger.warn(traceback.format_exc())
     logger.warn(e)
     logger.warn(msg)
+
 
 download.add_command(drugbank)
 download.add_command(indications)
@@ -152,4 +170,5 @@ download.add_command(gudid)
 download.add_command(ndc)
 download.add_command(orangebook)
 download.add_command(marketingcodes)
+download.add_command(rxnorm)
 download.add_command(all)

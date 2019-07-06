@@ -86,7 +86,6 @@ def truncate_stage_tables(ctx):
     # recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'], ctx.obj['prod_db'])
     recreate_sp("sp_truncate_stage_tables", ctx.obj['loader'], ctx.obj['user'], ctx.obj['db_name'])
 
-<<<<<<< HEAD
 @click.command()
 @click.pass_context
 def create_views(ctx):

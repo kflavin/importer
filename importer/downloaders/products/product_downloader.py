@@ -24,6 +24,10 @@ class ProductDownloader(object):
         options.add_argument("--incognito")
         #options.add_argument('--ignore-certificate-errors')
         options.add_argument('headless')
+        options.add_experimental_option("prefs", {
+            "download.default_directory": r"/Users/kyleflavin",
+            "download.prompt_for_download": False
+        })
         self.driver = webdriver.Chrome(options=options)
         logger.debug("Chrome started")
         self.today = date.today()
@@ -43,6 +47,11 @@ class ProductDownloader(object):
 
     def _s3_bucket_key(self, prefix):
         return f"{prefix}/archive"
+
+    def dl_rxnorm(self, url, bucket, prefix):
+        filename = f"rxnorm_{self.datestr}.zip"
+        self.rxnorm_url(url), filename, bucket, self._s3_bucket_key(prefix)
+        #return self.url_to_s3(self.rxnorm_url(url), filename, bucket, self._s3_bucket_key(prefix))
 
     def dl_drugbank(self, url, bucket, prefix):
         filename = f"drugbank_{self.datestr}.zip"
@@ -94,6 +103,43 @@ class ProductDownloader(object):
     #####################################
     # Find and return the download URL's
     #####################################
+
+    def rxnorm_url(self, url):
+        logger.debug("Scraping RXNORM")
+
+        self.close_all_other_tabs(self.driver.current_window_handle)
+        self.driver.get(url)
+
+        try:
+            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//table[@class='current']//text()[contains(., 'RxNorm Full Monthly Release')]/ancestor::tbody//td[@class='line']//a"))
+        except TimeoutException:
+            logger.error("RXNORM page failure.")
+            return ""
+
+        print(elems)
+        print(elems[0].get_attribute('href'))
+        elems[0].click()
+        user_input = self.driver.find_element_by_id("username")
+        user_input.clear()
+        user_input.send_keys("kflavin")
+        password_input = self.driver.find_element_by_id("username")
+        password_input.clear()
+        password_input.send_keys("7vB@X$!Cd2eeye%9")
+        submit_input = self.driver.find_element_by_name("submit")
+        submit_input.click()
+
+
+        download_url = "https://download.nlm.nih.gov/umls/kss/rxnorm/RxNorm_full_current.zip"
+        print("download")
+        self.driver.get(download_url)
+        print("download")
+
+        print(self.driver.current_url)
+        print(self.driver.page_source)
+
+        #dl_url = elems[0].get_attribute('href')
+        #logger.debug(f"Drugbank URL: {dl_url}")
+        #return dl_url
 
     def gudid_url(self, url):
         logger.debug("Scraping GUDID")
