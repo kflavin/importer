@@ -15,5 +15,5 @@ aws s3 cp --recursive config/ s3://${BUCKET_NAME}/config/
 echo "----- Build runner -----"
 python setup.py sdist
 echo "----- Copy runner to ${BUCKET_NAME} -----"
-aws s3 cp dist/*.tar.gz s3://${BUCKET_NAME}/importer.tar.gz
-
+latest_file=$(ls -tr dist/*.tar.gz | tail -n 1)
+aws s3 cp $latest_file s3://${BUCKET_NAME}/importer.tar.gz

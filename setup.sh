@@ -11,6 +11,14 @@
 #  Usage: ./setup.sh <stage>
 ###################################################################################################################################
 
+set +e
+git diff-index --quiet HEAD
+if [[ $? -ne 0 ]]; then
+    echo "Git working directory is dirty.  Please checkout a clean branch before deploying."
+    exit 1
+fi
+set -e
+
 STAGE=$(echo ${1:-dev} | tr '[:upper:]' '[:lower:]')
 ENV_FILE=.env.${STAGE}
 echo "Deploying to $STAGE using $ENV_FILE"

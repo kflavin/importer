@@ -1,4 +1,4 @@
-create definer = myusername@`%` procedure rxnorm_migrate2.sp_create_initial_tables2()
+create procedure sp_create_initial_tables2()
 sp_create_initial_tables:BEGIN
 
     # This SP performs the initial migration from the old "product" table to the new "products" table.  It should
@@ -11,6 +11,9 @@ sp_create_initial_tables:BEGIN
     SET @APPROVER_ID = null;
     SET @DELETER_ID = null;
     SET @UKNOWN_CATEGORY_ID = 5;
+    SET @DRUG_CATEGORY_ID = 1;
+    SET @VACCINE_CATEGORY_ID = 8;
+
     SET @products_rows = (SELECT count(1) FROM products);
     SET @products_to_product_rows := (SELECT count(1) FROM products_to_product);
     SET @product_synonym_rows := (SELECT count(1) FROM product_synonyms);
@@ -45,7 +48,7 @@ sp_create_initial_tables:BEGIN
 	INSERT INTO tmp_products (`name`, `generic_name`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `approver_id`, `creator_id`, `deleter_id`, `updater_id`, `created_at`, `updated_at`)
 	SELECT DISTINCT t2.BrandName as Name,
 	                SUBSTRING(GROUP_CONCAT(distinct t3.STR ORDER BY t3.STR ASC SEPARATOR ', '), 1, @maxlen_generic_name) as GenericName,
-	                t2.BrandRXCUI, 'RXNORM', 1, 0, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() # Find all TTY=IN from RXNORM vocab and print Brand/Generic names
+	                t2.BrandRXCUI, 'RXNORM', @DRUG_CATEGORY_ID, 0, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() # Find all TTY=IN from RXNORM vocab and print Brand/Generic names
 	FROM stage_rxnconso t3
 	JOIN (
 	  SELECT t1.RXCUI as BrandRXCUI,t1.STR as BrandName,t2.RXCUI2 as GenericRXCUI, RELA  # Lookup all ingredients with "has_tradename" relationship w/ Brand Name
@@ -54,7 +57,12 @@ sp_create_initial_tables:BEGIN
 	  ) t1 JOIN stage_rxnrel t2 ON t1.RXCUI = t2.RXCUI1 WHERE RELA='has_tradename'
 	) t2 ON t3.RXCUI = t2.GenericRXCUI WHERE SAB='RXNORM' AND TTY='IN' GROUP BY BrandRXCUI
     UNION
-	SELECT DISTINCT STR as Name, STR as GenericName, RXCUI, 'RXNORM', 1, 1, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%' ;
+	SELECT DISTINCT STR as Name, STR as GenericName, RXCUI, 'RXNORM', @DRUG_CATEGORY_ID, 1, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW() FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%' ;
+
+    # Anything with "vaccine", put in the VACCINE category
+    UPDATE tmp_products
+	SET product_category_id = @VACCINE_CATEGORY_ID
+	WHERE name LIKE '%vaccine%' or generic_name LIKE '%vaccine%';
 
 	DROP TABLE IF EXISTS tmp_product_cleaned;
 	CREATE TABLE `tmp_product_cleaned` (
@@ -96,7 +104,7 @@ sp_create_initial_tables:BEGIN
     
     # build "unknowns" table.  These are rows that don't match anything in RXNORM
     INSERT INTO tmp_products_unknown (`id`, `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
-	SELECT id, Name, Generic_Name, '', 0, 'USER', @UKNOWN_CATEGORY_ID, @CREATOR_ID, `Created_Date`, @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
+	SELECT id, Name, Generic_Name, '', null, 'USER', @UKNOWN_CATEGORY_ID, @CREATOR_ID, `Created_Date`, @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
     WHERE id not in (SELECT t1.id as old_id FROM tmp_product_cleaned t1 JOIN tmp_products_cleaned t2 ON t1.name = t2.name);  # WHERE finds old_id with name matches
 
     SELECT 'INSERT UNKNOWNS';

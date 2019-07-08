@@ -14,6 +14,7 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
 from importer.commands.products import products
+from importer.commands.gudid.main import gudid
 # from importer.commands.build_products import build_products
 
 from importer.commands.tools import tools
@@ -55,7 +56,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         sh = logging.StreamHandler(sys.stdout)
 
         # Add a formatter with time.
-        formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%H:%M:%S")
+        formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%Y-%m-%d %H:%M:%S")
         sh.setFormatter(formatter)
 
         sh.setLevel(handler_level)
@@ -71,6 +72,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         'database': os.environ.get('db_schema'),
         'debug': debug
     }
+    logger.info(f"Connecting to: {os.environ.get('db_host')}")
     
         
 start.add_command(npi)
@@ -78,6 +80,7 @@ start.add_command(npi)
 # start.add_command(product)
 start.add_command(products)
 start.add_command(tools)
+start.add_command(gudid)
 
 # Deprecated
 # start.add_command(build_products)

@@ -35,7 +35,7 @@ custom:
     slim: true
   scripts:
     hooks:
-      'deploy:finalize': bash bin/stage_all.sh
+      'deploy:finalize': bash bin/stage_all_files.sh
 
 provider:
   name: aws

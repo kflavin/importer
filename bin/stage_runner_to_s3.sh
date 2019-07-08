@@ -14,4 +14,5 @@ BUCKET_NAME=$(aws \
 # aws s3 cp runner-import.py s3://${BUCKET_NAME}/lib/
 # aws s3 cp importer s3://${BUCKET_NAME}/lib/importer/ --recursive
 echo "----- Uploading runner to stage: $STAGE -----"
-aws s3 cp dist/*.tar.gz s3://${BUCKET_NAME}/importer.tar.gz
+latest_file=$(ls -tr dist/*.tar.gz | tail -n 1)
+aws s3 cp $latest_file s3://${BUCKET_NAME}/importer.tar.gz
