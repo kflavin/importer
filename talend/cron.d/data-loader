@@ -1,0 +1,8 @@
+PATH=/home/ec2-user/.local/share/virtualenvs/aws_downloaders-2gdYGdoS/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/ec2-user/.local/bin:/home/ec2-user/bin
+
+13 08 * * * ec2-user runner-import.py products download all >> /home/ec2-user/jobs/logs/downloader.log 2>&1
+14 08 * * * ec2-user cd /home/ec2-user/jobs/RxNorm_Loader && ./load.sh stage
+#* * * * * ec2-user cd /home/ec2-user/jobs/RxNorm_Loader && ./load.sh stage
+
+# now included in LoadProductData_run
+#14 10 * * * ec2-user cd /home/ec2-user/jobs/SP_LoadDrugs && bash SP_LoadDrugs_run.sh >> /home/ec2-user/jobs/logs/SP_LoadDrugs.log 2>&1
