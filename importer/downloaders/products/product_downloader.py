@@ -1,5 +1,6 @@
 from datetime import date
-from urllib.request import urlopen
+from urllib.request import urlopen, build_opener, HTTPCookieProcessor
+from urllib.parse import urlencode
 import logging
 from zipfile import ZipFile
 import io
@@ -18,17 +19,24 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
+
 class ProductDownloader(object):
+    auth_rxnorm_url = "https://utslogin.nlm.nih.gov/cas/login"
+
     def __init__(self, region=None):
-        options = se.webdriver.ChromeOptions()
-        options.add_argument("--incognito")
-        #options.add_argument('--ignore-certificate-errors')
+        options = Options()
+        # options.add_argument("--incognito")
+        # options.add_argument('--ignore-certificate-errors')
         options.add_argument('headless')
-        options.add_experimental_option("prefs", {
-            "download.default_directory": r"/Users/kyleflavin",
-            "download.prompt_for_download": False
-        })
-        self.driver = webdriver.Chrome(options=options)
+
+        # # Downloads through Selenium.  Not working with Chrome.
+        # options.add_experimental_option("prefs", {
+        #     "download.default_directory": r"/path/to/dir",
+        #     "download.prompt_for_download": False,
+        #     "download.directory_upgrade": True,
+        #     "safebrowsing.enabled": True
+        # })
+        self.driver = webdriver.Chrome(chrome_options=options)
         logger.debug("Chrome started")
         self.today = date.today()
         self.datestr = f"{self.today.year}-{self.today.month}-{self.today.day}"
@@ -41,6 +49,39 @@ class ProductDownloader(object):
     def quit(self):
         self.driver.quit()
 
+    ###########################
+    # For files that need auth
+    ###########################
+
+    def auth_rxnorm(self, username, password):
+        """
+        :return: A session cookie for use with urllib
+        """
+
+        # Get a cookie
+        cookie_processor = HTTPCookieProcessor()
+        opener = build_opener(cookie_processor)
+        res = opener.open(self.auth_rxnorm_url)
+        contents = res.read()
+
+        # Get "execution" form field
+        soup = BeautifulSoup(contents, 'html.parser')
+        execution = soup.select("form[id=fm1]")[0].select("input[name=execution]")[0].get('value')
+        data = urlencode({'username': username, 'password': password, 'execution': execution, '_eventId': 'submit', 'submit': 'LOGIN'}).encode('utf-8')
+
+        res = opener.open(self.auth_rxnorm_url, data=data)
+        contents = res.read()
+
+        # Confirm we were logged in.
+        soup = BeautifulSoup(contents, 'html.parser')
+        if not soup.find("h2", text="Log In Successful"):
+            raise Exception("Failed to login to RXNORM site!  Their login page may have changed!")
+        else:
+            logger.info("Logged into RxNorm!")
+
+        return cookie_processor
+
+
     ####################
     # File Downloads
     ####################
@@ -48,10 +89,10 @@ class ProductDownloader(object):
     def _s3_bucket_key(self, prefix):
         return f"{prefix}/archive"
 
-    def dl_rxnorm(self, url, bucket, prefix):
-        filename = f"rxnorm_{self.datestr}.zip"
-        self.rxnorm_url(url), filename, bucket, self._s3_bucket_key(prefix)
-        #return self.url_to_s3(self.rxnorm_url(url), filename, bucket, self._s3_bucket_key(prefix))
+    def dl_rxnorm(self, url, bucket, prefix, username, password):
+        filename = f"rxnorm_full_{self.datestr}.zip"
+        return self.url_to_s3(self.rxnorm_url(url), filename, bucket, self._s3_bucket_key(prefix),
+                              cookie=self.auth_rxnorm(username, password))
 
     def dl_drugbank(self, url, bucket, prefix):
         filename = f"drugbank_{self.datestr}.zip"
@@ -107,39 +148,17 @@ class ProductDownloader(object):
     def rxnorm_url(self, url):
         logger.debug("Scraping RXNORM")
 
-        self.close_all_other_tabs(self.driver.current_window_handle)
-        self.driver.get(url)
+        content = urlopen(url).read()
+        pattern = re.compile(r"RxNorm Full Monthly Release")
+        soup = BeautifulSoup(content, 'html.parser')
 
-        try:
-            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//table[@class='current']//text()[contains(., 'RxNorm Full Monthly Release')]/ancestor::tbody//td[@class='line']//a"))
-        except TimeoutException:
-            logger.error("RXNORM page failure.")
-            return ""
-
-        print(elems)
-        print(elems[0].get_attribute('href'))
-        elems[0].click()
-        user_input = self.driver.find_element_by_id("username")
-        user_input.clear()
-        user_input.send_keys("kflavin")
-        password_input = self.driver.find_element_by_id("username")
-        password_input.clear()
-        password_input.send_keys("7vB@X$!Cd2eeye%9")
-        submit_input = self.driver.find_element_by_name("submit")
-        submit_input.click()
-
-
-        download_url = "https://download.nlm.nih.gov/umls/kss/rxnorm/RxNorm_full_current.zip"
-        print("download")
-        self.driver.get(download_url)
-        print("download")
-
-        print(self.driver.current_url)
-        print(self.driver.page_source)
-
-        #dl_url = elems[0].get_attribute('href')
-        #logger.debug(f"Drugbank URL: {dl_url}")
-        #return dl_url
+        # Search out the monthly file.
+        # u = soup.select("table[class='current']")[0].find(text=pattern).parent.parent.parent.find("a", href=re.compile("https?://.*RxNorm_full_.*\\.zip")).get('href')
+        u = soup.select("table[class='current']")[0].find("th", {"class": "current"}).\
+            find(text=pattern).parent.parent.parent.\
+            find("a", href=re.compile("https?://.*RxNorm_full_.*\\.zip")).get('href')
+        logger.debug(u)
+        return u
 
     def gudid_url(self, url):
         logger.debug("Scraping GUDID")
@@ -196,7 +215,7 @@ class ProductDownloader(object):
 
         try:
             wait = WebDriverWait(self.driver, self.jstimeout)
-            elem = wait.until(element_attribute_populated((By.ID, 'downloadFull'), "href"))
+            elem = wait.until(ElementAttributePopulated((By.ID, 'downloadFull'), "href"))
             dl_url = elem.get_attribute('href')
         except TimeoutException:
             logger.error("Indications page two failure.")
@@ -241,15 +260,16 @@ class ProductDownloader(object):
 
         s3.Object(bucket,f"{latest_prefix}/{latest_file_name}").copy_from(CopySource=f"{bucket}/{prefix}/{filename}")
 
-    def url_to_s3(self, url, filename, bucket, prefix, latest=True):
+    def url_to_s3(self, url, filename, bucket, prefix, latest=True, cookie=None):
         """
         Download the zip file to the appropriate S3 folder.
+
+        url may be either a String representing the URL of the resource, or an IOStream, for files that need preprocessing.
         """
         if not url:
             logger.info(f"No URL provided for {filename}.")
             return False
 
-        # fileName = url.split("/")[-1]
         client = boto3.client('s3')
 
         key = f"{prefix}/{filename}"
@@ -259,17 +279,22 @@ class ProductDownloader(object):
         # Open the URL or expect a file-like object that returns bytes from read()
         if isinstance(url, str):
             logger.debug("Using a string URL")
-            fileStream = urlopen(url)
+
+            if cookie:
+                opener = build_opener(cookie)
+                file_stream = opener.open(url)
+            else:
+                file_stream = urlopen(url)
+
         else:
-            # print("binary stream")
             logger.debug("Using an IO object")
-            fileStream = url
+            file_stream = url
 
         # If it's already in our bucket, skip it.
         if not self.exists(bucket, key):
             logger.info(f"Uploading {bucket}/{key}")
             try:
-                client.upload_fileobj(fileStream, bucket, key)
+                client.upload_fileobj(file_stream, bucket, key)
             except Exception as e:
                 logger.error(f"Error while uploading {filename}: {e}")
                 return False
@@ -372,19 +397,20 @@ class ProductDownloader(object):
         return buffer
 
 
-class element_attribute_populated(object):
-  """An expectation for checking that an element has a particular css class.
+class ElementAttributePopulated(object):
+    """
+      An expectation for checking that an element has a particular css class.
 
-  locator - used to find the element
-  returns the WebElement once it has the particular css class
-  """
-  def __init__(self, locator, attribute):
-    self.locator = locator
-    self.attribute = attribute
+    locator - used to find the element
+    returns the WebElement once it has the particular css class
+    """
+    def __init__(self, locator, attribute):
+        self.locator = locator
+        self.attribute = attribute
 
-  def __call__(self, driver):
-    element = driver.find_element(*self.locator)   # Finding the referenced element
-    if element.get_attribute(self.attribute):
-        return element
-    else:
-        return False
+    def __call__(self, driver):
+        element = driver.find_element(*self.locator)   # Finding the referenced element
+        if element.get_attribute(self.attribute):
+            return element
+        else:
+            return False

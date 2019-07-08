@@ -36,5 +36,3 @@ products.add_command(tables)
 products.add_command(refresh)
 products.add_command(download)
 products.add_command(sp)
-products.add_command(rxnorm)
-

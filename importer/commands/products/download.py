@@ -33,10 +33,12 @@ def download(ctx):
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
 @click.option('--prefix', '-p', required=False, default="rxnorm", type=click.STRING, help="S3 prefix, no trailing slash.")
+@click.option('--username', '-u', required=False, default="kflavin", type=click.STRING, help="RxNorm username")
+@click.option('--password', '-w', required=False, default="7vB@X$!Cd2eeye%9", type=click.STRING, help="RxNorm password")
 @click.pass_context
-def rxnorm(ctx, bucket, prefix):
+def rxnorm(ctx, bucket, prefix, username, password):
     d = ProductDownloader()
-    check_result(d.dl_rxnorm(rxnorm_url, bucket, prefix))
+    check_result(d.dl_rxnorm(rxnorm_url, bucket, prefix, username, password))
     d.quit()
 
 @click.command()
@@ -104,11 +106,14 @@ def marketingcodes(ctx, bucket, prefix):
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")
+@click.option('--username', '-u', required=False, default="kflavin", type=click.STRING, help="RxNorm username")
+@click.option('--password', '-w', required=False, default="7vB@X$!Cd2eeye%9", type=click.STRING, help="RxNorm password")
 @click.pass_context
-def all(ctx, bucket):
+def all(ctx, bucket, username, password):
     d = ProductDownloader()
+
     try:
-        check_result(d.dl_rxnorm(rxnorm_url, bucket, "rxnorm"))
+        check_result(d.dl_rxnorm(rxnorm_url, bucket, "rxnorm", username, password))
     except Exception as e:
         handle_exception(e, "Failed to download rxnorm file but continuing...")
 
