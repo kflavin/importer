@@ -47,11 +47,11 @@ function cleanup {
     RESULT="succeeded"
   fi
 
-  aws --region "$REGION" sns publish --topic-arn "$SNS_ARN" --subject "RxNorm import for $LOADER_ENVIRONMENT $RESULT." --message "$LOADER_ENVIRONMENT importer $RESULT on $INSTANCE_ID after $total_time seconds."
+  aws --region "$REGION" sns publish --topic-arn "$SNS_ARN" --subject "RxNorm import for $LOADER_ENVIRONMENT $RESULT." --message "RxNorm $LOADER_ENVIRONMENT importer $RESULT on $INSTANCE_ID after $total_time seconds."
 }
 trap 'cleanup $LINENO' EXIT
 
-
+set -e
 export start=$(date +%s)
 export loader_db_host=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/db_host" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
 export loader_db_user=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/db_user" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
