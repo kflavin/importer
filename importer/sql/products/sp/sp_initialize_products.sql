@@ -6,6 +6,9 @@ sp_create_initial_tables:BEGIN
     #   - Load old product table with the same id's (where records do not have a match in RXNORM)
     #   - Load new data from RXNORM
     #   - Update tables dependent on old `product` table id with new id in the `products` table (if the row was merged)
+
+    SELECT 'Ensure stage_products exists first!';
+    SELECT COUNT(*) FROM stage_product;    # Fail if this table does not exist
         
     SET SQL_SAFE_UPDATES = 0;
 #     SET FOREIGN_KEY_CHECKS = 0; # There are FK checks that fail.
