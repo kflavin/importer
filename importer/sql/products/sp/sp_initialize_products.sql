@@ -16,6 +16,8 @@ sp_create_initial_tables:BEGIN
     SET @DELETER_ID = null;
     SET @UKNOWN_CATEGORY_ID = 5;
     SET @DRUG_CATEGORY_ID = 1;
+    SET @DEVICE_CATEGORY_ID = 2;
+    SET @SERVICE_CATEGORY_ID = 4;
     SET @VACCINE_CATEGORY_ID = 8;
 
     SET @products_rows = (SELECT count(1) FROM products);
@@ -105,8 +107,22 @@ sp_create_initial_tables:BEGIN
     SELECT 'INSERT TMP_PRODUCTS_UNKNOWNS';
     # Build "unknowns" table.  These are rows that don't match anything in RXNORM
     INSERT INTO tmp_products_unknown (`id`, `name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `creator_id`,`created_at`, `approver_id`, `deleter_id`, `updater_id`, `updated_at`)
-    SELECT id, Name, Generic_Name, '', null, 'USER', @UKNOWN_CATEGORY_ID, COALESCE(`Created_By`, @CREATOR_ID), COALESCE(`Created_Date`, NOW()), @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
+    SELECT id, TRIM(Name), TRIM(Generic_Name), '', null, 'USER', @UKNOWN_CATEGORY_ID, COALESCE(`Created_By`, @CREATOR_ID), COALESCE(`Created_Date`, NOW()), @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
     WHERE id not in (SELECT t1.id as old_id FROM tmp_product_cleaned t1 JOIN tmp_products_cleaned t2 ON t1.name = t2.name);  # WHERE finds old_id with name matches
+
+
+    SELECT 'UPDATE CATEGORY ID''s';
+    # NEWLY ADDED - ADD ADDITIONAL PRODUCT CATEGORIES
+    UPDATE tmp_products_unknown t1
+    JOIN stage_product t2
+    ON t1.name = t2.name and t1.generic_name = t2.generic_name
+    SET product_category_id = CASE master_type
+      WHEN 'Drug' THEN @DRUG_CATEGORY_ID
+      WHEN 'Medical_Device' THEN @DEVICE_CATEGORY_ID
+      WHEN 'Services' THEN @SERVICE_CATEGORY_ID
+      ELSE 5
+      END
+    WHERE t1.source="USER";
 
     SELECT 'FIX CREATOR_ID''S';
     DROP TABLE IF EXISTS tmp_products_unknown_fix_creator_id;
