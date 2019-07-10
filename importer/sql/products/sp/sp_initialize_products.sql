@@ -7,8 +7,9 @@ sp_create_initial_tables:BEGIN
     #   - Load new data from RXNORM
     #   - Update tables dependent on old `product` table id with new id in the `products` table (if the row was merged)
 
-    SELECT 'Ensure stage_products exists first!';
-    SELECT COUNT(*) FROM stage_product;    # Fail if this table does not exist
+#     # We'll handle this step separately, after the tables are loaded.
+#     SELECT 'Ensure stage_products exists first!';
+#     SELECT COUNT(*) FROM stage_product;    # Fail if this table does not exist
         
     SET SQL_SAFE_UPDATES = 0;
 #     SET FOREIGN_KEY_CHECKS = 0; # There are FK checks that fail.
@@ -113,19 +114,19 @@ sp_create_initial_tables:BEGIN
     SELECT id, TRIM(Name), TRIM(Generic_Name), '', null, 'USER', @UKNOWN_CATEGORY_ID, COALESCE(`Created_By`, @CREATOR_ID), COALESCE(`Created_Date`, NOW()), @APPROVER_ID, @DELETER_ID, @UPDATER_ID, NOW() FROM product
     WHERE id not in (SELECT t1.id as old_id FROM tmp_product_cleaned t1 JOIN tmp_products_cleaned t2 ON t1.name = t2.name);  # WHERE finds old_id with name matches
 
-
-    SELECT 'UPDATE CATEGORY ID''s';
-    # NEWLY ADDED - ADD ADDITIONAL PRODUCT CATEGORIES
-    UPDATE tmp_products_unknown t1
-    JOIN stage_product t2
-    ON t1.name = t2.name and t1.generic_name = t2.generic_name
-    SET product_category_id = CASE master_type
-      WHEN 'Drug' THEN @DRUG_CATEGORY_ID
-      WHEN 'Medical_Device' THEN @DEVICE_CATEGORY_ID
-      WHEN 'Services' THEN @SERVICE_CATEGORY_ID
-      ELSE 5
-      END
-    WHERE t1.source="USER";
+#     # We'll handle this step separately, after the tables are loaded.
+#     SELECT 'UPDATE CATEGORY ID''s';
+#     # NEWLY ADDED - ADD ADDITIONAL PRODUCT CATEGORIES
+#     UPDATE tmp_products_unknown t1
+#     JOIN stage_product t2
+#     ON t1.name = t2.name and t1.generic_name = t2.generic_name
+#     SET product_category_id = CASE master_type
+#       WHEN 'Drug' THEN @DRUG_CATEGORY_ID
+#       WHEN 'Medical_Device' THEN @DEVICE_CATEGORY_ID
+#       WHEN 'Services' THEN @SERVICE_CATEGORY_ID
+#       ELSE 5
+#       END
+#     WHERE t1.source="USER";
 
     SELECT 'FIX CREATOR_ID''S';
     DROP TABLE IF EXISTS tmp_products_unknown_fix_creator_id;
