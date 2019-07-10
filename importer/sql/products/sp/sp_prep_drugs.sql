@@ -16,13 +16,13 @@ BEGIN
 
     SET @@SESSION.group_concat_max_len = 4096;
 
-	DROP TABLE IF EXISTS tmp_products_toCompare;
+    DROP TABLE IF EXISTS tmp_products_toCompare;
     CREATE TABLE tmp_products_toCompare like products;
     # Make a copy of the products table
     INSERT INTO tmp_products_toCompare select * from products;
 
     DROP TABLE IF EXISTS tmp_products;
-	CREATE TABLE tmp_products like products;
+    CREATE TABLE tmp_products like products;
 
     SELECT 'CREATE tmp_products FROM RXNORM DATA';
     # Bring the new data from RXNORM into tmp_products
@@ -50,12 +50,12 @@ BEGIN
 
     # Delete all but the new records
     DELETE t1 FROM tmp_products t1 JOIN tmp_products_toCompare t2
-		   ON t1.rxcui_id = t2.rxcui_id;
+           ON t1.rxcui_id = t2.rxcui_id;
 
-	# Anything with "vaccine", put in the VACCINE category
+    # Anything with "vaccine", put in the VACCINE category
     UPDATE tmp_products
-	SET product_category_id = @VACCINE_CATEGORY_ID
-	WHERE name LIKE '%vaccine%' or generic_name LIKE '%vaccine%';
+    SET product_category_id = @VACCINE_CATEGORY_ID
+    WHERE name LIKE '%vaccine%' or generic_name LIKE '%vaccine%';
 
     # Insert new records into the products table
     INSERT INTO products (`name`, `generic_name`, `description`, `rxcui_id`, `source`, `product_category_id`, `is_generic`, `approver_id`, `creator_id`, `deleter_id`, `updater_id`, `created_at`, `updated_at`)
@@ -74,15 +74,15 @@ BEGIN
 
     INSERT INTO tmp_product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT brand_rxcui, STR, @CREATOR_ID, @UPDATER_ID, NOW(), NOW() from stage_rxnconso t3 JOIN (
-	SELECT name,t1.rxcui_id as brand_rxcui,t2.rxcui2 as generic_rxcui FROM tmp_products2 t1 JOIN stage_rxnrel t2 on t1.rxcui_id = t2.rxcui1 WHERE (RELA='precise_ingredient_of' or RELA='has_tradename') and is_generic = 0
-	) t4 on t3.rxcui = t4.generic_rxcui WHERE (TTY='SY' or TTY='TMSY' or TTY='PIN' or TTY='IN') and  SAB='RXNORM';
+    SELECT name,t1.rxcui_id as brand_rxcui,t2.rxcui2 as generic_rxcui FROM tmp_products2 t1 JOIN stage_rxnrel t2 on t1.rxcui_id = t2.rxcui1 WHERE (RELA='precise_ingredient_of' or RELA='has_tradename') and is_generic = 0
+    ) t4 on t3.rxcui = t4.generic_rxcui WHERE (TTY='SY' or TTY='TMSY' or TTY='PIN' or TTY='IN') and  SAB='RXNORM';
 
     SELECT 'DELETE FROM SYNONYMS';
     DELETE t1 FROM tmp_product_synonyms t1 JOIN tmp_product_synonyms_toCompare t2
-		   ON t1.rxcui_id = t2.rxcui_id;
+           ON t1.rxcui_id = t2.rxcui_id;
 
     SELECT 'INSERT NEW SYNONYMS';
-	# Insert new records into the product_synonyms table
+    # Insert new records into the product_synonyms table
     INSERT INTO product_synonyms (`rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at`)
     SELECT `rxcui_id`, `synonym`, `creator_id`, `updater_id`, `created_at`, `updated_at` from tmp_product_synonyms;
 
