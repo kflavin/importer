@@ -107,12 +107,17 @@ resources:
 package:
   # Stuff we don't want to upload with the lambdas.
   exclude:
-    - env.python/**
-    - env.python.old/**
-    - importer.*/**
-    - data/**
-    - dist/**
-    - "**/**/*.pyc"
-    - ".env.*"
-    - ".*"
-    - output/**
+    - ./**
+    - '!node_modules/**'
+#    - env.python/**
+#    - env.python.old/**
+#    - importer.*/**
+#    - data/**
+#    - dist/**
+#    - "**/**/*.pyc"
+#    - ".env.*"
+#    - ".*"
+#    - output/**
+  include:
+#    - node_modules/*
+    - lambdas/**
