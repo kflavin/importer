@@ -14,6 +14,7 @@ custom:
   awsImageId: ${env:aws_image_id}
   awsDbSubnetGroup: ${env:aws_rds_subnet_group}
   awsDbEngineVersion: ${env:aws_rds_engine_version}
+  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
@@ -84,6 +85,8 @@ functions:
     timeout: 120
   rxnorm_loader:
     handler: lambdas/product/import_rxnorm.handler
+    environment:
+      aws_instance_type: ${self:custom.awsRxNormInstanceType}
     timeout: 120
 
 resources:

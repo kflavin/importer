@@ -12,6 +12,7 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
+  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
@@ -81,6 +82,8 @@ functions:
     timeout: 120
   rxnorm_loader:
     handler: lambdas/product/import_rxnorm.handler
+    environment:
+      aws_instance_type: ${self:custom.awsRxNormInstanceType}
     timeout: 120
 
 resources:
