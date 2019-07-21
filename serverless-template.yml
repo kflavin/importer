@@ -79,6 +79,9 @@ functions:
   npi_downloader:
     handler: lambdas/npi/downloader.handler
     timeout: 120
+  rxnorm_loader:
+    handler: lambdas/product/import_rxnorm.handler
+    timeout: 120
 
 resources:
   Outputs:
