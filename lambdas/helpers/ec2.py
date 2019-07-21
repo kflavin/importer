@@ -2,12 +2,12 @@ import boto3
 from pprint import pprint
 
 class EC2Helper(object):
-    def __init__(self, region, period):
+    def __init__(self, region, period="none"):
         self.client = boto3.client('ec2', region_name=region)
         self.resource = boto3.resource('ec2', region_name=region)
         self.period = period
 
-    def run(self, key_name, image_id, instance_type, subnet_id, user_data, instance_profile, security_groups, function_name, period, table_name, environment):
+    def run(self, key_name, image_id, instance_type, subnet_id, user_data, instance_profile, security_groups, function_name, table_name, environment):
         instance_id = self.resource.create_instances(
             NetworkInterfaces=[
                 {

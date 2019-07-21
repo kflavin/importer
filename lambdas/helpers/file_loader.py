@@ -1,13 +1,8 @@
 import os
-
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-SHELL_DIR = os.path.join(ROOT_DIR, "lambdas/resources/product")
-
-print(f"shell dir is: {SHELL_DIR}")
-print(f"root dir is: {ROOT_DIR}")
+from lambdas import ROOT_DIR, USERDATA_DIR
 
 
-def shell_loader(fileName):
-    print(f"shell dir is: {SHELL_DIR}")
-    print(f"root dir is: {ROOT_DIR}")
-    return open(os.path.join(SHELL_DIR, fileName + ".sh")).read()
+def loader_user_data(fileName):
+    print(f"shell dir is: {USERDATA_DIR}")
+    print(f"root dir is: {USERDATA_DIR}")
+    return open(os.path.join(USERDATA_DIR, fileName + ".sh")).read()

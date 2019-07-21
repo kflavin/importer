@@ -10,7 +10,7 @@
   "builders": [
       {
           "access_key": "{{user `aws_access_key`}}",
-          "ami_name": "NPI-Loader-{{timestamp}}",
+          "ami_name": "Data-Loader-{{timestamp}}",
           "instance_type": "t2.micro",
           "region": "us-east-1",
           "secret_key": "{{user `aws_secret_key`}}",
@@ -21,7 +21,7 @@
           "vpc_id": "{{user `aws_vpc_id`}}",
           "subnet_id": "{{user `aws_subnet_id`}}",
           "tags": {
-            "Name": "NPI Loader",
+            "Name": "Data Loader",
             "OS_Version": "Amazon Linux",
             "Base_AMI_Name": "{{ .SourceAMIName }}",
             "Extra": "{{ .SourceAMITags.TagName }}"
@@ -30,10 +30,24 @@
   ],
   "provisioners": [
       {
-          "type": "shell",
-          "inline":[
-              "sudo yum install -y awscli awslogs gcc python3 python3-pip python3-setuptools python3-libs python3-devel mysql-devel jq"
-          ]
+        "type": "shell",
+        "inline":[
+            "sudo yum install -y awscli awslogs gcc python3 python3-pip python3-setuptools python3-libs python3-devel mysql-devel jq google-chrome-stable-75.0.3770.142-1",
+            "wget -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/75.0.3770.140/chromedriver_linux64.zip",
+            "sudo unzip -d /usr/local/bin /tmp/chromedriver_linux64.zip",
+            "sudo chmod +x /usr/local/bin/chromedriver"
+        ]
+      },
+      {
+        "type": "file",
+        "source": "google-chrome.repo",
+        "destination": "/tmp/"
+      },
+    {
+        "type": "shell",
+        "inline":[
+            "sudo mv /tmp/google-chrome.repo /etc/yum.repos.d/"
+        ]
       }
   ]
 }

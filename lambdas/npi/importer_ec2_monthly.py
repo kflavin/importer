@@ -59,7 +59,7 @@ def handler(event, context):
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
-                        security_groups, context.function_name, period, table_name, environment)
+                        security_groups, context.function_name, table_name, environment)
 
     print(f"Instance: {instance}")
     return True
