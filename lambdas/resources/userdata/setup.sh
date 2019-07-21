@@ -14,11 +14,17 @@ function cleanup {{
   # Send status to SNS
   if [[ $EXIT_CODE -ne 0 ]]; then
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{importer_type} {environment} importer failed." --message "{environment} importer failed after ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish \
+            --topic-arn {sns_topic_arn} \
+            --subject "{importer_type} {environment} importer failed." \
+            --message "{importer_type} {environment} importer failed after ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
-      aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{importer_type} {environment} importer completed." --message "{environment} importer completed in ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
+      aws --region ${{aws_region:-us-east-1}} sns publish \
+            --topic-arn {sns_topic_arn} \
+            --subject "{importer_type} {environment} importer completed." \
+            --message "{importer_type} {environment} importer completed in ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
     fi
   fi
 
@@ -27,7 +33,10 @@ function cleanup {{
   EXIT_CODE=$?
   sleep 180
   if [[ "$EXIT_CODE" -ne 0 ]]; then
-    aws --region ${{aws_region:-us-east-1}} sns publish --topic-arn {sns_topic_arn} --subject "{importer_type} {environment} importer failed to terminate!" --message "Failed to terminate {importer_type} {environment} EC2, exit code=$EXIT_CODE.  Attempting halt -p.  Please check instance_ID=$instance_id, $cw_url" || true
+    aws --region ${{aws_region:-us-east-1}} sns publish \
+        --topic-arn {sns_topic_arn} \
+        --subject "{importer_type} {environment} importer failed to terminate!" \
+        --message "Failed to terminate {importer_type} {environment} EC2, exit code=$EXIT_CODE.  Attempting halt -p.  Please check instance_ID=$instance_id, $cw_url" || true
   fi
 }}
 trap 'cleanup $LINENO' EXIT
