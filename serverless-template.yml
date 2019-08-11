@@ -60,11 +60,6 @@ provider:
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
     aws_sns_topic_arn: ${self:custom.snsTopicArn}
-    npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
-    monthly_import_timeout: ${self:custom.monthlyImportTimeout}
-    weekly_import_timeout: ${self:custom.weeklyImportTimeout}
-    npi_table_name: ${self:custom.npiTableName}
-    npi_log_table_name: ${self:custom.npiLogTableName}
   iamRoleStatements: ${file(resources/iam.yml)}
 
 functions:
@@ -72,14 +67,26 @@ functions:
     handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
+      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+      npi_table_name: ${self:custom.npiTableName}
+      npi_log_table_name: ${self:custom.npiLogTableName}
     timeout: 15
   import_npi_monthly:
     handler: lambdas/npi/importer_ec2_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+      npi_table_name: ${self:custom.npiTableName}
+      npi_log_table_name: ${self:custom.npiLogTableName}
     timeout: 15
   npi_downloader:
     handler: lambdas/npi/downloader.handler
+    environment:
+      npi_log_table_name: ${self:custom.npiLogTableName}
     timeout: 120
   rxnorm_loader:
     handler: lambdas/product/import_rxnorm.handler
