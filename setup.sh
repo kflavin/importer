@@ -24,9 +24,10 @@ ENV_FILE=.env.${STAGE}
 echo "Deploying to $STAGE using $ENV_FILE"
 
 source $ENV_FILE
-env | grep -i db_
 
 sls deploy --stage=$STAGE
 
 # Load parameters into SSM
 bin/set_ssm_params.sh $STAGE
+
+echo "Configured to deploy to: ${db_host}, schema: ${db_schema}"
