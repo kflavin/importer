@@ -21,7 +21,7 @@ def handler(event, context):
     security_groups = os.environ.get('aws_security_groups').split(",")
     subnet_id = os.environ.get('aws_subnets').split(",")[0]  # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
-    table_name = os.environ.get('npi_table_name')
+    table_name = os.environ.get('table_name')
     bucket_name = os.environ.get("aws_s3_bucket")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
 
