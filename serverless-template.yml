@@ -32,6 +32,7 @@ custom:
   dbSchema: ${env:db_schema}
   npiTableName: ${env:npi_table_name}
   npiLogTableName: ${env:npi_log_table_name}
+  rxnormTableName: ${env:rxnorm_table_name}
   pythonRequirements:
     dockerizePip: false
     slim: true
@@ -84,6 +85,7 @@ functions:
     handler: lambdas/product/import_rxnorm.handler
     environment:
       aws_instance_type: ${self:custom.awsRxNormInstanceType}
+      table_name: ${self:custom.rxnormTableName}
     timeout: 120
 
 resources:
@@ -104,16 +106,6 @@ package:
   exclude:
     - ./**
     - '!node_modules/**'
-#    - env.python/**
-#    - env.python.old/**
-#    - importer.*/**
-#    - data/**
-#    - dist/**
-#    - "**/**/*.pyc"
-#    - ".env.*"
-#    - ".*"
-#    - output/**
   include:
-#    - node_modules/*
     - lambdas/**
 

@@ -2,6 +2,26 @@
 set -vxe
 sleep 1
 
+#################################################################################################################
+# Setup script for userdata.  This should be included in your lambda function prior to the userdata body.
+#
+# This will do the following:
+#   1) find environment (region, instance id)
+#   2) install the importer script
+#   #) setup cloudwatch logging
+#   4) register a cleanup handler that notifies our SNS topic on completion, and terminates the EC2 instance.
+#
+#
+#
+#  Lambda parameters (pass from the lambda code):
+#    sns_topic_arn
+#    environment
+#    importer_type  (npi, rxnorm, etc)
+#
+#  Body parameters (pass from userdata body script):
+#    message
+#################################################################################################################
+
 # Ensure on halt we do some cleanup and send out SNS message on completion.
 function cleanup {{
   EXIT_CODE=$?

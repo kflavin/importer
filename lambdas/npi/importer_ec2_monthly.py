@@ -1,17 +1,20 @@
 import os
-import boto3
-from lambdas.resources.userdata import user_data_tmpl
-# from lambdas.helpers.s3 import next_bucket_key, is_imported
+from importer import monthly_prefix as bucket_prefix
 from lambdas.helpers.db import DBHelper
 from lambdas.helpers.ec2 import EC2Helper
+from lambdas.helpers.file_loader import loader_user_data
 from lambdas.periods import MONTHLY as period
-from importer import monthly_prefix as bucket_prefix
+
+user_data_head_tmpl = loader_user_data("setup")
+user_data_body_tmpl = loader_user_data("npi_body")
+user_data_finish_tmpl = loader_user_data("finish")
+
 
 def handler(event, context):
     print(f"Starting {period} import...")
     print(event)
 
-    # Run first time to initialize database.  This will zero out deactivate NPI data.
+    # Run first time to initialize database.  This will zero out deactivated NPI data.
     initialize = event.get('initialize', False)
     init_flag = "--initialize" if initialize else ""
     print(f"Initialize?: {initialize}, init_flag={init_flag}")
@@ -46,20 +49,29 @@ def handler(event, context):
         print(f"SKIPPING, there is already an import running for table {table_name}.")
         return False
 
-    user_data = user_data_tmpl.format(bucket_name=bucket_name,
-                                      bucket_prefix=bucket_prefix,
-                                      environment=environment,
-                                      table_name=table_name,
-                                      log_table_name=log_table_name,
-                                      period=period,
-                                      timeout=timeout,
-                                      init_flag=init_flag,
-                                      limit=1,
-                                      sns_topic_arn=sns_topic_arn)
+    # Configure userdata script.  This is what will run on the EC2.
+    user_data_head = user_data_head_tmpl.format(environment=environment,
+                                                importer_type="NPI",
+                                                sns_topic_arn=sns_topic_arn,
+                                                bucket_name=bucket_name)
+
+    user_data_body = user_data_body_tmpl.format(bucket_name=bucket_name,
+                                                bucket_prefix=bucket_prefix,
+                                                environment=environment,
+                                                table_name=table_name,
+                                                log_table_name=log_table_name,
+                                                period=period,
+                                                timeout=timeout,
+                                                init_flag=init_flag,
+                                                limit=1)
+
+    user_data_finish = user_data_finish_tmpl
+
+    user_data = f"{user_data_head}\n{user_data_body}\n{user_data_finish}"
 
     # Run the instance
     instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
-                        security_groups, context.function_name, table_name, environment)
+                       security_groups, context.function_name, table_name, environment)
 
     print(f"Instance: {instance}")
     return True

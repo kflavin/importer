@@ -10,14 +10,8 @@ user_data_finish_tmpl = loader_user_data("finish")
 
 
 def handler(event, context):
-    print(f"Starting rxnorm import...")
+    print(f"Starting RXNORM import...")
     print(event)
-
-
-    # Run first time to initialize database.  This will zero out deactivate NPI data.
-    initialize = event.get('initialize', False)
-    init_flag = "--initialize" if initialize else ""
-    print(f"Initialize?: {initialize}, init_flag={init_flag}")
 
     environment = os.environ.get('environment', 'dev')
     region = os.environ.get('aws_region')
@@ -28,8 +22,6 @@ def handler(event, context):
     subnet_id = os.environ.get('aws_subnets').split(",")[0]  # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name')
-    log_table_name = os.environ.get('npi_log_table_name')
-    timeout = os.environ.get('monthly_import_timeout', '30')
     bucket_name = os.environ.get("aws_s3_bucket")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
 
@@ -42,9 +34,9 @@ def handler(event, context):
         return False
 
     user_data_head = user_data_head_tmpl.format(environment=environment,
-                                               importer_type="rxnorm",
-                                               sns_topic_arn=sns_topic_arn,
-                                               bucket_name=bucket_name)
+                                                importer_type="RXNORM",
+                                                sns_topic_arn=sns_topic_arn,
+                                                bucket_name=bucket_name)
 
     user_data_body = user_data_body_tmpl.format(timeout=15,
                                                 environment=environment,
