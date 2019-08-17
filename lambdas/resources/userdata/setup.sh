@@ -22,7 +22,7 @@ sleep 1
 #    message
 #
 #
-#  NOTE: Python string interpolation uses {var}, which conflicts with Bash ${var}.  To specify a Bash variable,
+#  NOTE: Python string interpolation using brackets, which conflicts with Bash ${var}.  To specify a Bash variable,
 #        you must escape it like ${{var}}
 #################################################################################################################
 
