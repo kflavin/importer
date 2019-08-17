@@ -20,6 +20,10 @@ sleep 1
 #
 #  Body parameters (pass from userdata body script):
 #    message
+#
+#
+#  NOTE: Python string interpolation uses {var}, which conflicts with Bash ${var}.  To specify a Bash variable,
+#        you must escape it like ${{var}}
 #################################################################################################################
 
 # Ensure on halt we do some cleanup and send out SNS message on completion.
@@ -37,14 +41,14 @@ function cleanup {{
       aws --region ${{aws_region:-us-east-1}} sns publish \
             --topic-arn {sns_topic_arn} \
             --subject "{importer_type} {environment} importer failed." \
-            --message "{importer_type} {environment} importer failed after ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
+            --message "{importer_type} {environment} importer failed after ${{total_time}} seconds.  $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
       aws --region ${{aws_region:-us-east-1}} sns publish \
             --topic-arn {sns_topic_arn} \
-            --subject "{importer_type} {environment} importer completed." \
-            --message "{importer_type} {environment} importer completed in ${{total_time}} seconds.  Instance_ID=$instance_id, $cw_url" || true
+            --subject "{importer_type} {environment} importer completed.  $message" \
+            --message "{importer_type} {environment} importer completed in ${{total_time}} seconds.  $cw_url $message" || true
     fi
   fi
 

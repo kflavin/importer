@@ -33,3 +33,21 @@ timeout {timeout}m runner-import.py -l cloudwatch npi full {init_flag} \
                     -u s3://{bucket_name}/{bucket_prefix} \
                     --limit {limit}
 
+
+# How many new records were loaded?
+created=$(mysql -h $loader_db_host \
+      -u $loader_db_user \
+      -p$loader_db_password \
+      $loader_db_schema \
+      -e "select count(*) from products where DATE(created_at)=DATE(NOW())" \
+      -B -s -N)
+
+# How many new records were loaded?
+updated=$(mysql -h $loader_db_host \
+      -u $loader_db_user \
+      -p$loader_db_password \
+      $loader_db_schema \
+      -e "select count(*) from products where DATE(updated_at)=DATE(NOW())" \
+      -B -s -N)
+
+export message="$created created. $updated updated."
