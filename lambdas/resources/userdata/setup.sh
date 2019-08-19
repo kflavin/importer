@@ -57,7 +57,7 @@ function cleanup {{
   if [[ "{terminate_on_completion}" == "true" ]]; then
     aws --region ${{aws_region:-us-east-1}} ec2 terminate-instances --instance-ids "${{instance_id}}"
   fi
-  
+
   EXIT_CODE=$?
   sleep 180
   if [[ "$EXIT_CODE" -ne 0 ]]; then

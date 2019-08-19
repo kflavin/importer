@@ -58,7 +58,8 @@
         "type": "shell",
         "inline":[
             "sudo yum install -y awscli awslogs gcc python3 python3-pip python3-setuptools python3-libs python3-devel mysql-devel jq",
-            "sudo yum install -y google-chrome-stable-75.0.3770.142-1 java",
+            "sudo yum install -y google-chrome-stable-76.0.3809.100-1",
+            "sudo yum install -y java",
             "wget -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/75.0.3770.140/chromedriver_linux64.zip",
             "sudo unzip -d /usr/bin /tmp/chromedriver_linux64.zip",
             "sudo chmod +x /usr/bin/chromedriver"
