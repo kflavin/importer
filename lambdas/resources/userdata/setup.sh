@@ -56,7 +56,7 @@ function cleanup {{
   aws --region ${{aws_region:-us-east-1}} ec2 terminate-instances --instance-ids "${{instance_id}}"
   EXIT_CODE=$?
   sleep 180
-  if [[ "$EXIT_CODE" -ne 0 ]]; then
+  if [[ "$EXIT_CODE" -ne 0 && "$terminate_on_completion" == "true" ]]; then
     aws --region ${{aws_region:-us-east-1}} sns publish \
         --topic-arn {sns_topic_arn} \
         --subject "{importer_type} {environment} importer failed to terminate!" \

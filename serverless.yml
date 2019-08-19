@@ -60,6 +60,7 @@ provider:
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
     aws_sns_topic_arn: ${self:custom.snsTopicArn}
+    terminate_on_completion: true
   iamRoleStatements: ${file(resources/iam.yml)}
 
 functions:
