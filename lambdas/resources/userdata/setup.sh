@@ -53,10 +53,14 @@ function cleanup {{
   fi
 
   sleep 10  # give some extra time to get all logs to CW=
-  aws --region ${{aws_region:-us-east-1}} ec2 terminate-instances --instance-ids "${{instance_id}}"
+
+  if [[ "{terminate_on_completion}" == "true" ]]; then
+    aws --region ${{aws_region:-us-east-1}} ec2 terminate-instances --instance-ids "${{instance_id}}"
+  fi
+  
   EXIT_CODE=$?
   sleep 180
-  if [[ "$EXIT_CODE" -ne 0 && "{terminate_on_completion}" == "true" ]]; then
+  if [[ "$EXIT_CODE" -ne 0 ]]; then
     aws --region ${{aws_region:-us-east-1}} sns publish \
         --topic-arn {sns_topic_arn} \
         --subject "{importer_type} {environment} importer failed to terminate!" \
