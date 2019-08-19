@@ -28,6 +28,7 @@ def handler(event, context):
     max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 1))
     bucket_name = os.environ.get("aws_s3_bucket")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
+    terminate_on_completion = os.environ.get("terminate_on_completion")
 
     ec2 = EC2Helper(region, period)
     rds = DBHelper(region)
@@ -49,7 +50,8 @@ def handler(event, context):
     user_data_head = user_data_head_tmpl.format(environment=environment,
                                                 importer_type="NPI",
                                                 sns_topic_arn=sns_topic_arn,
-                                                bucket_name=bucket_name)
+                                                bucket_name=bucket_name,
+                                                terminate_on_completion=terminate_on_completion)
 
     user_data_body = user_data_body_tmpl.format(bucket_name=bucket_name,
                                                 bucket_prefix=bucket_prefix,
