@@ -14,6 +14,7 @@ custom:
   awsImageId: ${env:aws_image_id}
   awsDbSubnetGroup: ${env:aws_rds_subnet_group}
   awsDbEngineVersion: ${env:aws_rds_engine_version}
+  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
@@ -82,6 +83,11 @@ functions:
   npi_downloader:
     handler: lambdas/npi/downloader.handler
     timeout: 120
+  rxnorm_loader:
+    handler: lambdas/product/import_rxnorm.handler
+    environment:
+      aws_instance_type: ${self:custom.awsRxNormInstanceType}
+    timeout: 120
 
 resources:
   Outputs:
@@ -104,12 +110,17 @@ resources:
 package:
   # Stuff we don't want to upload with the lambdas.
   exclude:
-    - env.python/**
-    - env.python.old/**
-    - importer.*/**
-    - data/**
-    - dist/**
-    - "**/**/*.pyc"
-    - ".env.*"
-    - ".*"
-    - output/**
+    - ./**
+    - '!node_modules/**'
+#    - env.python/**
+#    - env.python.old/**
+#    - importer.*/**
+#    - data/**
+#    - dist/**
+#    - "**/**/*.pyc"
+#    - ".env.*"
+#    - ".*"
+#    - output/**
+  include:
+#    - node_modules/*
+    - lambdas/**

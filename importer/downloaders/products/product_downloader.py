@@ -27,7 +27,8 @@ class ProductDownloader(object):
         options = Options()
         # options.add_argument("--incognito")
         # options.add_argument('--ignore-certificate-errors')
-        options.add_argument('headless')
+        options.add_argument('--no-sandbox') # https://github.com/heroku/heroku-buildpack-google-chrome/issues/46
+        options.add_argument('--headless')
 
         # # Downloads through Selenium.  Not working with Chrome.
         # options.add_experimental_option("prefs", {

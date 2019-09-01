@@ -44,7 +44,7 @@ export db_schema=$(aws ssm get-parameters --names "/importer/{environment}/db_sc
 set -x
 
 # Send logs to CloudWatch
-aws s3 cp s3://{bucket_name}/config/awslogs.conf /etc/awslogs/awslogs.conf
+aws s3 cp s3://{bucket_name}/config/cloudwatch/awslogs.conf /etc/awslogs/awslogs.conf
 systemctl start awslogsd
 
 # Copy data package and runner package

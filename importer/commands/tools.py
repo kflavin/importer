@@ -178,6 +178,12 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
     if infile.endswith(".xls") or infile.endswith(".xlsx"):
         print("Loading Excel file...")
         df = pd.ExcelFile(infile).parse()
+
+        # # Use nrows to limit the number of rows read
+        # workbook = pd.ExcelFile(workbook_filename)
+        # rows = workbook.book.sheet_by_index(0).nrows
+        # nrows = 10
+        # workbook_dataframe = pd.read_excel(workbook, nrows=#rows to parse)
     else:
         print("Loading CSV file...")
         df = pd.read_csv(infile, encoding=encoding, sep=separator)

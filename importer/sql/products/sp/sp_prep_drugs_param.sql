@@ -2,8 +2,18 @@ create procedure sp_prep_drugs_param(IN prodDb varchar(255))
 BEGIN
 
     # This SP loads RXNORM data into the products table.  It is scheduled to run monthly through Talend.
+    #
+    # Parameters
+    #    prodDb: specifies the database where baked data will be loaded.  If not set, default to current DB.
+    #
+    #    Example 1:
+    #       call data_loader.sp_prep_drugs_param('rxvantage_staging');
+    #       Executes INSERTS like this: INSERT INTO rxvantage_staging.products ...
+    #
+    #    Example 2:
+    #       call data_loader.sp_prep_drugs_param('');
+    #       Executes INSERTS like this: INSERT INTO products ...
 
-    # prodDb specifies where the prod DB lives.  This is the database with the app tables.
     IF IFNULL(prodDb,'') <> '' THEN SET prodDb = CONCAT(prodDb, '.'); ELSE SET prodDb = ''; END IF;
     SELECT CONCAT('PROD DB=', prodDb);
 

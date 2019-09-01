@@ -12,4 +12,4 @@ BUCKET_NAME=$(aws \
 
 echo "Copy configs/ to ${BUCKET_NAME}"
 
-aws s3 cp --recursive config/ s3://${BUCKET_NAME}/config/
+aws s3 cp --recursive lambdas/resources/config/ s3://${BUCKET_NAME}/config/

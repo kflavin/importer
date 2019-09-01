@@ -25,9 +25,9 @@ sandbox/*
 
 # Serverless files
 serverless-*.yml
-serverless.yml
-!serverless-template-dev.yml
-!serverless-template.yml
+!serverless.yml
+#!serverless-template-dev.yml
+#!serverless-template.yml
 
 # No zip files
 *.zip
