@@ -41,7 +41,8 @@ def handler(event, context):
 
     user_data_body = user_data_body_tmpl.format(timeout=15,
                                                 environment=environment,
-                                                bucket_name=bucket_name)
+                                                bucket_name=bucket_name,
+                                                table_name=table_name)
 
     user_data_finish = user_data_finish_tmpl
 

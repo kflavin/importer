@@ -33,7 +33,7 @@ count=$(mysql -h $loader_db_host \
       -u $loader_db_user \
       -p$loader_db_password \
       $loader_db_schema \
-      -e "select count(*) from products where DATE(created_at)=DATE(NOW())" \
+      -e "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())" \
       -B -s -N)
 
 export message="$count new products."

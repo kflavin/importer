@@ -39,7 +39,7 @@ created=$(mysql -h $db_host \
       -u $db_user \
       -p$db_password \
       $db_schema \
-      -e "select count(*) from products where DATE(created_at)=DATE(NOW())" \
+      -e "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())" \
       -B -s -N)
 
 # How many new records were loaded?
@@ -47,7 +47,7 @@ updated=$(mysql -h $db_host \
       -u $db_user \
       -p$db_password \
       $db_schema \
-      -e "select count(*) from products where DATE(updated_at)=DATE(NOW())" \
+      -e "select count(*) from {table_name} where DATE(updated_at)=DATE(NOW())" \
       -B -s -N)
 
 export message="$created created. $updated updated."
