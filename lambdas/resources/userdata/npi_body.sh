@@ -50,4 +50,5 @@ updated=$(mysql -h $db_host \
       -e "select count(*) from {table_name} where DATE(updated_at)=DATE(NOW())" \
       -B -s -N)
 
+# message gets picked up by finish.sh
 export message="$created created. $updated updated."
