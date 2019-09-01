@@ -1,13 +1,29 @@
 import boto3
-from pprint import pprint
+
 
 class EC2Helper(object):
-    def __init__(self, region, period):
+    def __init__(self, region, period="none"):
         self.client = boto3.client('ec2', region_name=region)
         self.resource = boto3.resource('ec2', region_name=region)
         self.period = period
 
-    def run(self, key_name, image_id, instance_type, subnet_id, user_data, instance_profile, security_groups, function_name, period, table_name, environment):
+    def run(self, key_name, image_id, instance_type, subnet_id, user_data, instance_profile, security_groups,
+            function_name, table_name, environment):
+        """
+        Launch an EC2 instance and run the userdata file.
+        :param key_name:
+        :param image_id:
+        :param instance_type:
+        :param subnet_id:
+        :param user_data:
+        :param instance_profile:
+        :param security_groups:
+        :param function_name:
+        :param table_name:
+        :param environment:
+        :return:
+        """
+
         instance_id = self.resource.create_instances(
             NetworkInterfaces=[
                 {
@@ -83,6 +99,7 @@ class EC2Helper(object):
         
         response = self.client.describe_instances(Filters=filters)
         return len(response['Reservations']) 
+
 
 # Test from the CLI
 if __name__ == "__main__":

@@ -1,0 +1,126 @@
+service: importer
+
+frameworkVersion: ">=1.9.0 <2.0.0"
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-scripts
+
+custom:
+  environment: ${opt:stage, self:provider.stage}
+  version: ${opt:version, 'na'}
+  sshKey: ${env:aws_key}
+  awsRegion: ${env:aws_region}
+  awsImageId: ${env:aws_image_id}
+  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
+  awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
+  awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
+  awsSecurityGroups: ${env:aws_security_groups}
+  awsRdsSecurityGroup: ${env:aws_rds_security_group}
+  awsInstanceProfile: {Ref: Ec2InstanceProfile}
+  awsSubnets: ${env:aws_subnets}
+  awsRdsParameterGroup: ${env:aws_rds_parameter_group}
+  npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
+  weeklyImportTimeout: ${env:weekly_import_timeout}
+  monthlyImportTimeout: ${env:monthly_import_timeout}
+  snsTopicArn: ${env:aws_sns_topic_arn}
+  vpcId: ${env:aws_vpc_id}
+  dbHost: ${env:db_host}
+  dbPort: 3306
+  dbUser: ${env:db_user}
+  dbPassword: ${env:db_password}
+  dbSchema: ${env:db_schema}
+  npiTableName: ${env:npi_table_name}
+  npiLogTableName: ${env:npi_log_table_name}
+  rxnormTableName: ${env:rxnorm_table_name}
+  rxnormSynonymsTableName: ${env:rxnorm_synonyms_table_name}
+  pythonRequirements:
+    dockerizePip: false
+    slim: true
+  enabled:
+    dev: false
+    prod: true
+  scripts:
+    hooks:
+      'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
+
+provider:
+  name: aws
+  stackTags:
+    version: ${self:custom.version}
+  region: ${self:custom.awsRegion}
+  runtime: python3.6
+  environment:
+    environment: ${self:custom.environment}
+    aws_key: ${env:aws_key}
+    aws_region: ${env:aws_region}
+    aws_image_id: ${env:aws_image_id}
+    aws_security_groups: ${self:custom.awsSecurityGroups}
+    aws_vpc_id: ${self:custom.vpcId}
+    aws_subnets: ${self:custom.awsSubnets}
+    aws_instance_profile: ${self:custom.awsInstanceProfile}
+    aws_s3_bucket: {Ref: ScriptBucket}
+    aws_sns_topic_arn: ${self:custom.snsTopicArn}
+    terminate_on_completion: "true"
+  iamRoleStatements: ${file(resources/iam.yml)}
+
+functions:
+  # Importer weekly file (weekly|monthly periods not really necessary anymore)
+  npi_weekly:
+    handler: lambdas/npi/importer_ec2_weekly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsWeeklyInstanceType}
+      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+      npi_table_name: ${self:custom.npiTableName}
+      npi_log_table_name: ${self:custom.npiLogTableName}
+    timeout: 15
+  # Importer monthly file (weekly|monthly periods not really necessary anymore)
+  npi_monthly:
+    handler: lambdas/npi/importer_ec2_monthly.handler
+    environment:
+      aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+      npi_table_name: ${self:custom.npiTableName}
+      npi_log_table_name: ${self:custom.npiLogTableName}
+    timeout: 15
+  # This downloads the new NPI files (happens in Lambda, not EC2)
+  npi_downloader:
+    handler: lambdas/npi/downloader.handler
+    environment:
+      npi_log_table_name: ${self:custom.npiLogTableName}
+    timeout: 120
+  # This does file download as well as the import for RXNORM
+  rxnorm:
+    handler: lambdas/product/import_rxnorm.handler
+    environment:
+      aws_instance_type: ${self:custom.awsRxNormInstanceType}
+      table_name: ${self:custom.rxnormTableName}
+      synonyms_table_name: ${self:custom.rxnormSynonymsTableName}
+    timeout: 15
+
+resources:
+  Outputs:
+    ScriptBucket:
+      Value: {Ref: ScriptBucket}
+    Ec2Role:
+      Value: {Ref: Ec2Role}
+    Ec2InstanceProfile:
+      Value: {Ref: Ec2InstanceProfile}
+  Resources:
+    ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
+    Ec2Role: ${file(resources/ec2-role.yml)}
+    Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
+
+package:
+  # Stuff we don't want to upload with the lambdas.
+  exclude:
+    - ./**
+    - '!importer/**'
+    - '!node_modules/**'
+  include:
+    - lambdas/**
+

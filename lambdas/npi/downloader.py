@@ -11,6 +11,7 @@ from importer import weekly_prefix, monthly_prefix, deactivated_prefix
 
 max_links = 10  # If we find more zip files than this, exit.  The NPPES site may have changed.
 
+
 def handler(event, context):
     """
     Download zip files and put them into the appropriate s3 locations
@@ -30,6 +31,7 @@ def handler(event, context):
         url_to_s3(region, url, bucket, table_name, environment) # download the file
 
     print("Done!")
+
 
 def url_to_s3(region, url, bucket, table_name, environment):
     """

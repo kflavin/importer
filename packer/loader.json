@@ -1,0 +1,69 @@
+{
+  "variables": {
+      "aws_access_key": "{{env `AWS_ACCESS_KEY_ID`}}",
+      "aws_secret_key": "{{env `AWS_SECRET_ACCESS_KEY`}}",
+      "aws_source_ami": "{{env `AWS_SOURCE_AMI`}}",
+      "aws_subnet_id":  "{{env `AWS_SUBNET_ID`}}",
+      "aws_vpc_id":     "{{env `AWS_VPC_ID`}}",
+      "region":         "us-east-1"
+  },
+  "builders": [
+      {
+          "access_key": "{{user `aws_access_key`}}",
+          "ami_name": "Data-Loader-{{timestamp}}",
+          "instance_type": "t2.micro",
+          "region": "us-east-1",
+          "secret_key": "{{user `aws_secret_key`}}",
+          "source_ami": "{{user `aws_source_ami`}}",
+          "ssh_username": "ec2-user",
+          "type": "amazon-ebs",
+          "associate_public_ip_address": true,
+          "vpc_id": "{{user `aws_vpc_id`}}",
+          "subnet_id": "{{user `aws_subnet_id`}}",
+          "tags": {
+            "Name": "Data Loader",
+            "OS_Version": "Amazon Linux",
+            "Base_AMI_Name": "{{ .SourceAMIName }}",
+            "Extra": "{{ .SourceAMITags.TagName }}"
+          }
+      }
+  ],
+  "provisioners": [
+      {
+        "type": "file",
+        "source": "bin/mysql",
+        "destination": "/tmp/"
+      },
+      {
+        "type": "file",
+        "source": "bin/mysqldump",
+        "destination": "/tmp/"
+      },
+      {
+        "type": "file",
+        "source": "google-chrome.repo",
+        "destination": "/tmp/"
+      },
+      {
+        "type": "shell",
+        "inline":[
+            "sudo mv /tmp/google-chrome.repo /etc/yum.repos.d/",
+            "sudo mv /tmp/mysql /usr/bin/",
+            "sudo mv /tmp/mysqldump /usr/bin/",
+            "sudo chmod +x /usr/bin/mysql",
+            "sudo chmod +x /usr/bin/mysqldump"
+        ]
+      },
+      {
+        "type": "shell",
+        "inline":[
+            "sudo yum install -y awscli awslogs gcc python3 python3-pip python3-setuptools python3-libs python3-devel mysql-devel jq",
+            "sudo yum install -y google-chrome-stable-76.0.3809.100-1",
+            "sudo yum install -y java",
+            "wget -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/75.0.3770.140/chromedriver_linux64.zip",
+            "sudo unzip -d /usr/bin /tmp/chromedriver_linux64.zip",
+            "sudo chmod +x /usr/bin/chromedriver"
+        ]
+      }
+  ]
+}

@@ -12,6 +12,7 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
+  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
@@ -31,6 +32,7 @@ custom:
   dbSchema: ${env:db_schema}
   npiTableName: ${env:npi_table_name}
   npiLogTableName: ${env:npi_log_table_name}
+  rxnormTableName: ${env:rxnorm_table_name}
   pythonRequirements:
     dockerizePip: false
     slim: true
@@ -58,26 +60,43 @@ provider:
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
     aws_sns_topic_arn: ${self:custom.snsTopicArn}
-    npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
-    monthly_import_timeout: ${self:custom.monthlyImportTimeout}
-    weekly_import_timeout: ${self:custom.weeklyImportTimeout}
-    npi_table_name: ${self:custom.npiTableName}
-    npi_log_table_name: ${self:custom.npiLogTableName}
   iamRoleStatements: ${file(resources/iam.yml)}
 
 functions:
-  import_npi_weekly:
+  # Importer weekly file (weekly|monthly periods not really necessary anymore)
+  npi_weekly:
     handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
+      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+      npi_table_name: ${self:custom.npiTableName}
+      npi_log_table_name: ${self:custom.npiLogTableName}
     timeout: 15
-  import_npi_monthly:
+  # Importer monthly file (weekly|monthly periods not really necessary anymore)
+  npi_monthly:
     handler: lambdas/npi/importer_ec2_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
+      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
+      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
+      npi_table_name: ${self:custom.npiTableName}
+      npi_log_table_name: ${self:custom.npiLogTableName}
     timeout: 15
+  # This downloads the new NPI files (happens in Lambda, not EC2)
   npi_downloader:
     handler: lambdas/npi/downloader.handler
+    environment:
+      npi_log_table_name: ${self:custom.npiLogTableName}
+    timeout: 120
+  # This does file download as well as the import for RXNORM
+  rxnorm:
+    handler: lambdas/product/import_rxnorm.handler
+    environment:
+      aws_instance_type: ${self:custom.awsRxNormInstanceType}
+      table_name: ${self:custom.rxnormTableName}
     timeout: 120
 
 resources:
@@ -96,12 +115,8 @@ resources:
 package:
   # Stuff we don't want to upload with the lambdas.
   exclude:
-    - env.python/**
-    - env.python.old/**
-    - importer.*/**
-    - data/**
-    - dist/**
-    - "**/**/*.pyc"
-    - ".env.*"
-    - ".*"
-    - output/**
+    - ./**
+    - '!node_modules/**'
+  include:
+    - lambdas/**
+
