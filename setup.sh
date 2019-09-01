@@ -1,12 +1,10 @@
 #!/bin/bash -e
 ###################################################################################################################################
-# Run for the FIRST stack deployment.  Use bin/deploy.sh <stage> for subsequent builds.  Use ./teardown.sh <stage> to remove stack.
+# Deploy stack.  Use ./teardown.sh <stage> to remove stack.
 #  This will do the following:
+#   - Set the correct environmet
 #   - Deploy the CF stack
 #   - set SSM parameters
-#
-#  For "dev" builds ONLY it will also:
-#   - update your .env file with db_host of the RDS instance
 #
 #  Usage: ./setup.sh <stage>
 ###################################################################################################################################

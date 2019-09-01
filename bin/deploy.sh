@@ -1,5 +1,7 @@
 #!/bin/bash
 ###################################################################################################################################
+# Deprecated.  Use setup.sh now.
+#
 # Run for deployments.  Use setup.sh to deploy the stack for the first time, and this script after
 #
 # Usage: bin/deploy.sh <stage>
