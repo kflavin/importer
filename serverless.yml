@@ -93,6 +93,8 @@ functions:
     environment:
       npi_log_table_name: ${self:custom.npiLogTableName}
     timeout: 120
+    events:
+      - schedule: cron(0 17,23 ? * * *)
   # This does file download as well as the import for RXNORM
   rxnorm:
     handler: lambdas/product/import_rxnorm.handler
