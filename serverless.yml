@@ -12,6 +12,7 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
+  awsDbBackupInstanceType: ${env:aws_db_backup_instance_type}
   awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
@@ -102,6 +103,11 @@ functions:
       aws_instance_type: ${self:custom.awsRxNormInstanceType}
       table_name: ${self:custom.rxnormTableName}
       synonyms_table_name: ${self:custom.rxnormSynonymsTableName}
+    timeout: 15
+  db_backup:
+    handler: lambdas/db_backup/backup.handler
+    environment:
+      aws_instance_type: ${self:custom.awsDbBackupInstanceType}
     timeout: 15
 
 resources:
