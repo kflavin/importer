@@ -62,6 +62,15 @@ Properties:
                     - "/*"
           - Effect: Allow
             Action:
+              - "s3:PutObject"
+            Resource:
+              - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+              - "Fn::Join":
+                  - ""
+                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+                    - "/backups/*"
+          - Effect: Allow
+            Action:
               - "sns:Publish"
             Resource: ${self:custom.snsTopicArn}
           - Effect: Allow
