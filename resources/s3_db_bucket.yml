@@ -8,6 +8,6 @@ Properties:
         Status: Enabled
   PublicAccessBlockConfiguration:
     BlockPublicAcls: true
-    IgnorePublicAcls: false
+    IgnorePublicAcls: true
     BlockPublicPolicy: true
     RestrictPublicBuckets: true
