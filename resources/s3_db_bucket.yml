@@ -1,0 +1,8 @@
+---
+Type: "AWS::S3::Bucket"
+Properties:
+  LifecycleConfiguration:
+    Rules:
+      - Prefix: backups
+        ExpirationInDays: 7
+        Status: Enabled

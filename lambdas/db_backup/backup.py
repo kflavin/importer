@@ -33,14 +33,14 @@ def handler(event, context):
         print(f"SKIPPING, there is already an import running for table {table_name}.")
         return False
 
-    user_data_head = user_data_head_tmpl
+    user_data_head = user_data_head_tmpl.format()
     # user_data_head = user_data_head_tmpl.format(environment=environment,
     #                                             importer_type="RXNORM",
     #                                             sns_topic_arn=sns_topic_arn,
     #                                             bucket_name=bucket_name,
     #                                             terminate_on_completion=terminate_on_completion)
 
-    user_data_body = user_data_body_tmpl
+    user_data_body = user_data_body_tmpl.format()
     # user_data_body = user_data_body_tmpl.format(timeout=15,
     #                                             environment=environment,
     #                                             bucket_name=bucket_name,
