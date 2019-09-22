@@ -1,13 +1,6 @@
 #################################################################################################################
 # Userdata body.  Provide your own set of commands in the userdata body, which are specific to the import.
 #################################################################################################################
-export loader_db_host=$(aws ssm get-parameters --names "/importer/{environment}/db_host" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-export loader_db_schema=$(aws ssm get-parameters --names "/importer/{environment}/db_schema" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-export loader_stage_db_schema=$(aws ssm get-parameters --names "/importer/{environment}/stage_db_schema" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-set +x   # don't print secrets
-export loader_db_user=$(aws ssm get-parameters --names "/importer/{environment}/db_user" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-export loader_db_password=$(aws ssm get-parameters --names "/importer/{environment}/db_password" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-set -x
 
 fdisk /dev/nvme1n1 <<EOF
 n
@@ -24,13 +17,6 @@ sleep 5
 mkfs -t ext4 /dev/nvme1n1p1
 mkdir /data
 mount /dev/nvme1n1p1 /data
-
-cat <<EOF > ~/.my.cnf
-[mysqldump]
-user=$loader_db_user
-password=$loader_db_password
-host=$loader_db_host
-EOF
 
 mysqldump --max-allowed-packet=1073741824 \
           --net-buffer-length=32704 \
