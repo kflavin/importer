@@ -3,7 +3,7 @@ import boto3
 from lambdas.helpers.ec2 import EC2Helper
 from lambdas.helpers.file_loader import loader_user_data
 
-user_data_head_tmpl = loader_user_data("setup")
+user_data_head_tmpl = loader_user_data("start")
 user_data_body_tmpl = loader_user_data("rxnorm_body")
 user_data_finish_tmpl = loader_user_data("finish")
 

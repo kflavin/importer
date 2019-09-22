@@ -2,7 +2,7 @@
 
 This repo is used to dynamically launch EC2 instances for data loading.  There are two distinct parts:
 
-* Lambda functions, under `lambdas/`, which dynamically launch EC2's
+* Lambda functions, under `lambdas/`, which launches EC2's
 * An importer script, which is only used for NPI data, under `importer/`
 
 It currently loads the following data:
@@ -11,7 +11,7 @@ It currently loads the following data:
 * Loading the RxNorm product data
 * Database backups
 
-Each gets its own AWS Lambda function.
+Each gets its own AWS Lambda function.  See instructions at the end of this document for how to add new lambdas.
 
 ## Installation and Usage
 
@@ -112,7 +112,17 @@ The lambdas live under `lambdas/product/`
 
 The lambdas live under `lambdas/db_backup`
 
-### Dependencies
+## Add a new Lambda
+
+1. Create a new folder under `lambdas` and add a handler.   You can copy from an existing folder, like `lambdas/db_backup/`
+1. Add a new "body" userdata script under `lambdas/resources/userdata/`.  This is shell code which should perform your task.
+   * The `start.sh` and `finish.sh` scripts should be concatenated around your "body" script to ensure the EC2 is terminated properly.
+1. Add the handler (function) name to `serverless.yaml`.
+
+The `start.sh` and `finish.sh` are used as wrappers around your body data script.  They ensure your EC2 is terminated, and
+alerts are sent to SNS (if desired).  _Be sure to use them or your instance will not terminate properly!_
+
+## Dependencies
 
 * The lambdas have a dependency on the sql resources in the importer, under `importer/sql/`
 * The importer script has a dependency on AWS for cloudwatch logging
