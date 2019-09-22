@@ -100,6 +100,11 @@ cat <<EOF > ~/.my.cnf
 user=$loader_db_user
 password=$loader_db_password
 host=$loader_db_host
+
+[mysql]
+user=$loader_db_user
+password=$loader_db_password
+host=$loader_db_host
 EOF
 
 set -x

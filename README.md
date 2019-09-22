@@ -1,6 +1,14 @@
 # serverless importer
 
+This repo is used for:
+
+* Loading the `npis` table
+* Loading the RxNorm product data
+* Database backups
+
 ## Installation and Usage
+
+Each loader gets its own AWS Lambda function.  The following describes how to deploy those Lambda functions.
 
 #### Pre-reqs
 
@@ -13,6 +21,8 @@ Each stack corresponds to an environment.  You can create as many environments a
 
 * Create an environment file: `cp env.template .env.<environment name>`
 * Create a serverless YAML file: `cp serverless-template.yml serverless-<my new environment>.yml`
+
+Currently deployed stacks are `rc`, `stage`, and `prod`, and can be seen in [Cloudformation](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).
 
 The `serverless-template-dev.yml` file spins up an RDS instance for testing, while the other `serverless-template.yml` files do not.
 
