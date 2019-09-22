@@ -22,14 +22,12 @@ timeout {timeout}m runner-import.py products download all # >> /root/jobs/logs/d
 timeout {timeout}m bash RxNorm_Loader_run.sh --context_param contextName="{environment}" # 2>&1 | tee -a $LOG_FILE
 
 # How many new product records were loaded?
-products_count=$(mysql \
-      $loader_db_schema \
+products_count=$(mysql -D $loader_db_schema \
       -e "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())" \
       -B -s -N)
 
       # How many new synonym records were loaded?
-synonyms_count=$(mysql \
-      $loader_db_schema \
+synonyms_count=$(mysql -D $loader_db_schema \
       -e "select count(*) from {synonyms_table_name} where DATE(created_at)=DATE(NOW())" \
       -B -s -N)
 
