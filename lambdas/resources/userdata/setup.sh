@@ -107,3 +107,4 @@ set -x
 # export aws_region=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone | sed 's/[a-z]$//')
 export aws_region=$(curl --silent http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
 export instance_id=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+export HOME=/root
