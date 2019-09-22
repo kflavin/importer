@@ -19,6 +19,8 @@ w
 
 EOF
 
+sleep 5
+
 mkfs -t ext4 /dev/nvme1n1p1
 mkdir /data
 mount /dev/nvme1n1p1 /data
