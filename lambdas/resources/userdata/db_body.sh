@@ -9,7 +9,6 @@ export loader_db_user=$(aws ssm get-parameters --names "/importer/{environment}/
 export loader_db_password=$(aws ssm get-parameters --names "/importer/{environment}/db_password" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
 set -x
 
-
 fdisk /dev/nvme1n1 <<EOF
 n
 p
@@ -28,10 +27,10 @@ mysqldump --max-allowed-packet=1073741824 \
           --single-transaction=TRUE \
           --skip-triggers \
           --set-gtid-purged=OFF \
-          -h $host \
-          -u $user \
-          -p"$pass" \
-          $schema > /data/dump.sql
+          -h $loader_db_host \
+          -u $loader_db_user \
+          -p"$loader_db_password" \
+          $loader_db_schema > /data/dump.sql
 
 gzip /data/dump.sql
 
