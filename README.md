@@ -2,7 +2,7 @@
 
 This repo is used to dynamically launch EC2 instances for data loading.  There are two distinct parts:
 
-* Lambda functions, under `lambda/`, which handle the loading
+* Lambda functions, under `lambdas/`, which dynamically launch EC2's
 * An importer script, which is only used for NPI data, under `importer/`
 
 It currently loads the following data:
@@ -11,9 +11,9 @@ It currently loads the following data:
 * Loading the RxNorm product data
 * Database backups
 
-## Installation and Usage
+Each gets its own AWS Lambda function.
 
-Each loader gets its own AWS Lambda function.
+## Installation and Usage
 
 #### Pre-reqs
 
@@ -96,7 +96,7 @@ resources
 
 #### NPI Importer
 
-NPI data is loaded using the `importer/` script.  It is staged to the S3 bucket during deployment, and downloaded by the EC2 instance.
+NPI data is loaded using the `runner-import.py` script.  It is staged to the S3 bucket during deployment, and downloaded by the EC2 instance.
 
 The lambdas live under `lamdbas/npi/`
 
@@ -106,11 +106,11 @@ See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9
 
 The RxNORM data is loaded using the [Talend loader](https://github.com/rxvantage/data-importer-talend)
 
-The lambdas live under `lambdas\product`
+The lambdas live under `lambdas/product/`
 
 #### Database backup
 
-The lambdas live under `lambdas\db_backup`
+The lambdas live under `lambdas/db_backup`
 
 ### Dependencies
 
