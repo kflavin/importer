@@ -1,6 +1,11 @@
 # serverless importer
 
-This repo is used for:
+This repo is used to dynamically launch EC2 instances for data loading.  There are two distinct parts:
+
+* Lambda functions, under `lambda/`, which handle the loading
+* An importer script, which is only used for NPI data, under `importer/`
+
+It currently loads the following data:
 
 * Loading the `npis` table
 * Loading the RxNorm product data
@@ -8,72 +13,64 @@ This repo is used for:
 
 ## Installation and Usage
 
-Each loader gets its own AWS Lambda function.  The following describes how to deploy those Lambda functions.
+Each loader gets its own AWS Lambda function.
 
 #### Pre-reqs
 
+To deploy the Lambda functions, you need the following:
+
 * python3
-* You should have your AWS creds file configured.  If you are using profiles: `export AWS_PROFILE=profile_name`
+* You should have your AWS creds file configured.  If you are using profiles, be sure to set your profile name in your environment file.
 
-#### Building and Installation
+#### Building and Deploying the Lambda functions
 
-Each stack corresponds to an environment.  You can create as many environments as you'd like, but they must have unique names.  To create a new stack:
+Each environment corresponds to a [Cloudformation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).:
 
-* Create an environment file: `cp env.template .env.<environment name>`
-* Create a serverless YAML file: `cp serverless-template.yml serverless-<my new environment>.yml`
-
-Currently deployed stacks are `rc`, `stage`, and `prod`, and can be seen in [Cloudformation](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).
-
-The `serverless-template-dev.yml` file spins up an RDS instance for testing, while the other `serverless-template.yml` files do not.
-
-Example:
+Currently deployed stacks are `rc`, `stage`, and `prod`.
 
 ```bash
+# Copy the environment file
+cp env.template .env.rc
+cp env.template .env.stage
 cp env.template .env.prod
-cp serverless-template.yml serverless.prod
-```
 
-To deploy:
+# fill in the appropriate values
+vim .env.rc
+vim .env.stage
+vim .env.prod
 
-```bash
-# First run only
+# Deploy the stack
+./setup.sh rc
+./setup.sh stage
 ./setup.sh prod
-source .env.prod
-
-# Subsequent updates, use:
-./bin/deploy.sh prod
 ```
 
-To build and deploy the runner separately:
+#### Building and Deploying the NPI import script
+
+This repo also contains the NPI importer script.  It is built and deployed through `setup.sh`, but can be built separately:
 
 ```bash
 python setup.py sdist
-./bin/stage_runner_to_s3.sh stage
+./bin/stage_runner_to_s3.sh rc
 ```
 
-The helper scripts in `./bin/` take the environment name as the first parameter.
+#### Destroy a stack
+
+This will delete all components, _including the S3 bucket_:
+
+```bash
+./teardown.sh rc
+./teardown.sh stage
+./teardown.sh prod
+```
 
 #### Usage
 
-The Lambda functions are cron'd, but you can run them manually as follows.
+The Lambda functions are cron'd, but can also be run manually in [AWS](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions).
 
-```bash
-# Download any available zip files to S3.  Default directly is npi-in/[weekly|monthly]
-./bin/downloader.sh prod
+To run, configure an empty test event (event isn't used, all parameters are passed through the environment).
 
-# Load weekly files
-./bin/weekly.sh prod
-
-# Load the most recent monthly file
-./bin/monthly.sh prod
-
-# Create initial DB and tables.  Dev only.
-sls invoke --stage=${STAGE:-dev} --function create_db --data '{ "table_name": "'$npi_table_name'", "log_table_name": "'$npi_log_table_name'", "database": "'$db_schema'" }'
-```
-
-#### Environment values
-
-See `env.template` for an example environment file.  The filename should be suffixed with the environment.
+## Overview
 
 #### Packaging
 
@@ -88,34 +85,36 @@ importer
 └── ...Importer Library...
 lambdas
 └── ...Lambda Functions...
+packer
+└── ...EC2 AMI...
 resources
 └── ...AWS resources...
-├── runner-import.py              # Runner for import library
-├── serverless-template-dev.yml   # Create an RDS instance
-├── serverless-template.yml       # Without RDS instance
+├── runner-import.py              # Runner for the NPI importer
+├── serverless-template.yml       # Controls Lamba deployment and AWS resources
 └── setup.py                      # Build the python importer
 ```
 
-Generally speaking, changes to code in `lambdas/` requires a deploy `./bin/deploy.sh <env>`.  Changes to 
-`npi/` (the runner) requires it to be rebuilt and pushed: `python setup.py sdist && ./bin/stage_runner_to_s3.sh <env>`.
+#### NPI Importer
 
-### EC2 Importer
+NPI data is loaded using the `importer/` script.  It is staged to the S3 bucket during deployment, and downloaded by the EC2 instance.
 
-Deploys an ephemeral EC2 instance to handle data import.
+The lambdas live under `lamdbas/npi/`
 
 See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9RjsrSxSYUovuIqw
 
-_Fill out later_
+#### RxNorm Importer
+
+The RxNORM data is loaded using the [Talend loader](https://github.com/rxvantage/data-importer-talend)
+
+The lambdas live under `lambdas\product`
+
+#### Database backup
+
+The lambdas live under `lambdas\db_backup`
 
 ### Dependencies
 
 * The lambdas have a dependency on the sql resources in the importer, under `importer/sql/`
-* The importer's runner has a dependency on AWS for cloudwatch logging
+* The importer script has a dependency on AWS for cloudwatch logging
 * AWS subnets and security groups need to be created ahead of time
-* The EC2's run on a custom AMI with the environment pre-installed # todo: put this in packer
 
-## Destroy
-
-```bash
-./teardown.sh stage
-```
