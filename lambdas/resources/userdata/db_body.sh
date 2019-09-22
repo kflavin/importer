@@ -24,14 +24,19 @@ sleep 5
 mkfs -t ext4 /dev/nvme1n1p1
 mkdir /data
 mount /dev/nvme1n1p1 /data
+
+cat <<EOF > ~/.my.cnf
+[mysqldump]
+user=$loader_db_user
+password=$loader_db_password
+host=$loader_db_host
+EOF
+
 mysqldump --max-allowed-packet=1073741824 \
           --net-buffer-length=32704 \
           --single-transaction=TRUE \
           --skip-triggers \
           --set-gtid-purged=OFF \
-          -h $loader_db_host \
-          -u $loader_db_user \
-          -p"$loader_db_password" \
           $loader_db_schema > /data/dump.sql
 
 gzip /data/dump.sql
