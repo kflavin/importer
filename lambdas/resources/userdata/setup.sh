@@ -41,7 +41,7 @@ function cleanup {{
       aws --region ${{aws_region:-us-east-1}} sns publish \
             --topic-arn {sns_topic_arn} \
             --subject "{importer_type} {environment} failed." \
-            --message "{importer_type} {environment} failed after ${{total_time}} seconds.  $cw_url" || true
+            --message "{importer_type} {environment} failed.  $cw_url" || true
     fi
   else
     if [ -n "{sns_topic_arn}" ]; then
