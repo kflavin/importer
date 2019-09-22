@@ -109,6 +109,7 @@ functions:
     handler: lambdas/db_backup/backup.handler
     environment:
       aws_instance_type: ${self:custom.awsDbBackupInstanceType}
+      table_name: "db_backup"
     timeout: 15
 
 resources:
