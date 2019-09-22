@@ -18,7 +18,10 @@ mkfs -t ext4 /dev/nvme1n1p1
 mkdir /data
 mount /dev/nvme1n1p1 /data
 
-mysqldump --max-allowed-packet=1073741824 \
+cat ~/.my.cnf
+whoami
+mysqldump -h $loader_db_host \
+          --max-allowed-packet=1073741824 \
           --net-buffer-length=32704 \
           --single-transaction=TRUE \
           --skip-triggers \
