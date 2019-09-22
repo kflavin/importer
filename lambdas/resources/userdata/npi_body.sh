@@ -23,12 +23,12 @@ timeout {timeout}m runner-import.py -l cloudwatch npi full {init_flag} \
                     --limit {limit}
 
 # How many new records were loaded?
-created=$(mysql -D $db_schema \
+created=$(mysql -D $loader_db_schema \
       -e "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())" \
       -B -s -N)
 
 # How many new records were loaded?
-updated=$(mysql -D $db_schema \
+updated=$(mysql -D $loader_db_schema \
       -e "select count(*) from {table_name} where DATE(updated_at)=DATE(NOW())" \
       -B -s -N)
 
