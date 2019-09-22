@@ -38,7 +38,7 @@ def handler(event, context):
                                                 bucket_name=bucket_name,
                                                 terminate_on_completion=terminate_on_completion)
 
-    user_data_body = user_data_body_tmpl.format()
+    user_data_body = user_data_body_tmpl.format(environment=environment)
     # user_data_body = user_data_body_tmpl.format(timeout=15,
     #                                             environment=environment,
     #                                             bucket_name=bucket_name,
