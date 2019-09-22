@@ -19,9 +19,9 @@ def gudid(ctx):
     ctx.obj['stage_loader'] = stage_loader
 
     prod_db_credentials = {
-        'user': os.environ.get('db_user'),
-        'password': os.environ.get('db_password'),
-        'host': os.environ.get('db_host'),
+        'user': os.environ.get('loader_db_user'),
+        'password': os.environ.get('loader_db_password'),
+        'host': os.environ.get('loader_db_host'),
         'database': "prod",
         'debug': ctx.obj['db_credentials']['debug']
     }
