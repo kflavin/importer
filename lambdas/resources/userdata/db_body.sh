@@ -38,7 +38,7 @@ gzip /data/dump.sql
 # Encrypt and upload
 aws s3 cp --sse aws:kms /data/dump.sql.gz s3://importer-rc-dbbackupbucket-c6dx6gvyxji6/backups/$(date --iso-8601=seconds).sql.gz
 
-size=$(ls -lh /data/dump.sql.gz  | awk '{print $5}')
+size=$(ls -lh /data/dump.sql.gz  | awk '{{print $5}}')
 
 # message gets picked up by finish.sh
 export message="Uploaded $size backup"
