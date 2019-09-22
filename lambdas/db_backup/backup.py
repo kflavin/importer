@@ -20,7 +20,6 @@ def handler(event, context):
     subnet_id = os.environ.get('aws_subnets').split(",")[0]  # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('table_name')
-    synonyms_table_name = os.environ.get('synonyms_table_name')
     bucket_name = os.environ.get("aws_s3_bucket")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
     terminate_on_completion = os.environ.get("terminate_on_completion")
@@ -36,6 +35,7 @@ def handler(event, context):
     user_data_head = user_data_head_tmpl.format(environment=environment,
                                                 sns_topic_arn=sns_topic_arn,
                                                 importer_type="DB_backup",
+                                                bucket_name=bucket_name,
                                                 terminate_on_completion=terminate_on_completion)
 
     user_data_body = user_data_body_tmpl.format()
