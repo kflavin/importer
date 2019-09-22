@@ -19,8 +19,7 @@ mkdir /data
 mount /dev/nvme1n1p1 /data
 
 env
-mysqldump -h $loader_db_host \
-          --max-allowed-packet=1073741824 \
+mysqldump --max-allowed-packet=1073741824 \
           --net-buffer-length=32704 \
           --single-transaction=TRUE \
           --skip-triggers \

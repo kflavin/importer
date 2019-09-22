@@ -99,6 +99,7 @@ cat <<EOF > ~/.my.cnf
 [mysqldump]
 user=$loader_db_user
 password=$loader_db_password
+host=$loader_db_host
 EOF
 
 set -x
