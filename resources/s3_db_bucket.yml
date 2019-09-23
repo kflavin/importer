@@ -1,0 +1,13 @@
+---
+Type: "AWS::S3::Bucket"
+Properties:
+  LifecycleConfiguration:
+    Rules:
+      - Prefix: backups
+        ExpirationInDays: 7
+        Status: Enabled
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    IgnorePublicAcls: true
+    BlockPublicPolicy: true
+    RestrictPublicBuckets: true

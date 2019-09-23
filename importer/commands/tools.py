@@ -61,10 +61,10 @@ def load(ctx, infile, table_name):
     debug = ctx.obj['debug']
 
     args = {
-        'user': os.environ.get('db_user'),
-        'password': os.environ.get('db_password'),
-        'host': os.environ.get('db_host'),
-        'database': os.environ.get('db_schema'),
+        'user': os.environ.get('loader_db_user'),
+        'password': os.environ.get('loader_db_password'),
+        'host': os.environ.get('loader_db_host'),
+        'database': os.environ.get('loader_db_schema'),
         'debug': debug
     }
 

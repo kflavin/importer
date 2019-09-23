@@ -12,15 +12,14 @@ custom:
   sshKey: ${env:aws_key}
   awsRegion: ${env:aws_region}
   awsImageId: ${env:aws_image_id}
+  awsDbBackupInstanceType: ${env:aws_db_backup_instance_type}
   awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
   awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
   awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
   awsSecurityGroups: ${env:aws_security_groups}
-  awsRdsSecurityGroup: ${env:aws_rds_security_group}
   awsInstanceProfile: {Ref: Ec2InstanceProfile}
   awsSubnets: ${env:aws_subnets}
-  awsRdsParameterGroup: ${env:aws_rds_parameter_group}
-  npiMaxWeeklyInstances: ${env:npi_max_weekly_instances}
+  npiMaxInstances: 1
   weeklyImportTimeout: ${env:weekly_import_timeout}
   monthlyImportTimeout: ${env:monthly_import_timeout}
   snsTopicArn: ${env:aws_sns_topic_arn}
@@ -60,6 +59,7 @@ provider:
     aws_subnets: ${self:custom.awsSubnets}
     aws_instance_profile: ${self:custom.awsInstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
+    aws_db_backup_s3_bucket: {Ref: DbBackupBucket}
     aws_sns_topic_arn: ${self:custom.snsTopicArn}
     terminate_on_completion: "true"
   iamRoleStatements: ${file(resources/iam.yml)}
@@ -70,7 +70,7 @@ functions:
     handler: lambdas/npi/importer_ec2_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
-      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      npi_max_instances: ${self:custom.npiMaxInstances}
       monthly_import_timeout: ${self:custom.monthlyImportTimeout}
       weekly_import_timeout: ${self:custom.weeklyImportTimeout}
       npi_table_name: ${self:custom.npiTableName}
@@ -81,7 +81,7 @@ functions:
     handler: lambdas/npi/importer_ec2_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
-      npi_max_weekly_instances: ${self:custom.npiMaxWeeklyInstances}
+      npi_max_instances: ${self:custom.npiMaxInstances}
       monthly_import_timeout: ${self:custom.monthlyImportTimeout}
       weekly_import_timeout: ${self:custom.weeklyImportTimeout}
       npi_table_name: ${self:custom.npiTableName}
@@ -103,17 +103,26 @@ functions:
       table_name: ${self:custom.rxnormTableName}
       synonyms_table_name: ${self:custom.rxnormSynonymsTableName}
     timeout: 15
+  db_backup:
+    handler: lambdas/db_backup/backup.handler
+    environment:
+      aws_instance_type: ${self:custom.awsDbBackupInstanceType}
+      table_name: "db_backup"
+    timeout: 15
 
 resources:
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
+    DbBackupBucket:
+      Value: {Ref: DbBackupBucket}
     Ec2Role:
       Value: {Ref: Ec2Role}
     Ec2InstanceProfile:
       Value: {Ref: Ec2InstanceProfile}
   Resources:
     ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
+    DbBackupBucket: ${file(resources/s3_db_bucket.yml)}
     Ec2Role: ${file(resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
 

@@ -23,10 +23,10 @@ def fetch(url_prefix, table_name, period, output_dir, limit, environment):
     """
     print(f"Fetch '{period}' files from {table_name}")
     npi_loader = NpiLoader()
-    npi_loader.connect(user=os.environ['db_user'],
-                        host=os.environ['db_host'], 
-                        password=os.environ['db_password'], 
-                        database=os.environ['db_schema'], 
+    npi_loader.connect(user=os.environ['loader_db_user'],
+                        host=os.environ['loader_db_host'],
+                        password=os.environ['loader_db_password'],
+                        database=os.environ['loader_db_schema'],
                         dictionary=True, 
                         buffered=True)
     npi_loader.fetch(url_prefix, table_name, period, environment, output_dir, limit)
@@ -45,10 +45,10 @@ def load(infile, batch_size, table_name, period, large_file, initialize):
     """
 
     args = {
-        'user': os.environ.get('db_user'),
-        'password': os.environ.get('db_password'),
-        'host': os.environ.get('db_host'),
-        'database': os.environ.get('db_schema')
+        'user': os.environ.get('loader_db_user'),
+        'password': os.environ.get('loader_db_password'),
+        'host': os.environ.get('loader_db_host'),
+        'database': os.environ.get('loader_db_schema')
     }
 
     npi_loader = NpiLoader()
@@ -136,10 +136,10 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
     workspace = workspace.rstrip("/")
 
     args = {
-        'user': os.environ.get('db_user'),
-        'password': os.environ.get('db_password'),
-        'host': os.environ.get('db_host'),
-        'database': os.environ.get('db_schema')
+        'user': os.environ.get('loader_db_user'),
+        'password': os.environ.get('loader_db_password'),
+        'host': os.environ.get('loader_db_host'),
+        'database': os.environ.get('loader_db_schema')
     }
 
     # We don't want to use these for the file loading, just the fetch
@@ -203,6 +203,7 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
     npi_loader.close()
 
     logger.info(f"Data loaded to table: {table_name}")
+
 
 npi.add_command(load)
 npi.add_command(fetch)

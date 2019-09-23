@@ -5,7 +5,7 @@ from lambdas.periods import WEEKLY as period
 from importer import weekly_prefix as bucket_prefix
 
 from lambdas.helpers.file_loader import loader_user_data
-user_data_head_tmpl = loader_user_data("setup")
+user_data_head_tmpl = loader_user_data("start")
 user_data_body_tmpl = loader_user_data("npi_body")
 user_data_finish_tmpl = loader_user_data("finish")
 
@@ -25,7 +25,7 @@ def handler(event, context):
     table_name = os.environ.get('npi_table_name')
     log_table_name = os.environ.get('npi_log_table_name')
     timeout = os.environ.get('weekly_import_timeout', '10')
-    max_concurrent_instances = int(os.environ.get('npi_max_weekly_instances', 1))
+    max_concurrent_instances = int(os.environ.get('npi_max_instances', 1))
     bucket_name = os.environ.get("aws_s3_bucket")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
     terminate_on_completion = os.environ.get("terminate_on_completion")
