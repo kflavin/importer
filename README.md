@@ -73,6 +73,8 @@ This will delete all components, _including the S3 bucket_ and any staged files!
 
 The Lambda functions are cron'd, but can also be run manually in [AWS](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions).  To run, configure an empty test event (event isn't used, all parameters are passed through the environment).
 
+_Note that the cloudwatch events used to trigger the functions are created manually, outside of the Cloudformation stack._
+
 ## Overview
 
 #### Packaging
