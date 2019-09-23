@@ -98,12 +98,12 @@ export loader_db_password=$(aws ssm get-parameters --names "/importer/{environme
 cat <<EOF > ~/.my.cnf
 [mysqldump]
 user=$loader_db_user
-password=$loader_db_password
+password="$loader_db_password"
 host=$loader_db_host
 
 [mysql]
 user=$loader_db_user
-password=$loader_db_password
+password="$loader_db_password"
 host=$loader_db_host
 EOF
 
