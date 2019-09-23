@@ -52,7 +52,7 @@ vim .env.prod
 
 #### Building and Deploying the NPI import script
 
-This repo also contains the NPI importer script.  It is built and deployed through `setup.sh`, but can be built separately:
+This repo also contains the NPI importer script.  It is built and deployed through `setup.sh`, but can also be built separately:
 
 ```bash
 python setup.py sdist
@@ -61,7 +61,7 @@ python setup.py sdist
 
 #### Destroy a stack
 
-This will delete all components, _including the S3 bucket_:
+This will delete all components, _including the S3 bucket_ and any staged files!:
 
 ```bash
 ./teardown.sh rc
@@ -83,7 +83,7 @@ The directory structure is laid out as follows:
 bin
 └── ...Helper Scripts...
 dist
-└── ...Runner distributable...
+└── ...Distributable NPI importer script...
 importer
 └── ...Importer Library...
 lambdas
@@ -113,17 +113,22 @@ The lambdas live under `lambdas/product/`
 
 #### Database backup
 
+The database backup runs a `mysqldump` to backup the database.
+
 The lambdas live under `lambdas/db_backup/`
 
 ## Add a new Lambda
 
-1. Create a new folder under `lambdas` and add a handler.   You can copy from an existing folder, like `lambdas/db_backup/`
+You can add a new lambda with a few steps.  The lambdas are responsible for launching an EC2 with any necessary environment variables.  The userdata scripts are responsible for doing your work, terminating the instance, and sending any notifications.
+
+1. Create a new folder under `lambdas` and add a handler (Python function).   This is responsible for launching the EC2 with your custom userdata script.  You can copy from an existing folder, like `lambdas/db_backup/`
 1. Add a new "body" userdata script under `lambdas/resources/userdata/`.  This is shell code which should perform your task.
-   * The `start.sh` and `finish.sh` scripts should be concatenated around your "body" script to ensure the EC2 is terminated properly.
+   * The `start.sh` and `finish.sh` scripts should be concatenated around your "body" script to ensure the EC2 is terminated properly.  This is done inside the lambda.
 1. Add the handler (function) name to `serverless.yaml`.
+1. Deploy: `./setup.sh <env>`
 
 The `start.sh` and `finish.sh` are used as wrappers around your body data script.  They ensure your EC2 is terminated, and
-alerts are sent to SNS (if desired).  _Be sure to use them or your instance will not terminate properly!_
+alerts are sent to SNS (if desired).  They also handle setting up environment variables for database access.  _Be sure to use them or your instance will not terminate properly!_
 
 ## Dependencies
 
