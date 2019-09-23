@@ -63,12 +63,17 @@ Properties:
           - Effect: Allow
             Action:
               - "s3:PutObject"
+              - "s3:ListMultipartUploadParts"
             Resource:
               - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
               - "Fn::Join":
                   - ""
                   - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
                     - "/backups/*"
+              - "Fn::Join":
+                  - ""
+                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+                    - "/backups"
           - Effect: Allow
             Action:
               - "sns:Publish"
