@@ -28,9 +28,7 @@ npm install serverless -g
 
 #### Building and Deploying the Lambda functions
 
-Each environment corresponds to a [Cloudformation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).:
-
-Currently deployed stacks are `rc`, `stage`, and `prod`.
+Each environment corresponds to a [Cloudformation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).  Existing stacks are `rc`, `stage`, and `prod`.
 
 ```bash
 # Install dependencies
@@ -73,9 +71,7 @@ This will delete all components, _including the S3 bucket_:
 
 #### Usage
 
-The Lambda functions are cron'd, but can also be run manually in [AWS](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions).
-
-To run, configure an empty test event (event isn't used, all parameters are passed through the environment).
+The Lambda functions are cron'd, but can also be run manually in [AWS](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions).  To run, configure an empty test event (event isn't used, all parameters are passed through the environment).
 
 ## Overview
 
@@ -103,7 +99,7 @@ resources
 
 #### NPI Importer
 
-NPI data is loaded using the `runner-import.py` script.  It is staged to the S3 bucket during deployment, and downloaded by the EC2 instance.
+NPI data is loaded using the `runner-import.py` script.  It is automatically staged to the S3 bucket during deployment, and downloaded by the EC2 instance.
 
 The lambdas live under `lamdbas/npi/`
 
@@ -111,13 +107,13 @@ See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9
 
 #### RxNorm Importer
 
-The RxNORM data is loaded using the [Talend loader](https://github.com/rxvantage/data-importer-talend)
+The RxNORM data is loaded using the [Talend loader](https://github.com/rxvantage/data-importer-talend).  The Talend loader is a jar built in Talend, and kept in a separate repo.  It must be staged to the S3 script bucket manually, with the name `RxNorm_Loader.zip`.
 
 The lambdas live under `lambdas/product/`
 
 #### Database backup
 
-The lambdas live under `lambdas/db_backup`
+The lambdas live under `lambdas/db_backup/`
 
 ## Add a new Lambda
 
