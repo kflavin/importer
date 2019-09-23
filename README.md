@@ -2,13 +2,13 @@
 
 This repo is used to dynamically launch EC2 instances for data loading.  There are two distinct parts:
 
-* Lambda functions, under `lambdas/`, which launches EC2's
+* Lambda functions, under `lambdas/`, which launch EC2's
 * An importer script, which is only used for NPI data, under `importer/`
 
 It currently loads the following data:
 
-* Loading the `npis` table
-* Loading the RxNorm product data
+* The `npis` table
+* The RxNorm product data
 * Database backups
 
 Each gets its own AWS Lambda function.  See instructions at the end of this document for how to add new lambdas.
@@ -20,6 +20,10 @@ Each gets its own AWS Lambda function.  See instructions at the end of this docu
 To deploy the Lambda functions, you need the following:
 
 * python3
+* serverless framework
+```bash
+npm install serverless -g
+```
 * You should have your AWS creds file configured.  If you are using profiles, be sure to set your profile name in your environment file.
 
 #### Building and Deploying the Lambda functions
@@ -29,6 +33,9 @@ Each environment corresponds to a [Cloudformation stack](https://console.aws.ama
 Currently deployed stacks are `rc`, `stage`, and `prod`.
 
 ```bash
+# Install dependencies
+npm install
+
 # Copy the environment file
 cp env.template .env.rc
 cp env.template .env.stage
