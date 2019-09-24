@@ -11,3 +11,4 @@ Properties:
     IgnorePublicAcls: true
     BlockPublicPolicy: true
     RestrictPublicBuckets: true
+DeletionPolicy: Retain    # Keep our backups even if someone removes the stack!

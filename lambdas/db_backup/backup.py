@@ -21,6 +21,7 @@ def handler(event, context):
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('table_name')
     bucket_name = os.environ.get("aws_s3_bucket")
+    backup_bucket_name = os.environ.get("aws_db_backup_s3_bucket")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
     terminate_on_completion = os.environ.get("terminate_on_completion")
 
@@ -38,12 +39,7 @@ def handler(event, context):
                                                 bucket_name=bucket_name,
                                                 terminate_on_completion=terminate_on_completion)
 
-    user_data_body = user_data_body_tmpl.format(environment=environment)
-    # user_data_body = user_data_body_tmpl.format(timeout=15,
-    #                                             environment=environment,
-    #                                             bucket_name=bucket_name,
-    #                                             table_name=table_name,
-    #                                             synonyms_table_name=synonyms_table_name)
+    user_data_body = user_data_body_tmpl.format(backup_bucket_name=backup_bucket_name)
 
     user_data_finish = user_data_finish_tmpl
 

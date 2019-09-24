@@ -32,7 +32,7 @@ mysqldump --max-allowed-packet=1073741824 \
 gzip /data/dump.sql
 
 # Encrypt and upload
-aws s3 cp --sse aws:kms /data/dump.sql.gz s3://importer-rc-dbbackupbucket-c6dx6gvyxji6/backups/$(date --iso-8601=seconds).sql.gz
+aws s3 cp --sse aws:kms /data/dump.sql.gz s3://{backup_bucket_name}/backups/$(date --iso-8601=seconds).sql.gz
 
 size=$(ls -lh /data/dump.sql.gz  | awk '{{print $5}}')
 
