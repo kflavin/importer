@@ -40,7 +40,9 @@ def handler(event, context):
                                                 bucket_name=bucket_name,
                                                 terminate_on_completion=terminate_on_completion)
 
-    user_data_body = user_data_body_tmpl.format(backup_bucket_name=backup_bucket_name, use_replica=use_replica)
+    user_data_body = user_data_body_tmpl.format(backup_bucket_name=backup_bucket_name,
+                                                environment=environment,
+                                                use_replica=use_replica)
 
     user_data_finish = user_data_finish_tmpl
 
