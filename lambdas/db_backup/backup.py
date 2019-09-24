@@ -3,7 +3,7 @@ from lambdas.helpers.ec2 import EC2Helper
 from lambdas.helpers.file_loader import loader_user_data
 
 user_data_head_tmpl = loader_user_data("start")
-user_data_body_tmpl = loader_user_data("db_body")
+user_data_body_tmpl = loader_user_data("db_backup_body")
 user_data_finish_tmpl = loader_user_data("finish")
 
 
@@ -22,6 +22,7 @@ def handler(event, context):
     table_name = os.environ.get('table_name')
     bucket_name = os.environ.get("aws_s3_bucket")
     backup_bucket_name = os.environ.get("aws_db_backup_s3_bucket")
+    use_replica = os.environ.get("use_replica")
     sns_topic_arn = os.environ.get("aws_sns_topic_arn")
     terminate_on_completion = os.environ.get("terminate_on_completion")
 
@@ -39,7 +40,7 @@ def handler(event, context):
                                                 bucket_name=bucket_name,
                                                 terminate_on_completion=terminate_on_completion)
 
-    user_data_body = user_data_body_tmpl.format(backup_bucket_name=backup_bucket_name)
+    user_data_body = user_data_body_tmpl.format(backup_bucket_name=backup_bucket_name, use_replica=use_replica)
 
     user_data_finish = user_data_finish_tmpl
 

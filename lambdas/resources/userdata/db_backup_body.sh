@@ -1,8 +1,15 @@
 #################################################################################################################
-# Userdata body.  Provide your own set of commands in the userdata body, which are specific to the import.
+# Userdata body.  Provide your own set of commands in the userdata body.
 #################################################################################################################
 
-# Parition the disk.  Initially I tried to stream the dump directly into S3, but it wasn't working; the MySQL
+# This would normally be set to "0", but we have to handle the one off case of production, where we want to take
+# a backup from the replica.
+if [[ "{use_replica}" -eq "1" ]]; then
+    echo "Using replica"
+    export loader_db_host=$(aws ssm get-parameters --names "/importer/{environment}/db_host_replica" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
+fi
+
+# Partition the disk.  Initially I tried to stream the dump directly into S3, but it wasn't working; the MySQL
 # connection kept dropping.  This seems to be more reliable.
 fdisk /dev/nvme1n1 <<EOF
 n
@@ -22,12 +29,13 @@ mkdir /data
 mount /dev/nvme1n1p1 /data
 
 ## Increased packet size helps with the disconnects.  Changed in RDS as well to match the value listed here.
-#mysqldump --max-allowed-packet=1073741824 \
-#          --net-buffer-length=32704 \
-#          --single-transaction=TRUE \
-#          --skip-triggers \
-#          --set-gtid-purged=OFF \
-#          $loader_db_schema > /data/dump.sql
+mysqldump -h "$loader_db_host" \
+          --max-allowed-packet=1073741824 \
+          --net-buffer-length=32704 \
+          --single-transaction=TRUE \
+          --skip-triggers \
+          --set-gtid-purged=OFF \
+          "$loader_db_schema" > /data/dump.sql
 
 echo "this is a test" > /data/dump.sql
 gzip /data/dump.sql

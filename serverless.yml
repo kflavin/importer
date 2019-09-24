@@ -108,6 +108,7 @@ functions:
     environment:
       aws_instance_type: ${self:custom.awsDbBackupInstanceType}
       table_name: "db_backup"
+      use_replica: 0 # This can be manually toggled to "1" in prod to use the replica server.  Host parameter must be set in SSM.
     timeout: 15
 
 resources:
