@@ -21,14 +21,15 @@ mkfs -t ext4 /dev/nvme1n1p1
 mkdir /data
 mount /dev/nvme1n1p1 /data
 
-# Increased packet size helps with the disconnects.  Changed in RDS as well to match the value listed here.
-mysqldump --max-allowed-packet=1073741824 \
-          --net-buffer-length=32704 \
-          --single-transaction=TRUE \
-          --skip-triggers \
-          --set-gtid-purged=OFF \
-          $loader_db_schema > /data/dump.sql
+## Increased packet size helps with the disconnects.  Changed in RDS as well to match the value listed here.
+#mysqldump --max-allowed-packet=1073741824 \
+#          --net-buffer-length=32704 \
+#          --single-transaction=TRUE \
+#          --skip-triggers \
+#          --set-gtid-purged=OFF \
+#          $loader_db_schema > /data/dump.sql
 
+echo "this is a test" > /data/dump.sql
 gzip /data/dump.sql
 
 # Encrypt and upload
