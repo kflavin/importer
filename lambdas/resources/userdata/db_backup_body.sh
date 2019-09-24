@@ -37,7 +37,6 @@ mysqldump -h "$loader_db_host" \
           --set-gtid-purged=OFF \
           "$loader_db_schema" > /data/dump.sql
 
-echo "this is a test" > /data/dump.sql
 gzip /data/dump.sql
 
 # Encrypt and upload
