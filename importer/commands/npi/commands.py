@@ -2,7 +2,7 @@ import click
 import os
 import logging
 
-from importer.loaders.npi import NpiLoader
+from importer.loaders import NpiLoader
 
 logger = logging.getLogger(__name__)
 
