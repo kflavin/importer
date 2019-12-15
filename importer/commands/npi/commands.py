@@ -178,17 +178,17 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
         try:
             csv_file = npi_loader.unzip(infile, unzip_path)
         except Exception as e:
-            logger.info(f"{e}")
-            logger.info(f"Error loading zip file, skipping file...")
-            continue
+            # logger.info(f"{e}")
+            logger.info("Error loading zip file)")
+            raise
 
         logger.info(f"Preprocessing {csv_file}")
         try:
             cleaned_file = npi_loader.preprocess(csv_file)
         except Exception as e:
-            logger.info(f"{e}")
-            logger.info(f"Error preprocessing file, skipping file...")
-            continue
+            # logger.info(f"{e}")
+            logger.info("Error preprocessing file")
+            raise
         
         try:
             if large_file:
@@ -200,15 +200,16 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
                 print(f"Loading {period} file into database.  large_file: {large_file}")
                 npi_loader.load_file(table_name, cleaned_file, batch_size, 10000, 1, initialize)
         except Exception as e:
-            logger.info(f"{e}")
-            logger.info(f"Error loading data to DB, skipping file...")
-            continue
+            # logger.info(f"{e}")
+            logger.info(f"Error loading data to DB")
+            raise
 
         try:
             npi_loader.mark_imported(id, import_table_name)
         except Exception as e:
-            logger.info(f"{e}")
+            # logger.info(f"{e}")
             logger.info(f"Failed to update record in database.")
+            raise
 
         # npi_loader.clean()
     npi_loader.close()

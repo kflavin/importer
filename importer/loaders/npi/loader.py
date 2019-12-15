@@ -225,14 +225,14 @@ class NpiLoader(object):
         if not outfile:
             outfile = infile[:infile.rindex(".")] + ".clean.csv"
 
-        # Read the header file first, then reread the entire file with just the columns we want.  This is faster
-        # than reading the entire file, and then removing the columns.
-        col_df = pd.read_csv(infile, nrows=1)
-        col_df = col_df[col_df.columns.drop(col_df.filter(regex='Healthcare Provider Taxonomy Group').columns)]
-        col_df = col_df[col_df.columns.drop(col_df.filter(regex='Provider License Number').columns)]
-        col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
-        df = pd.read_csv(infile, usecols=col_df.columns, dtype=self.__get_dtypes(), low_memory=False)
-        # df = pd.read_csv(infile, usecols=self.__get_columns(), dtype=self.__get_dtypes(), low_memory=False)
+        # # Read the header file first, then reread the entire file with just the columns we want.  This is faster
+        # # than reading the entire file, and then removing the columns.
+        # col_df = pd.read_csv(infile, nrows=1)
+        # col_df = col_df[col_df.columns.drop(col_df.filter(regex='Healthcare Provider Taxonomy Group').columns)]
+        # col_df = col_df[col_df.columns.drop(col_df.filter(regex='Provider License Number').columns)]
+        # col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
+        # df = pd.read_csv(infile, usecols=col_df.columns, dtype=self.__get_dtypes(), low_memory=False)
+        df = pd.read_csv(infile, usecols=self.__get_columns(), dtype=self.__get_dtypes(), low_memory=False)
 
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
@@ -444,9 +444,9 @@ class NpiLoader(object):
         values.
         """
         return {
-            # "NPI": np.int64,
-            # "Entity Type Code": np.float64,
-            # "Replacement NPI": np.float64,
+            "NPI": np.int64,
+            "Entity Type Code": np.float64,
+            "Replacement NPI": np.float64,
             "Employer Identification Number (EIN)": str,
             "Provider Organization Name (Legal Business Name)": str,
             "Provider Last Name (Legal Name)": str,
@@ -463,7 +463,7 @@ class NpiLoader(object):
             "Provider Other Name Prefix Text": str,
             "Provider Other Name Suffix Text": str,
             "Provider Other Credential Text": str,
-            # "Provider Other Last Name Type Code": np.float64,
+            "Provider Other Last Name Type Code": np.float64,
             "Provider First Line Business Mailing Address": str,
             "Provider Second Line Business Mailing Address": str,
             "Provider Business Mailing Address City Name": str,

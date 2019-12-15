@@ -11,6 +11,7 @@ from importer.commands.products.common import data_loader, parseIntOrNone
 
 logger = logging.getLogger(__name__)
 
+
 @click.group()
 @click.pass_context
 def product(ctx):
@@ -18,6 +19,7 @@ def product(ctx):
     loader = BaseLoader(warnings=ctx.obj['warnings'])
     loader.connect(**ctx.obj['db_credentials'])
     ctx.obj['loader'] = loader
+
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -64,6 +66,7 @@ def create_table(ctx, table_name, complete):
     loader._submit_single_q(q)
     logger.info("Finished.")
 
+
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="")
 @click.pass_context
@@ -74,6 +77,7 @@ def create_reload_table(ctx, table_name):
     loader._submit_single_q(q)
     logger.info("Finished.")
 
+
 @click.command()
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="")
 @click.pass_context
@@ -83,6 +87,7 @@ def alter_reload_table(ctx, table_name):
     q = ALTER_PRODUCT_RELOAD_TABLE.format(table_name=table_name)
     loader._submit_single_q(q)
     logger.info("Finished.")
+
 
 product.add_command(load)
 product.add_command(create_table)

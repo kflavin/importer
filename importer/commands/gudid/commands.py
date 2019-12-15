@@ -2,7 +2,7 @@ import click
 import os
 import logging
 
-from importer.loaders.base import BaseLoader, convert_date
+# from importer.loaders.base import BaseLoader, convert_date
 from importer.loaders.gudid.base import GudidLoader
 from importer.sql import (INSERT_AND_UPDATE_QUERY, SELECT_Q)
 from importer.commands.products.common import data_loader, parseIntOrNone

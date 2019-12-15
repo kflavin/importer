@@ -13,10 +13,10 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
 import boto3
 import urllib.request
-from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
+# from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands import npi
-from importer.commands.products import products
-from importer.commands.gudid.main import gudid
+from importer.commands import products
+from importer.commands import gudid
 # from importer.commands.build_products import build_products
 
 from importer.commands import tools
@@ -38,11 +38,12 @@ if is_aws:
 @click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
 @click.option('--debug/--no-debug', default=False)
 @click.option('--warnings/--no-warnings', default=True)
-@click.option('--logs', '-l', default="system", type=click.Choice(["cloudwatch", "system"]), help="[cloudwatch|system] - CW requires aws_region/instance_id env vars to be set.")
-@click.option('--log-group', default="importer-test", help="Cloudwatch log group name")
+# @click.option('--logs', '-l', default="system", type=click.Choice(["cloudwatch", "system"]), help="[cloudwatch|system] - CW requires aws_region/instance_id env vars to be set.")
+# @click.option('--log-group', default="importer-test", help="Cloudwatch log group name")
 @click.option('--time/--no-time', default=False, help="Print times.")
 @click.pass_context
-def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, log_group, time):
+# def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, log_group, time):
+def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, time):
     ctx.ensure_object(dict)
     logger = logging.getLogger("importer")
 
@@ -61,20 +62,20 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
         ctx.obj['debug'] = False
         handler_level = logging.INFO
     
-    if logs == "cloudwatch":
-        region = os.environ.get('aws_region')
-        logger.addHandler(CloudWatchLogHandler(log_group=log_group, stream_name=os.environ.get('instance_id'), region=region))
-        logger.info("Sending runner logs to cloudwatch")
-    else:
-        sh = logging.StreamHandler(sys.stdout)
+    # if logs == "cloudwatch":
+    #     region = os.environ.get('aws_region')
+    #     logger.addHandler(CloudWatchLogHandler(log_group=log_group, stream_name=os.environ.get('instance_id'), region=region))
+    #     logger.info("Sending runner logs to cloudwatch")
+    # else:
+    sh = logging.StreamHandler(sys.stdout)
 
-        # Add a formatter with time.
-        formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%Y-%m-%d %H:%M:%S")
-        sh.setFormatter(formatter)
+    # Add a formatter with time.
+    formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%Y-%m-%d %H:%M:%S")
+    sh.setFormatter(formatter)
 
-        sh.setLevel(handler_level)
-        logger.addHandler(sh)
-        logger.info("Sending runner logs to stdout")
+    sh.setLevel(handler_level)
+    logger.addHandler(sh)
+    logger.info("Sending runner logs to stdout")
 
     logger.debug("DEBUGGING IS ENABLED")
 

@@ -6,6 +6,7 @@ def data_loader(LoaderType, query, column_type_overrides, ctx, infile, table_nam
     loader.connect(**ctx.obj['db_credentials'])
     loader.csv_loader(query, table_name, infile, ctx)
 
+
 # The call to float() is because pandas will convert int column to floats, if there are any null values.
 def parseIntOrNone(value):
     if value:
@@ -16,6 +17,7 @@ def parseIntOrNone(value):
     else:
         return None
     return newval
+
 
 def parseInt(value):
     try:
