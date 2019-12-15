@@ -74,15 +74,6 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
 
     logger.debug("DEBUGGING IS ENABLED")
 
-    # ctx.obj['db_credentials'] = {
-    #     'user': os.environ.get('db_user'),
-    #     'password': os.environ.get('db_password'),
-    #     'host': os.environ.get('db_host'),
-    #     'database': os.environ.get('db_schema'),
-    #     'debug': debug
-    # }
-    # logger.info(f"Connecting to: {os.environ.get('db_host')}")
-    
         
 start.add_command(npi)
 # start.add_command(hdm)

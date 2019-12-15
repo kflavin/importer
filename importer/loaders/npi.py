@@ -1,3 +1,4 @@
+import logging
 import csv, sys, subprocess, time, itertools, textwrap, datetime
 from collections import OrderedDict
 from zipfile import ZipFile
@@ -9,6 +10,10 @@ from importer.sql.npi import (CREATE_NPI_TABLE, INSERT_QUERY, UPDATE_QUERY,
 from importer.sql.checks import DISABLE, ENABLE
 from importer.downloaders.downloader import downloader
 import pandas as pd
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
 
 def convert_date(x):
     if not str(x) == "nan":
@@ -18,6 +23,17 @@ def convert_date(x):
             return None
     else:
         return None
+
+
+def five_digit_zip(x):
+    if pd.notnull(x):
+        try:
+            return x[:5]
+        except Exception as e:
+            pass
+    # return np.nan
+    return None
+
 
 class NpiLoader(object):
     """
@@ -86,8 +102,7 @@ class NpiLoader(object):
             return value
 
     def __submit_batch(self, query, data):
-        if self.debug:
-            print(query)
+        logger.debug(query)
 
         tries = 3
         count = 0
@@ -137,7 +152,7 @@ class NpiLoader(object):
             # We only want to load one monthly file at a time.  Pick the most recent one.
             q = GET_MONTHLY_FILES.format(table_name=table_name, period=p, environment=environment)
 
-        print(q.replace('\n', ' ').replace('\r', ''))
+        logger.debug(q.replace('\n', ' ').replace('\r', ''))
         self.cursor.execute(q)
 
         print(f"Fetching {self.cursor.rowcount} files")
@@ -217,7 +232,8 @@ class NpiLoader(object):
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Provider License Number').columns)]
         col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
         df = pd.read_csv(infile, usecols=col_df.columns, dtype=self.__get_dtypes(), low_memory=False)
-        
+        # df = pd.read_csv(infile, usecols=self.__get_columns(), dtype=self.__get_dtypes(), low_memory=False)
+
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
 
@@ -227,6 +243,10 @@ class NpiLoader(object):
         df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(convert_date)
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
+
+        # Only keep the first 5 digits of the zip code
+        df['Provider Business Practice Location Address Postal Code'] = \
+            df['Provider Business Practice Location Address Postal Code'].apply(five_digit_zip)
         
         # df = pd.read_csv(infile)
         # df = pd.read_csv(infile, low_memory=False)
@@ -280,9 +300,8 @@ class NpiLoader(object):
         """
         print("NPI large loader importing from {}".format(infile))
         q = INSERT_LARGE_QUERY.format(infile=infile, table_name=table_name)
-        
-        if self.debug:
-            print(repr(q))
+
+        logger.debug(repr(q))
 
         self.cursor.execute(q)
         self.cnx.commit()
@@ -408,18 +427,26 @@ class NpiLoader(object):
         self.cursor.execute(query)
         self.cnx.commit()
 
+    def __get_columns(self):
+        return self.__get_dtypes().keys()
+
     def __get_dtypes(self):
         """
-        The purpose of this ugly looking thing is to deal with the weirdness in how pandas handles int columns.  int columns with null values
+        Returns columns and column types.
+
+        It's important to know how pandas handles int columns.  int columns with null values
         will be transformed into floats.  This results in unwanted behavior when dealing with things like telephone numbers, which are converted
         to decimal.  It can be unexpected when there is a column that normally has numeric values, but can also have numeric values.  If a weekly
         file comes in with all numeric values in this column (and some nulls), they will be treated as decimals, even though the field is normally
         treated as a string.  To get around this, we manually set the column types on these fields, rather than using the pandas type detection.
 
-        NPI, Entity Type Code, Replacement NPI, and Provider Other Last Name Type Code are not include here, because they are stored as INT in the
-        database.
+        Entity Type Code, Replacement NPI, and Provider Other Last Name Type Code are treated as floats, because these columns contain null
+        values.
         """
         return {
+            # "NPI": np.int64,
+            # "Entity Type Code": np.float64,
+            # "Replacement NPI": np.float64,
             "Employer Identification Number (EIN)": str,
             "Provider Organization Name (Legal Business Name)": str,
             "Provider Last Name (Legal Name)": str,
@@ -436,6 +463,7 @@ class NpiLoader(object):
             "Provider Other Name Prefix Text": str,
             "Provider Other Name Suffix Text": str,
             "Provider Other Credential Text": str,
+            # "Provider Other Last Name Type Code": np.float64,
             "Provider First Line Business Mailing Address": str,
             "Provider Second Line Business Mailing Address": str,
             "Provider Business Mailing Address City Name": str,

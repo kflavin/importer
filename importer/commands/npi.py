@@ -32,14 +32,15 @@ def fetch(url_prefix, table_name, period, output_dir, limit, environment):
     npi_loader.fetch(url_prefix, table_name, period, environment, output_dir, limit)
 
 @click.command()
-@click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
+@click.option('--infile', '-f', required=True, type=click.STRING, help="CSV file with NPI data")
 @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
+@click.option('--import-table-name', '-i', default="npi_import_log", type=click.STRING, help="NPI import table")
 # @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
 @click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
 @click.option('--initialize', default=False, is_flag=True, help="Only use for first table load to get all deactivated NPI's!  This will OVERWRITE existing data!")
-def load(infile, batch_size, table_name, period, large_file, initialize):
+def load(infile, batch_size, import_table_name, table_name, period, large_file, initialize):
     """
     NPI importer
     """
@@ -62,7 +63,17 @@ def load(infile, batch_size, table_name, period, large_file, initialize):
     else:
         print(f"Loading {period} (small) file into database.  large_file: {large_file}")
         npi_loader.connect(**args)
-        npi_loader.load_file(table_name, infile, batch_size, 10000, 3, initialize)
+        npi_loader.load_file(table_name, infile, batch_size, 10000, 1, initialize)
+
+    try:
+        npi_loader.mark_imported(id, import_table_name)
+    except Exception as e:
+        logger.info(f"{e}")
+        logger.info(f"Failed to update record in database.")
+
+    npi_loader.close()
+
+    logger.info(f"Data loaded to table: {table_name}")
 
     print(f"Data loaded to table: {table_name}")
 
