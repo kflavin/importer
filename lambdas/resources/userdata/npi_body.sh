@@ -13,7 +13,7 @@
 #################################################################################################################
 
 # Clean and load CSV file, then mark the object as imported
-timeout {timeout}m runner-import.py -l cloudwatch npi full {init_flag} \
+timeout {timeout}m runner-import.py npi full {init_flag} \
                     -t {table_name} \
                     -i {log_table_name} \
                     -p {period} \

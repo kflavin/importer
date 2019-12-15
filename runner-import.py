@@ -11,6 +11,8 @@ import warnings
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 
+import boto3
+import urllib.request
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
 from importer.commands.npi import npi
 from importer.commands.products import products
@@ -18,6 +20,13 @@ from importer.commands.gudid.main import gudid
 # from importer.commands.build_products import build_products
 
 from importer.commands.tools import tools
+
+# Configure details for SNS messages.
+sns_arn = os.environ.get('aws_sns_topic_arn', '')
+region = os.environ.get('aws_region', 'us-east-1')
+instance_id = urllib.request.urlopen('http://169.254.169.254/latest/meta-data/instance-id').read().decode('utf-8')
+cloudwatch_url=f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logEventViewer:group=/var/log/cloud-init-output.log;stream={instance_id}"
+
 
 @click.group()
 @click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
@@ -65,14 +74,14 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, logs, 
 
     logger.debug("DEBUGGING IS ENABLED")
 
-    ctx.obj['db_credentials'] = {
-        'user': os.environ.get('db_user'),
-        'password': os.environ.get('db_password'),
-        'host': os.environ.get('db_host'),
-        'database': os.environ.get('db_schema'),
-        'debug': debug
-    }
-    logger.info(f"Connecting to: {os.environ.get('db_host')}")
+    # ctx.obj['db_credentials'] = {
+    #     'user': os.environ.get('db_user'),
+    #     'password': os.environ.get('db_password'),
+    #     'host': os.environ.get('db_host'),
+    #     'database': os.environ.get('db_schema'),
+    #     'debug': debug
+    # }
+    # logger.info(f"Connecting to: {os.environ.get('db_host')}")
     
         
 start.add_command(npi)
@@ -86,5 +95,15 @@ start.add_command(gudid)
 # start.add_command(build_products)
 
 if __name__ == '__main__':
-    start()
+    try:
+        start()
+    except Exception as e:
+        if sns_arn:
+            client = boto3.client('sns', region_name=region)
+            response = client.publish(
+                TargetArn=sns_arn,
+                Subject="Importer Exception",
+                Message=f"Exception running {' '.join(click.get_os_args())}.  See {cloudwatch_url}",
+            )
+        raise
 
