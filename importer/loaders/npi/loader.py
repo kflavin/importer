@@ -8,7 +8,7 @@ from mysql.connector.constants import ClientFlag
 from importer.sql.npi import (CREATE_NPI_TABLE, INSERT_QUERY, UPDATE_QUERY,
                               INSERT_LARGE_QUERY, GET_FILES, GET_MONTHLY_FILES, MARK_AS_IMPORTED)
 from importer.sql.checks import DISABLE, ENABLE
-from importer.downloaders.downloader import downloader
+from importer.downloaders import NpiDownloader
 import pandas as pd
 import numpy as np
 
@@ -160,7 +160,7 @@ class NpiLoader(object):
             file_name = row.get('url').split("/")[-1]
 
             print(f"{url_prefix}{file_name} to {output_dir}")
-            dlr = downloader(url_prefix)
+            dlr = NpiDownloader.get_downloader(url_prefix)
             downloaded_file = dlr.download(file_name, output_dir)
 
             if downloaded_file:

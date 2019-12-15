@@ -1,9 +1,9 @@
 import click
-import os
+# import os
 import traceback
 import logging
 
-from importer.downloaders.products.product_downloader import ProductDownloader
+from importer.downloaders import ProductDownloader
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ def download(ctx):
     will overwrite the "latest" file, but skip duplicate "date" files.
     """
     ctx.ensure_object(dict)
+
 
 @click.command()
 @click.option('--bucket', '-b', required=False, default=s3_bucket_name, type=click.STRING, help="S3 bucket")

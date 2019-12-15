@@ -225,13 +225,19 @@ class ProductDownloader(object):
         logger.debug(f"Indications URL: {dl_url}")
         return dl_url
 
-    def cms_url(self, url):
+
+    def __UNUSED_cms_url(self, url):
+        """
+        This function used to handle the CMS downloader, but doesn't any longer.  It's kept here for informational purposes
+        only, because it shows a way to use selenium to handle accepting a license agreement, which took awhile to get
+        right. :/
+        """
         logger.debug("Scraping CMS Services")
         self.close_all_other_tabs(self.driver.current_window_handle)
         self.driver.get(url)
 
         try:
-            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//div[@class='help-details']//a[substring(@href, string-length(@href) - string-length('DHS-Addendum.zip') + 1) = 'DHS-Addendum.zip']"))
+            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//h2[text()='Related Links']/following-sibling::ul/li[1]//a"))
         except TimeoutException:
             logger.error("CMS page one failure.")
             return ""
@@ -251,7 +257,19 @@ class ProductDownloader(object):
         accept_agreement = "?agree=yes&next=Accept"
         dl_url = elems2[0].get_attribute('action') + accept_agreement
         logger.debug(f"CMS URL: {dl_url}")
-        return dl_url
+
+    def cms_url(self, url):
+        logger.debug("Scraping CMS Services")
+        self.close_all_other_tabs(self.driver.current_window_handle)
+        self.driver.get(url)
+
+        try:
+            elems = WebDriverWait(self.driver, self.jstimeout).until(lambda driver: driver.find_elements_by_xpath("//h2[text()='Related Links']/following-sibling::ul/li[1]//a"))
+        except TimeoutException:
+            logger.error("CMS page one failure.")
+            return ""
+
+        return elems[0].get_attribute('href')
 
     def create_latest_file(self, bucket, prefix, filename, latest_prefix, latest_file_name):
         s3 = boto3.resource('s3')

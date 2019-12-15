@@ -1,7 +1,8 @@
 import os
 import boto3
 
-class Downloader(object):
+
+class S3Downloader(object):
     def __init__(self, url_prefix):
         """
         URL includes the bucket name and prefix, without filename, ie: s3://my_bucket/path/to/file/
