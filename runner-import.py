@@ -14,18 +14,22 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 import boto3
 import urllib.request
 from importer.loggers.cloudwatch_handler import CloudWatchLogHandler
-from importer.commands.npi import npi
+from importer.commands import npi
 from importer.commands.products import products
 from importer.commands.gudid.main import gudid
 # from importer.commands.build_products import build_products
 
-from importer.commands.tools import tools
+from importer.commands import tools
+
+# Figure out if we're running on EC2
+is_aws = os.popen("hostname").read().rstrip().endswith("ec2.internal")
 
 # Configure details for SNS messages.
-sns_arn = os.environ.get('aws_sns_topic_arn', '')
-region = os.environ.get('aws_region', 'us-east-1')
-instance_id = urllib.request.urlopen('http://169.254.169.254/latest/meta-data/instance-id').read().decode('utf-8')
-cloudwatch_url=f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logEventViewer:group=/var/log/cloud-init-output.log;stream={instance_id}"
+if is_aws:
+    sns_arn = os.environ.get('aws_sns_topic_arn', '')
+    region = os.environ.get('aws_region', 'us-east-1')
+    instance_id = urllib.request.urlopen('http://169.254.169.254/latest/meta-data/instance-id').read().decode('utf-8')
+    cloudwatch_url=f"https://console.aws.amazon.com/cloudwatch/home?region={region}#logEventViewer:group=/var/log/cloud-init-output.log;stream={instance_id}"
 
 
 @click.group()
@@ -89,7 +93,7 @@ if __name__ == '__main__':
     try:
         start()
     except Exception as e:
-        if sns_arn:
+        if is_aws and sns_arn:
             client = boto3.client('sns', region_name=region)
             response = client.publish(
                 TargetArn=sns_arn,
