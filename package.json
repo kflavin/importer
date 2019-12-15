@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/kflavin/importer#readme",
   "dependencies": {
+    "serverless-plugin-git-variables": "^3.4.0",
     "serverless-plugin-scripts": "^1.0.2",
     "serverless-python-requirements": "^4.1.0"
   }

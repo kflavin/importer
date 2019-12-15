@@ -5,8 +5,10 @@ frameworkVersion: ">=1.9.0 <2.0.0"
 plugins:
   - serverless-python-requirements
   - serverless-plugin-scripts
+  - serverless-plugin-git-variables
 
 custom:
+  gitDescription: ${git:branch}:${git:sha1}
   environment: ${opt:stage, self:provider.stage}
   version: ${opt:version, 'na'}
   sshKey: ${env:aws_key}
@@ -42,11 +44,13 @@ custom:
   scripts:
     hooks:
       'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
+  exportGitVariables: false
 
 provider:
   name: aws
   stackTags:
     version: ${self:custom.version}
+    gitDescription: ${self:custom.gitDescription}
   region: ${self:custom.awsRegion}
   runtime: python3.6
   environment:
