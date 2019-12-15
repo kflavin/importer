@@ -214,7 +214,7 @@ class NpiLoader(object):
         
         return f"{path}/{csv_file}"
 
-    def preprocess(self, infile, outfile=None, entity_types=1):
+    def preprocess(self, infile, outfile=None):
         """
         Given a CSV file to process (infile) and a file to write out (outfile), perform preprocessing on file.  This
         includes removing extra rows and renaming columns.  Returns the full path of the new CSV.
