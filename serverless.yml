@@ -71,7 +71,7 @@ provider:
 functions:
   # Importer weekly file (weekly|monthly periods not really necessary anymore)
   npi_weekly:
-    handler: lambdas/npi/importer_ec2_weekly.handler
+    handler: lambdas/npi/importer_weekly.handler
     environment:
       aws_instance_type: ${self:custom.awsWeeklyInstanceType}
       npi_max_instances: ${self:custom.npiMaxInstances}
@@ -82,7 +82,7 @@ functions:
     timeout: 15
   # Importer monthly file (weekly|monthly periods not really necessary anymore)
   npi_monthly:
-    handler: lambdas/npi/importer_ec2_monthly.handler
+    handler: lambdas/npi/importer_monthly.handler
     environment:
       aws_instance_type: ${self:custom.awsMonthlyInstanceType}
       npi_max_instances: ${self:custom.npiMaxInstances}
@@ -101,7 +101,7 @@ functions:
       - schedule: cron(0 17,23 ? * * *)
   # This does file download as well as the import for RXNORM
   rxnorm:
-    handler: lambdas/product/import_rxnorm.handler
+    handler: lambdas/products/import_rxnorm.handler
     environment:
       aws_instance_type: ${self:custom.awsRxNormInstanceType}
       table_name: ${self:custom.rxnormTableName}

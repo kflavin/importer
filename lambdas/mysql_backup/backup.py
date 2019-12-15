@@ -3,7 +3,7 @@ from lambdas.helpers.ec2 import EC2Helper
 from lambdas.helpers.file_loader import loader_user_data
 
 user_data_head_tmpl = loader_user_data("start")
-user_data_body_tmpl = loader_user_data("db_backup_body")
+user_data_body_tmpl = loader_user_data("mysql_backup/body")
 user_data_finish_tmpl = loader_user_data("finish")
 
 

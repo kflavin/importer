@@ -6,8 +6,8 @@ from urllib.parse import urljoin
 from zipfile import ZipFile
 from bs4 import BeautifulSoup
 from lambdas.helpers.db import DBHelper
-from lambdas.product import (gudid_download_url, ndc_download_url, orange_download_url, 
-                    orange_base_url, indications_download_url)
+from lambdas.products import (gudid_download_url, ndc_download_url, orange_download_url,
+                              orange_base_url, indications_download_url)
 from importer import weekly_prefix, monthly_prefix, deactivated_prefix
 
 max_links = 10  # If we find more zip files than this, exit.  The NPPES site may have changed.

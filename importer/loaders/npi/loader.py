@@ -5,7 +5,7 @@ from zipfile import ZipFile
 import mysql.connector as connector
 from mysql.connector.constants import ClientFlag
 
-from importer.sql.npi import (CREATE_NPI_TABLE, INSERT_QUERY, UPDATE_QUERY,
+from importer.sql.npi import (INSERT_QUERY, UPDATE_QUERY,
                               INSERT_LARGE_QUERY, GET_FILES, GET_MONTHLY_FILES, MARK_AS_IMPORTED)
 from importer.sql.checks import DISABLE, ENABLE
 from importer.downloaders import NpiDownloader
@@ -20,9 +20,8 @@ def convert_date(x):
         try:
             return datetime.datetime.strptime(str(x), '%m/%d/%Y').strftime('%Y-%m-%d')
         except Exception as e:
-            return None
-    else:
-        return None
+            pass
+    return np.nan
 
 
 def five_digit_zip(x):
@@ -31,8 +30,7 @@ def five_digit_zip(x):
             return x[:5]
         except Exception as e:
             pass
-    # return np.nan
-    return None
+    return np.nan
 
 
 class NpiLoader(object):
@@ -216,7 +214,7 @@ class NpiLoader(object):
         
         return f"{path}/{csv_file}"
 
-    def preprocess(self, infile, outfile=None):
+    def preprocess(self, infile, outfile=None, entity_types=1):
         """
         Given a CSV file to process (infile) and a file to write out (outfile), perform preprocessing on file.  This
         includes removing extra rows and renaming columns.  Returns the full path of the new CSV.
@@ -236,6 +234,7 @@ class NpiLoader(object):
 
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
+        logger.debug(len(df))
 
         # Reformat dates to be MySQL friendly
         df['Provider Enumeration Date'] = df['Provider Enumeration Date'].apply(convert_date)
@@ -253,7 +252,7 @@ class NpiLoader(object):
 
         # Drop/clean columns.
         # df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
-        df.columns = [ self.__clean_field(col) for col in df.columns]
+        df.columns = [self.__clean_field(col) for col in df.columns]
         
         # regex=re.compile("^other provider", re.IGNORECASE)
         # df.filter(regex='Test').columns
@@ -352,7 +351,7 @@ class NpiLoader(object):
                 # This NPI has been deactivated.  Don't blindly overwrite the old row, because we want
                 # to preserve the NPI's data.  Do an UPDATE instead.
                 if update_row_count >= batch_size - 1:
-                    print("Submitting UPDATE batch {}".format(update_batch_count))
+                    print("UPDATE batch {}".format(update_batch_count))
                     total_rows_modified += self.__submit_batch(update_q, update_batch)
                     update_batch = []
                     update_row_count = 0
@@ -373,7 +372,7 @@ class NpiLoader(object):
 
             else:
                 if insert_row_count >= batch_size - 1:
-                    print("Submitting INSERT batch {}".format(insert_batch_count))
+                    print("INSERT batch {}".format(insert_batch_count))
                     total_rows_modified += self.__submit_batch(insert_q, insert_batch)
                     insert_batch = []
                     insert_row_count = 0
@@ -395,12 +394,12 @@ class NpiLoader(object):
 
         # Submit remaining INSERT queries
         if insert_batch:
-            print("Submitting INSERT batch {}".format(insert_batch_count))
+            print("INSERT batch {}".format(insert_batch_count))
             total_rows_modified += self.__submit_batch(insert_q, insert_batch)
 
         # Submit remaining UPDATE queries
         if update_batch:
-            print("Submitting UPDATE batch {}".format(update_batch_count))
+            print("UPDATE batch {}".format(update_batch_count))
             print(len(update_batch))
             total_rows_modified += self.__submit_batch(update_q, update_batch)
 

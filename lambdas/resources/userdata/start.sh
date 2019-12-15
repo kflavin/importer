@@ -48,7 +48,7 @@ function cleanup {{
       aws --region ${{aws_region:-us-east-1}} sns publish \
             --topic-arn {sns_topic_arn} \
             --subject "{importer_type} {environment} completed.  $message" \
-            --message "{importer_type} {environment} completed in ${{total_time}} seconds.  $cw_url $message" || true
+            --message "{importer_type} {environment} completed in ${{total_time}} seconds.  $cw_url - $message" || true
     fi
   fi
 

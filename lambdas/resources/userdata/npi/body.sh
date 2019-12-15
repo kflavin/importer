@@ -33,4 +33,4 @@ updated=$(mysql -D $loader_db_schema \
       -B -s -N)
 
 # message gets picked up by finish.sh
-export message="$created created. $updated updated."
+export message="$created created, $updated updated."
