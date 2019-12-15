@@ -68,11 +68,11 @@ class EC2Helper(object):
             BlockDeviceMappings=[{
                 "DeviceName": "/dev/xvda",
                 "Ebs" : { 
-                    "VolumeSize" : 20,
+                    "VolumeSize" : 40,
                     "DeleteOnTermination": True 
                     }
                 }],
-            IamInstanceProfile={ 'Name': instance_profile })
+            IamInstanceProfile={'Name': instance_profile})
 
         return instance_id
 
