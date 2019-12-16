@@ -85,8 +85,8 @@ def npi_preprocess(infile, outfile):
     Preprocess NPI csv file to do things like remove extraneous columns
     """
     npi_loader = NpiLoader()
-    npi_loader.preprocess(infile, outfile)
-    print(outfile)
+    csv_file = npi_loader.preprocess(infile, outfile)
+    print(csv_file)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
