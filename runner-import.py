@@ -71,6 +71,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, time):
 
     # Add a formatter with time.
     formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%Y-%m-%d %H:%M:%S")
+    formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%Y-%m-%d %H:%M:%S")
     sh.setFormatter(formatter)
 
     sh.setLevel(handler_level)

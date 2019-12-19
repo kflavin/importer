@@ -123,12 +123,12 @@ class NpiLoader(object):
             except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
                 # print(self.cursor.statement)
-                print("Rolling back...")
+                logger.info("Rolling back...")
                 self.cnx.rollback()
                 count += 1
-                print(f"Failed on try {count}/{tries}")
+                logger.info(f"Failed on try {count}/{tries}")
                 if count >= tries:
-                    print("Could not submit batch, aborting.")
+                    logger.info("Could not submit batch, aborting.")
                     raise
 
         return self.cursor.rowcount
@@ -159,11 +159,11 @@ class NpiLoader(object):
         logger.debug(q.replace('\n', ' ').replace('\r', ''))
         self.cursor.execute(q)
 
-        print(f"Fetching {self.cursor.rowcount} files")
+        logger.info(f"Fetching {self.cursor.rowcount} files")
         for row in self.cursor:
             file_name = row.get('url').split("/")[-1]
 
-            print(f"{url_prefix}{file_name} to {output_dir}")
+            logger.info(f"{url_prefix}{file_name} to {output_dir}")
             dlr = NpiDownloader.get_downloader(url_prefix)
             downloaded_file = dlr.download(file_name, output_dir)
 
@@ -171,7 +171,7 @@ class NpiLoader(object):
                 self.files[downloaded_file] = row['id']
 
         files_reversed = OrderedDict(reversed(list(self.files.items())))   # we receive in desc order, so reverse for processing
-        print(f"Files to process: {files_reversed}")
+        logger.info(f"Files to process: {files_reversed}")
         return files_reversed
 
     def unzip(self, infile, path):
@@ -199,7 +199,7 @@ class NpiLoader(object):
                 extractions.append(name)
 
         if len(extractions) != 1:
-            print("Did not find exactly one file in {infile}.  Exiting.")
+            logger.info("Did not find exactly one file in {infile}.  Exiting.")
             sys.exit(1)
 
         csv_file = extractions[0]
@@ -207,15 +207,15 @@ class NpiLoader(object):
         try:
             zip.extract(csv_file, path)
         except NotImplementedError as e:
-            print("Python does not support Type 9 compression, trying system unzip...")
+            logger.warning("Python does not support Type 9 compression, trying system unzip...")
             
             if not subprocess.run(["which", "unzip"]).returncode:
                 out = subprocess.run(["unzip", infile, csv_file, "-d", path], stdout=subprocess.PIPE)
                 if out.returncode:
-                    print("Can't unzip this file.  Local unzip failed.")
+                    logger.error("Can't unzip this file.  Local unzip failed.")
                     raise
             else:
-                print("Can't unzip this file.  Type 9 compression not supported, and no local unzip.")
+                logger.error("Can't unzip this file.  Type 9 compression not supported, and no local unzip.")
                 raise
         
         return f"{path}/{csv_file}"
@@ -250,12 +250,12 @@ class NpiLoader(object):
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
 
         # Only keep the first 5 digits of US zip codes
-        logger.debug("Truncate zip codes")
+        logger.info("Truncate zip codes")
         df['Provider Business Practice Location Address Postal Code'] = \
             df.apply(five_digit_zip, args=('Provider Business Practice Location Address Country Code (If outside U.S.)',
                                            'Provider Business Practice Location Address Postal Code',
                                            ), axis=1)
-        logger.debug("Zip codes truncated")
+        logger.info("Zip codes truncated")
 
         # df = pd.read_csv(infile)
         # df = pd.read_csv(infile, low_memory=False)
@@ -307,7 +307,7 @@ class NpiLoader(object):
         """
         Load large files (such as the monthly zip).  Return the number of rows inserted.
         """
-        print("NPI large loader importing from {}".format(infile))
+        logger.info("NPI large loader importing from {}".format(infile))
         q = INSERT_LARGE_QUERY.format(infile=infile, table_name=table_name)
 
         logger.debug(repr(q))
@@ -326,7 +326,7 @@ class NpiLoader(object):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        print("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"\
+        logger.info("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"\
                 .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
@@ -361,7 +361,7 @@ class NpiLoader(object):
                 # This NPI has been deactivated.  Don't blindly overwrite the old row, because we want
                 # to preserve the NPI's data.  Do an UPDATE instead.
                 if update_row_count >= batch_size - 1:
-                    print("UPDATE batch {}".format(update_batch_count))
+                    logger.info("UPDATE batch {}".format(update_batch_count))
                     total_rows_modified += self.__submit_batch(update_q, update_batch)
                     update_batch = []
                     update_row_count = 0
@@ -382,7 +382,7 @@ class NpiLoader(object):
 
             else:
                 if insert_row_count >= batch_size - 1:
-                    print("INSERT batch {}".format(insert_batch_count))
+                    logger.info("INSERT batch {}".format(insert_batch_count))
                     total_rows_modified += self.__submit_batch(insert_q, insert_batch)
                     insert_batch = []
                     insert_row_count = 0
@@ -395,7 +395,7 @@ class NpiLoader(object):
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                print(f"Sleeping for {throttle_time} seconds... row: {i}")
+                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:
@@ -404,13 +404,13 @@ class NpiLoader(object):
 
         # Submit remaining INSERT queries
         if insert_batch:
-            print("INSERT batch {}".format(insert_batch_count))
+            logger.info("INSERT batch {}".format(insert_batch_count))
             total_rows_modified += self.__submit_batch(insert_q, insert_batch)
 
         # Submit remaining UPDATE queries
         if update_batch:
-            print("UPDATE batch {}".format(update_batch_count))
-            print(len(update_batch))
+            logger.info("UPDATE batch {}".format(update_batch_count))
+            logger.info(len(update_batch))
             total_rows_modified += self.__submit_batch(update_q, update_batch)
 
         return total_rows_modified
