@@ -24,10 +24,16 @@ def convert_date(x):
     return np.nan
 
 
-def five_digit_zip(x):
-    if pd.notnull(x):
+def five_digit_zip(row, country_code, postal_code):
+    """
+    Truncate the zip code to 5 digits, but only if it's a US country code
+    """
+    if pd.notnull(row[country_code]):
         try:
-            return x[:5]
+            if str(row[country_code]).strip() != "US":
+                return row[postal_code]
+
+            return row[postal_code][:5]
         except Exception as e:
             pass
     return np.nan
@@ -243,10 +249,14 @@ class NpiLoader(object):
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
         df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
 
-        # Only keep the first 5 digits of the zip code
+        # Only keep the first 5 digits of US zip codes
+        logger.debug("Truncate zip codes")
         df['Provider Business Practice Location Address Postal Code'] = \
-            df['Provider Business Practice Location Address Postal Code'].apply(five_digit_zip)
-        
+            df.apply(five_digit_zip, args=('Provider Business Practice Location Address Country Code (If outside U.S.)',
+                                           'Provider Business Practice Location Address Postal Code',
+                                           ), axis=1)
+        logger.debug("Zip codes truncated")
+
         # df = pd.read_csv(infile)
         # df = pd.read_csv(infile, low_memory=False)
 
