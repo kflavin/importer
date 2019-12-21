@@ -47,7 +47,7 @@ class NpiLoader(object):
     Large file loader: Loads data using LOAD DATA LOCAL INFILE query.
     """
 
-    def __init__(self, warnings=True):
+    def __init__(self, warnings=True, print_insert_every=100, print_update_every=10):
         """
         Blank constructor, b/c preprocess does not need a db connection.
         """
@@ -56,6 +56,10 @@ class NpiLoader(object):
         self.debug = ""
         self.warnings = warnings
         self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
+
+        # Controls amount of print output.
+        self.print_insert_every = print_insert_every
+        self.print_update_every = print_update_every
 
     def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
         self.debug = debug
@@ -131,7 +135,7 @@ class NpiLoader(object):
                     logger.error("Could not submit batch, aborting.")
                     raise
 
-        # # This value does not seem to be accurate.  It's returning the value x2.
+        # # rowcount does not seem to be accurate.  It's returning the value x2.  Buffered=True may resolve.
         # return self.cursor.rowcount
         return len(data)
 
@@ -161,11 +165,11 @@ class NpiLoader(object):
         logger.debug(q.replace('\n', ' ').replace('\r', ''))
         self.cursor.execute(q)
 
-        logger.info(f"Fetching {self.cursor.rowcount} files")
+        logger.info(f"Fetching {self.cursor.rowcount} file(s)")
         for row in self.cursor:
             file_name = row.get('url').split("/")[-1]
 
-            logger.info(f"{url_prefix}{file_name} to {output_dir}")
+            logger.debug(f"Fetching {url_prefix}{file_name} to {output_dir}")
             dlr = NpiDownloader.get_downloader(url_prefix)
             downloaded_file = dlr.download(file_name, output_dir)
 
@@ -173,7 +177,6 @@ class NpiLoader(object):
                 self.files[downloaded_file] = row['id']
 
         files_reversed = OrderedDict(reversed(list(self.files.items())))   # we receive in desc order, so reverse for processing
-        logger.info(f"Files to process: {files_reversed}")
         return files_reversed
 
     def unzip(self, infile, path):
@@ -305,6 +308,7 @@ class NpiLoader(object):
             npi="%(npi)s")
         return query
 
+    # Deprecated
     def load_large_file(self, table_name, infile):
         """
         Load large files (such as the monthly zip).  Return the number of rows inserted.
@@ -328,14 +332,15 @@ class NpiLoader(object):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        logger.info("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"
-                    .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
         update_q = self.build_update_query(table_name)
         # columnNames = reader.fieldnames
 
-        # Maintain two batches.  One for INSERT queries, and one for UPDATE queries.
+        # Maintain two batches.  One for INSERT queries, and one for UPDATE queries.  The INSERT query does an
+        # INSERT ON DUPLICATE UPDATE, and will zero out deactivated NPI's, because the NPI source data removes
+        # this information when a deactivation date has been set.  In these cases, we use an UPDATE instead to
+        # preserve the data.
         insert_row_count = 0
         insert_batch = []
         insert_batch_count = 1
@@ -344,7 +349,6 @@ class NpiLoader(object):
         update_batch = []
         update_batch_count = 1
 
-        # total_rows_modified = 0
         total_rows_deactivated = 0
         total_rows_inserted = 0
         throttle_count = 0
@@ -364,17 +368,14 @@ class NpiLoader(object):
                not initialize:
                 # This NPI has been deactivated.  Don't blindly overwrite the old row, because we want
                 # to preserve the NPI's data.  Do an UPDATE instead.
-                if update_row_count >= batch_size - 1:
+                if update_row_count >= batch_size:
                     rows_updated = self.__submit_batch(update_q, update_batch)
-                    # total_rows_modified += rows_updated
                     total_rows_deactivated += rows_updated
                     update_batch = []
                     update_row_count = 0
-                    if update_batch_count % 1 == 0:
+                    if update_batch_count % self.print_update_every == 0:
                         logger.info("UPDATE batch {}".format(update_batch_count))
                     update_batch_count += 1
-                else:
-                    update_row_count += 1
 
                 # data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
                 # data = OrderedDict((('npi_deactivation_date', row.get('npi_deactivation_date')), ('npi', row.get('npi'))))
@@ -386,26 +387,25 @@ class NpiLoader(object):
                     ('npi', row.get('npi'))
                 ))
                 update_batch.append(data)
+                update_row_count += 1
 
             else:
-                if insert_row_count >= batch_size - 1:
+                if insert_row_count >= batch_size:
                     rows_inserted = self.__submit_batch(insert_q, insert_batch)
-                    # total_rows_modified += rows_inserted
                     total_rows_inserted += rows_inserted
                     insert_batch = []
                     insert_row_count = 0
-                    if insert_batch_count % 1 == 0:
+                    if insert_batch_count % self.print_insert_every == 0:
                         logger.info("INSERT batch {}, rows inserted {}".format(insert_batch_count, rows_inserted))
                     insert_batch_count += 1
-                else:
-                    insert_row_count += 1
 
                 data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
                 insert_batch.append(data)
+                insert_row_count += 1
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
+                # logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:
@@ -414,22 +414,17 @@ class NpiLoader(object):
 
         # Submit remaining INSERT queries
         if insert_batch:
-            # logger.info("INSERT batch {}".format(insert_batch_count))
             rows_inserted = self.__submit_batch(insert_q, insert_batch)
-            # total_rows_modified += rows_inserted
             total_rows_inserted += rows_inserted
 
         # Submit remaining UPDATE queries
         if update_batch:
-            # logger.info("UPDATE batch {}".format(update_batch_count))
-            # logger.info(len(update_batch))
             rows_updated = self.__submit_batch(update_q, update_batch)
-            # total_rows_modified += rows_updated
             total_rows_deactivated += rows_updated
 
-        logger.info("INSERTED {} batches of {}, for a total of {} records.".format(insert_batch_count,
+        logger.debug("INSERTED {} batches of {}, for a total of {} records.".format(insert_batch_count,
                                                                         batch_size, total_rows_inserted))
-        logger.info("UPDATED {} batches of {}, for a total of {} records".format(update_batch_count,
+        logger.debug("UPDATED {} batches of {}, for a total of {} records".format(update_batch_count,
                                                                       batch_size, total_rows_deactivated))
 
         return total_rows_inserted, total_rows_deactivated
