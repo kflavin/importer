@@ -31,9 +31,9 @@ if is_aws:
 
 
 @click.group()
-@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
-@click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after this many inserts.")
-@click.option('--throttle-time', type=click.INT, default=3, help="Time (s) to sleep after --throttle-size.")
+@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, default 1000.")
+@click.option('--throttle-size', type=click.INT, default=10000, help="Sleep after inserting this many record.  Default 10000.")
+@click.option('--throttle-time', type=click.INT, default=1, help="Time (s) to sleep after --throttle-size.  Default 1s.")
 @click.option('--debug/--no-debug', default=False)
 @click.option('--warnings/--no-warnings', default=True)
 @click.option('--time/--no-time', default=False, help="Print times.")
@@ -59,7 +59,7 @@ def start(ctx, batch_size, throttle_size, throttle_time, debug, warnings, time):
     
     sh = logging.StreamHandler(sys.stdout)
 
-    # Add a formatter with time.
+    # Add a formatter with time.  We can skip the timestamp if logs are going to Cloudwatch.
     if time:
         formatter = logging.Formatter("%(asctime)s:%(levelname)s:  %(message)s", "%Y-%m-%d %H:%M:%S")
     else:

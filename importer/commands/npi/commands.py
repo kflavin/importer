@@ -21,7 +21,7 @@ def fetch(url_prefix, table_name, period, output_dir, limit, environment):
     """
     Fetch files from import log table
     """
-    print(f"Fetch '{period}' files from {table_name}")
+    logger.info(f"Fetch '{period}' files from {table_name}")
     npi_loader = NpiLoader()
     npi_loader.connect(user=os.environ['loader_db_user'],
                         host=os.environ['loader_db_host'],
@@ -33,17 +33,19 @@ def fetch(url_prefix, table_name, period, output_dir, limit, environment):
 
 @click.command()
 @click.option('--infile', '-f', required=True, type=click.STRING, help="CSV file with NPI data")
-@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
 @click.option('--import-table-name', '-i', default="npi_import_log", type=click.STRING, help="NPI import table")
-# @click.option('--step-load', '-s', nargs=2, type=click.INT, help="Use the step loader.  Specify a start and end line.")
 @click.option('--table-name', '-t', required=True, type=click.STRING, help="Table name to load.")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
 @click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
 @click.option('--initialize', default=False, is_flag=True, help="Only use for first table load to get all deactivated NPI's!  This will OVERWRITE existing data!")
-def load(infile, batch_size, import_table_name, table_name, period, large_file, initialize):
+@click.pass_context
+def load(ctx, infile, batch_size, import_table_name, table_name, period, large_file, initialize):
     """
     NPI importer
     """
+    batch_size = ctx.obj['batch_size']
+    throttle_size = ctx.obj['throttle_size']
+    throttle_time = ctx.obj['throttle_time']
 
     args = {
         'user': os.environ.get('loader_db_user'),
@@ -55,15 +57,15 @@ def load(infile, batch_size, import_table_name, table_name, period, large_file, 
     npi_loader = NpiLoader()
 
     if large_file:
-        print(f"Loading {period} (large) file into database.  large_file: {large_file}")
+        logger.info(f"Loading {period} (large) file into database.  large_file: {large_file}")
         npi_loader.connect(**args, clientFlags=True)
         npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
         npi_loader.load_large_file(table_name, infile)
         npi_loader.enable_checks()
     else:
-        print(f"Loading {period} (small) file into database.  large_file: {large_file}")
+        logger.info(f"Loading {period} (small) file into database.  large_file: {large_file}")
         npi_loader.connect(**args)
-        npi_loader.load_file(table_name, infile, batch_size, 10000, 1, initialize)
+        npi_loader.load_file(table_name, infile, batch_size, throttle_size, throttle_time, initialize)
 
     try:
         npi_loader.mark_imported(id, import_table_name)
@@ -75,7 +77,7 @@ def load(infile, batch_size, import_table_name, table_name, period, large_file, 
 
     logger.info(f"Data loaded to table: {table_name}")
 
-    print(f"Data loaded to table: {table_name}")
+    logger.info(f"Data loaded to table: {table_name}")
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -86,7 +88,7 @@ def npi_preprocess(infile, outfile):
     """
     npi_loader = NpiLoader()
     csv_file = npi_loader.preprocess(infile, outfile)
-    print(csv_file)
+    logger.info(csv_file)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
@@ -94,7 +96,7 @@ def npi_preprocess(infile, outfile):
 def npi_unzip(infile, unzip_path):
     npi_loader = NpiLoader()
     csv_file = npi_loader.unzip(infile, unzip_path)
-    print(csv_file)
+    logger.info(csv_file)
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
@@ -117,18 +119,17 @@ def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_
     used to initialize the table, or for testing.
     """
     npi_loader = NpiLoader()
-    print(f"Unzipping {infile}")
+    logger.info(f"Unzipping {infile}")
     csv_file = npi_loader.unzip(infile, unzip_path)
     if not outfile:
         outfile = infile[:infile.rindex(".")] + ".clean.csv"
-    print(f"Preprocessing {csv_file}")
+    logger.info(f"Preprocessing {csv_file}")
     npi_loader.preprocess(csv_file, outfile)
-    print(f"Loading cleaned file {outfile}")
+    logger.info(f"Loading cleaned file {outfile}")
     ctx.invoke(load, infile=outfile, batch_size=batch_size, table_name=table_name, period=period, large_file=large_file, initialize=initialize)
 
 @click.command()
 @click.option('--url-prefix', '-u', required=True, type=click.STRING, help="URL directory that contains weekly or monthly files to fetch")
-@click.option('--batch-size', '-b', type=click.INT, default=1000, help="Batch size, only applies to weekly imports.")
 @click.option('--table-name', '-t', default="npi", type=click.STRING, help="NPI table")
 @click.option('--import-table-name', '-i', default="npi_import_log", type=click.STRING, help="NPI import table")
 @click.option('--period', '-p', default="weekly", type=click.STRING, help="[weekly| monthly] default: weekly")
@@ -137,12 +138,17 @@ def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_
 @click.option('--large-file', default=False, is_flag=True, help="Use LOAD DATA INFILE instead of INSERT")
 @click.option('--environment', '-e', default="dev", type=click.STRING, help="User specified environment, ie: dev|rc|stage|prod, etc")
 @click.option('--initialize', default=False, is_flag=True, help="Only use for first table load to get all deactivated NPI's!  This will OVERWRITE existing data!")
-def full(url_prefix, batch_size, table_name, import_table_name, period, workspace, limit, large_file, environment, initialize):
+@click.pass_context
+def full(ctx, url_prefix, table_name, import_table_name, period, workspace, limit, large_file, environment, initialize):
     """
     Perform a full load.  This will fetch, unzip, preprocess, and load the file from S3 into the database.  On completion, mark
     the file as imported in the log table.
     """
     logger.info(f"Start: {period} file")
+    batch_size = ctx.obj['batch_size']
+    throttle_size = ctx.obj['throttle_size']
+    throttle_time = ctx.obj['throttle_time']
+    rows = (0,0)
 
     workspace = workspace.rstrip("/")
 
@@ -192,13 +198,13 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
         
         try:
             if large_file:
-                print(f"Loading {period} file into database.  large_file: {large_file}")
+                logger.info(f"Loading {period} file into database.  large_file: {large_file}")
                 npi_loader.disable_checks()     # disable foreign key, unique checks, etc, for better performance
                 npi_loader.load_large_file(table_name, cleaned_file)
                 npi_loader.enable_checks()
             else:
-                print(f"Loading {period} file into database.  large_file: {large_file}")
-                npi_loader.load_file(table_name, cleaned_file, batch_size, 10000, 1, initialize)
+                logger.info(f"Loading {period} file into database.  large_file: {large_file}")
+                rows = npi_loader.load_file(table_name, cleaned_file, batch_size, throttle_size, throttle_time, initialize)
         except Exception as e:
             # logger.info(f"{e}")
             logger.info(f"Error loading data to DB")
@@ -213,6 +219,8 @@ def full(url_prefix, batch_size, table_name, import_table_name, period, workspac
 
         # npi_loader.clean()
     npi_loader.close()
+
+    logger.info("Rows updated: {}, Rows deactivated: {}".format(rows[0], rows[1]))
 
     logger.info(f"Data loaded to table: {table_name}")
 

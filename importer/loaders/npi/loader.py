@@ -123,15 +123,17 @@ class NpiLoader(object):
             except connector.errors.InternalError as e:
                 # print(self.cursor._last_executed)
                 # print(self.cursor.statement)
-                logger.info("Rolling back...")
+                logger.warning("Rolling back...")
                 self.cnx.rollback()
                 count += 1
-                logger.info(f"Failed on try {count}/{tries}")
+                logger.warning(f"Failed on try {count}/{tries}")
                 if count >= tries:
-                    logger.info("Could not submit batch, aborting.")
+                    logger.error("Could not submit batch, aborting.")
                     raise
 
-        return self.cursor.rowcount
+        # # This value does not seem to be accurate.  It's returning the value x2.
+        # return self.cursor.rowcount
+        return len(data)
 
     def fetch(self, url_prefix, table_name, period, environment, output_dir, limit):
         """
@@ -326,8 +328,8 @@ class NpiLoader(object):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        logger.info("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"\
-                .format(infile, batch_size, throttle_size, throttle_time))
+        logger.info("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"
+                    .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
         insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
         update_q = self.build_update_query(table_name)
@@ -342,7 +344,9 @@ class NpiLoader(object):
         update_batch = []
         update_batch_count = 1
 
-        total_rows_modified = 0
+        # total_rows_modified = 0
+        total_rows_deactivated = 0
+        total_rows_inserted = 0
         throttle_count = 0
 
         i = 0
@@ -361,10 +365,13 @@ class NpiLoader(object):
                 # This NPI has been deactivated.  Don't blindly overwrite the old row, because we want
                 # to preserve the NPI's data.  Do an UPDATE instead.
                 if update_row_count >= batch_size - 1:
-                    logger.info("UPDATE batch {}".format(update_batch_count))
-                    total_rows_modified += self.__submit_batch(update_q, update_batch)
+                    rows_updated = self.__submit_batch(update_q, update_batch)
+                    # total_rows_modified += rows_updated
+                    total_rows_deactivated += rows_updated
                     update_batch = []
                     update_row_count = 0
+                    if update_batch_count % 1 == 0:
+                        logger.info("UPDATE batch {}".format(update_batch_count))
                     update_batch_count += 1
                 else:
                     update_row_count += 1
@@ -382,10 +389,13 @@ class NpiLoader(object):
 
             else:
                 if insert_row_count >= batch_size - 1:
-                    logger.info("INSERT batch {}".format(insert_batch_count))
-                    total_rows_modified += self.__submit_batch(insert_q, insert_batch)
+                    rows_inserted = self.__submit_batch(insert_q, insert_batch)
+                    # total_rows_modified += rows_inserted
+                    total_rows_inserted += rows_inserted
                     insert_batch = []
                     insert_row_count = 0
+                    if insert_batch_count % 1 == 0:
+                        logger.info("INSERT batch {}, rows inserted {}".format(insert_batch_count, rows_inserted))
                     insert_batch_count += 1
                 else:
                     insert_row_count += 1
@@ -404,16 +414,25 @@ class NpiLoader(object):
 
         # Submit remaining INSERT queries
         if insert_batch:
-            logger.info("INSERT batch {}".format(insert_batch_count))
-            total_rows_modified += self.__submit_batch(insert_q, insert_batch)
+            # logger.info("INSERT batch {}".format(insert_batch_count))
+            rows_inserted = self.__submit_batch(insert_q, insert_batch)
+            # total_rows_modified += rows_inserted
+            total_rows_inserted += rows_inserted
 
         # Submit remaining UPDATE queries
         if update_batch:
-            logger.info("UPDATE batch {}".format(update_batch_count))
-            logger.info(len(update_batch))
-            total_rows_modified += self.__submit_batch(update_q, update_batch)
+            # logger.info("UPDATE batch {}".format(update_batch_count))
+            # logger.info(len(update_batch))
+            rows_updated = self.__submit_batch(update_q, update_batch)
+            # total_rows_modified += rows_updated
+            total_rows_deactivated += rows_updated
 
-        return total_rows_modified
+        logger.info("INSERTED {} batches of {}, for a total of {} records.".format(insert_batch_count,
+                                                                        batch_size, total_rows_inserted))
+        logger.info("UPDATED {} batches of {}, for a total of {} records".format(update_batch_count,
+                                                                      batch_size, total_rows_deactivated))
+
+        return total_rows_inserted, total_rows_deactivated
 
     def disable_checks(self):
         """
