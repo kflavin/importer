@@ -1,0 +1,6 @@
+---
+handler: lambdas/db_backup/backup.handler
+environment:
+  instance_type: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.instance_type}
+  backup_table_name: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.backup_table_name}
+  use_replica: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.use_replica}

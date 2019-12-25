@@ -1,0 +1,7 @@
+---
+handler: lambdas/npi/downloader.handler
+environment:
+  npi_log_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_log_table_name}
+timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.downloader_timeout}
+events:
+  - schedule: cron(0 17,23 ? * * *)
