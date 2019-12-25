@@ -77,7 +77,7 @@ Properties:
           - Effect: Allow
             Action:
               - "sns:Publish"
-            Resource: ${self:custom.snsTopicArn}
+            Resource: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_sns_topic_arn}
           - Effect: Allow
             Action: "s3:ListBucket"
             Resource: "arn:aws:s3:::rxv-product-data"
