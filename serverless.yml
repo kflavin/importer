@@ -39,12 +39,15 @@ custom:
       'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
   exportGitVariables: false
   schedule:
-    edge:
-      enabled: false
-      weekly:
-        rate: rate(365 days)
-      monthly:
-        rate: rate(365 days)
+    products: ${file(./serverless/products/schedule.yml)}
+    npi: ${file(./serverless/npi/schedule.yml)}
+    mysql_backup: ${file(./serverless/mysql_backup/schedule.yml)}
+#    edge:
+#      enabled: false
+#      weekly:
+#        rate: rate(365 days)
+#      monthly:
+#        rate: rate(365 days)
 #    prod:
 #      enabled: false
 #      weekly:

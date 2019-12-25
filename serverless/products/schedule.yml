@@ -1,0 +1,13 @@
+---
+edge:
+  enabled: false
+  rate: rate(365 days)
+rc:
+  enabled: false
+  rate: rate(365 days)
+stage:
+  enabled: false
+  rate: rate(365 days)
+prod:
+  enabled: false
+  rate: rate(365 days)

@@ -1,0 +1,39 @@
+---
+loader:
+  edge:
+    enabled: false
+    weekly:
+      rate: rate(365 days)
+    monthly:
+      rate: rate(365 days)
+  rc:
+    enabled: false
+    weekly:
+      rate: rate(365 days)
+    monthly:
+      rate: rate(365 days)
+  stage:
+    enabled: false
+    weekly:
+      rate: rate(365 days)
+    monthly:
+      rate: rate(365 days)
+  prod:
+    enabled: false
+    weekly:
+      rate: rate(365 days)
+    monthly:
+      rate: rate(365 days)
+downloader:
+  edge:
+    enabled: false
+    rate: cron(0 17,23 ? * * *)
+  rc:
+    enabled: false
+    rate: cron(0 17,23 ? * * *)
+  stage:
+    enabled: false
+    rate: cron(0 17,23 ? * * *)
+  prod:
+    enabled: false
+    rate: cron(0 17,23 ? * * *)
