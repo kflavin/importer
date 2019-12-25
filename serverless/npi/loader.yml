@@ -6,16 +6,16 @@ environment:
   npi_log_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_log_table_name}
 events:
   - schedule:
-      rate: ${self:custom.schedule.${self.provider.environment}.weekly.rate}
-      enabled: ${self:custom.schedule.${self.provider.environment}.enabled}
+      rate: ${self:custom.schedule.${self:custom.environment}.weekly.rate}
+      enabled: ${self:custom.schedule.${self:custom.environment}.enabled}
       input:
         debug: false
         period: weekly
         instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
         timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
   - schedule:
-      rate: ${self:custom.schedule.${self.provider.environment}.monthly.rate}
-      enabled: ${self:custom.schedule.${self.provider.environment}.enabled}
+      rate: ${self:custom.schedule.${self:custom.environment}.monthly.rate}
+      enabled: ${self:custom.schedule.${self:custom.environment}.enabled}
       input:
         debug: false
         period: monthly
