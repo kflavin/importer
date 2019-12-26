@@ -14,12 +14,13 @@ def handler(event, context):
     print(event)
     period = event.get('period')
     debug_flag = ""
+    debug = event.get('debug', False)
     init_flag = ""
 
     if not period:
         raise Exception("Please pass a period ('monthly' or 'weekly')")
 
-    if event.get('debug', False) == "True":
+    if debug:
         debug_flag = "--debug"
 
     if period == "monthly":
