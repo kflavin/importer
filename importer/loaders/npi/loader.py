@@ -110,7 +110,7 @@ class NpiLoader(object):
             return value
 
     def __submit_batch(self, query, data):
-        logger.debug(query)
+        logger.debug(f"Submitting batch of: {len(data)}")
 
         tries = 3
         count = 0
@@ -245,7 +245,7 @@ class NpiLoader(object):
 
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
-        logger.debug(len(df))
+        logger.debug(f"Total records: {len(df)}")
 
         # Reformat dates to be MySQL friendly
         df['Provider Enumeration Date'] = df['Provider Enumeration Date'].apply(convert_date)

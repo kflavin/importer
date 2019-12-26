@@ -15,15 +15,15 @@ loader:
   stage:
     enabled: false
     weekly:
-      rate: rate(365 days)
+      rate: cron(0 2 ? * * *)
     monthly:
-      rate: rate(365 days)
+      rate: cron(0 3 * * ? *)
   prod:
     enabled: false
     weekly:
-      rate: rate(365 days)
+      rate: cron(0 7 6-27 * ? *)
     monthly:
-      rate: rate(365 days)
+      rate: cron(0 9 6-27 * ? *)
 downloader:
   edge:
     enabled: false

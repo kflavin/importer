@@ -11,13 +11,13 @@ events:
       input:
         debug: false
         period: weekly
-        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
-        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
+#        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
+#        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.monthly.rate}
       enabled: ${self:custom.schedule.npi.loader.${self:custom.environment}.enabled}
       input:
         debug: false
         period: monthly
-        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.monthly_instance_type}
-        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_monthly}
+#        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.monthly_instance_type}
+#        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_monthly}
