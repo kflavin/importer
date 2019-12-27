@@ -4,6 +4,10 @@ environment:
 #    aws_instance_type: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_image_id}
   npi_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_table_name}
   npi_log_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_log_table_name}
+  weekly_instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
+  monthly_instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.monthly_instance_type}
+  timeout_weekly: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
+  timeout_monthly: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_monthly}
 events:
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.weekly.rate}
@@ -11,13 +15,9 @@ events:
       input:
         debug: false
         period: weekly
-#        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
-#        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.monthly.rate}
       enabled: ${self:custom.schedule.npi.loader.${self:custom.environment}.enabled}
       input:
         debug: false
         period: monthly
-#        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.monthly_instance_type}
-#        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_monthly}

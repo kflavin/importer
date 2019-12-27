@@ -1,8 +1,8 @@
 import os
 from lambdas.helpers.db import DBHelper
 from lambdas.helpers.ec2 import EC2Helper
-from lambdas.periods import WEEKLY as period
-from importer import weekly_prefix as bucket_prefix
+from lambdas.periods import WEEKLY, MONTHLY
+from importer import weekly_prefix, monthly_prefix
 
 from lambdas.helpers.file_loader import loader_user_data
 user_data_head_tmpl = loader_user_data("start")
@@ -14,27 +14,27 @@ def handler(event, context):
     print(event)
     period = event.get('period')
     debug_flag = ""
-    debug = event.get('debug', False)
     init_flag = ""
 
     if not period:
         raise Exception("Please pass a period ('monthly' or 'weekly')")
 
-    if debug:
+    if event.get('debug', False):
         debug_flag = "--debug"
 
-    if period == "monthly":
+    if period == MONTHLY:
         instance_type = os.environ.get('monthly_instance_type')
         timeout = os.environ.get('timeout_monthly', 150)
+        bucket_prefix = monthly_prefix
 
         # Run first time to initialize database.  This will zero out deactivated NPI data.
-        initialize = event.get('initialize', False)
-        init_flag = "--initialize" if initialize else ""
+        init_flag = "--initialize" if event.get('initialize', False) else ""
     else:
         instance_type = os.environ.get('weekly_instance_type')
         timeout = os.environ.get('timeout_weekly', 20)
+        bucket_prefix = weekly_prefix
 
-    print(f"Starting {period} import using instance_type={instance_type}, initialize: {initialize}, debug: {debug}...")
+    print(f"Starting {period} import")
 
     environment = os.environ.get('environment', 'dev')
     region = os.environ.get('aws_region')
@@ -53,7 +53,8 @@ def handler(event, context):
     ec2 = EC2Helper(region, period)
     rds = DBHelper(region)
 
-    print(f"bucket: {bucket_name} prefix: {bucket_prefix} table: {table_name} period: {period}")
+    print(f"instance_type: {instance_type}, initialize: {init_flag}, debug: {debug_flag}, bucket: {bucket_name}, "
+          f"prefix: {bucket_prefix}, table: {table_name}")
 
     if not rds.files_ready(log_table_name, period, environment, 1):
         print(f"No files in {bucket_name}/{bucket_prefix} are ready for import.")
