@@ -15,9 +15,13 @@ events:
       input:
         debug: false
         period: weekly
+      name: npi-${self:custom.environment}-loader-monthly
+      description: Triggers NPI load of weekly file
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.monthly.rate}
       enabled: ${self:custom.schedule.npi.loader.${self:custom.environment}.enabled}
       input:
         debug: false
         period: monthly
+      name: npi-${self:custom.environment}-loader-weekly
+      description: Triggers NPI load of monthly file
