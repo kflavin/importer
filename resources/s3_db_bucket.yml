@@ -11,4 +11,4 @@ Properties:
     IgnorePublicAcls: true
     BlockPublicPolicy: true
     RestrictPublicBuckets: true
-DeletionPolicy: Retain    # Keep our backups even if someone removes the stack!
+DeletionPolicy: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.deletion_policy}
