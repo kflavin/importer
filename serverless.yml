@@ -10,27 +10,6 @@ plugins:
 custom:
   gitDescription: ${git:branch}:${git:sha1}
   environment: ${opt:stage, self:provider.stage}
-#  version: ${opt:version, 'na'}
-#  awsRegion: ${env:aws_region}
-#  awsImageId: ${env:aws_image_id}
-#  awsDbBackupInstanceType: ${env:aws_db_backup_instance_type}
-#  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
-#  awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
-#  awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
-#  awsSecurityGroups: ${env:aws_security_groups}
-#  awsInstanceProfile: {Ref: Ec2InstanceProfile}
-  npiMaxInstances: 1
-#  weeklyImportTimeout: ${env:weekly_import_timeout}
-#  monthlyImportTimeout: ${env:monthly_import_timeout}
-#  dbHost: ${env:db_host}
-#  dbPort: 3306
-#  dbUser: ${env:db_user}
-#  dbPassword: ${env:db_password}
-#  dbSchema: ${env:db_schema}
-#  npiTableName: ${env:npi_table_name}
-#  npiLogTableName: ${env:npi_log_table_name}
-#  rxnormTableName: ${env:rxnorm_table_name}
-#  rxnormSynonymsTableName: ${env:rxnorm_synonyms_table_name}
   pythonRequirements:
     dockerizePip: false
     slim: true
@@ -42,37 +21,11 @@ custom:
     products: ${file(./serverless/products/schedule.yml)}
     npi: ${file(./serverless/npi/schedule.yml)}
     mysql_backup: ${file(./serverless/mysql_backup/schedule.yml)}
-#    edge:
-#      enabled: false
-#      weekly:
-#        rate: rate(365 days)
-#      monthly:
-#        rate: rate(365 days)
-#    prod:
-#      enabled: false
-#      weekly:
-#        rate: cron()
-#      monthly:
-#        rate: cron()
-#    stage:
-#      enabled: false
-#        weekly:
-#          rate: cron()
-#        monthly:
-#          rate: cron()
-#    rc:
-#      enabled: false
-#        weekly:
-#          rate: cron()
-#        monthly:
-#          rate: cron()
 
 provider:
   name: aws
   stackTags:
-#    version: ${self:custom.version}
     gitDescription: ${self:custom.gitDescription}
-#  region: ${self:custom.awsRegion}
   runtime: python3.6
   timeout: 30
   environment:
@@ -90,33 +43,14 @@ provider:
     terminate_on_completion: "true"
   iamRoleStatements: ${file(resources/iam.yml)}
 
+# The Lambda functions.
+# NPI has separate download/load functions.
+# Products uses the RxNorm dataset.
 functions:
-  # Separate lambda functions to download and load the files.
   npi_loader: ${file(serverless/npi/loader.yml)}
   npi_downloader: ${file(serverless/npi/downloader.yml)}
-  # This does file download as well as the import for RXNORM
-  rxnorm: ${file(serverless/products/loader.yml)}
-  db_backup: ${file(serverless/mysql_backup/loader.yml)}
-
-  #  # Importer weekly file (weekly|monthly periods not really necessary anymore)
-  #  npi_weekly:
-  #    handler: lambdas/npi/importer_weekly.handler
-  #    environment:
-  #      aws_instance_type: ${self:custom.awsWeeklyInstanceType}
-  #      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
-  #      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
-  #      npi_table_name: ${self:custom.npiTableName}
-  #      npi_log_table_name: ${self:custom.npiLogTableName}
-  #  # Importer monthly file (weekly|monthly periods not really necessary anymore)
-  #  npi_monthly:
-  #    handler: lambdas/npi/importer_monthly.handler
-  #    environment:
-  #      aws_instance_type: ${self:custom.awsMonthlyInstanceType}
-  #      npi_max_instances: ${self:custom.npiMaxInstances}
-  #      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
-  #      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
-  #      npi_table_name: ${self:custom.npiTableName}
-  #      npi_log_table_name: ${self:custom.npiLogTableName}
+  products: ${file(serverless/products/loader.yml)}
+  mysql_backup: ${file(serverless/mysql_backup/loader.yml)}
 
 resources:
   Outputs:
@@ -135,7 +69,6 @@ resources:
     Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
 
 package:
-  # Stuff we don't want to upload with the lambdas.
   exclude:
     - ./**
     - '!importer/**'

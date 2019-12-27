@@ -1,10 +1,10 @@
 ---
 edge:
   enabled: false
-  rate: rate(365 days)
+  rate: rate(9999 days)
 rc:
   enabled: false
-  rate: rate(365 days)
+  rate: rate(9999 days)
 stage:
   enabled: false
   rate: cron(0 1 ? * * *)

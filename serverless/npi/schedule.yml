@@ -3,15 +3,15 @@ loader:
   edge:
     enabled: false
     weekly:
-      rate: rate(365 days)
+      rate: rate(9999 days)
     monthly:
-      rate: rate(365 days)
+      rate: rate(9999 days)
   rc:
     enabled: false
     weekly:
-      rate: rate(365 days)
+      rate: rate(9999 days)
     monthly:
-      rate: rate(365 days)
+      rate: rate(9999 days)
   stage:
     enabled: false
     weekly:
