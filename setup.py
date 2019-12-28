@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 # )
 
 setup(name='importer',
-      version='0.2',
+      version='0.10',
       description='Importer',
       scripts=['./runner-import.py',],
       #packages=['importer.downloaders', 'importer.loaders', 'importer.sql', 'importer.loggers', 'importer.commands'],
