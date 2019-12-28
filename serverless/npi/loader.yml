@@ -1,0 +1,28 @@
+---
+handler: lambdas/npi/loader.handler
+description: Loads NPI files
+environment:
+#    aws_instance_type: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_image_id}
+  npi_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_table_name}
+  npi_log_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_log_table_name}
+  weekly_instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
+  monthly_instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.monthly_instance_type}
+  timeout_weekly: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
+  timeout_monthly: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_monthly}
+events:
+  - schedule:
+      rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.weekly.rate}
+      enabled: ${self:custom.schedule.npi.loader.${self:custom.environment}.enabled}
+      input:
+        debug: false
+        period: weekly
+      name: ${self:custom.environment}-npi-loader-monthly
+      description: Triggers NPI load of weekly file
+  - schedule:
+      rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.monthly.rate}
+      enabled: ${self:custom.schedule.npi.loader.${self:custom.environment}.enabled}
+      input:
+        debug: false
+        period: monthly
+      name: ${self:custom.environment}-npi-loader-weekly
+      description: Triggers NPI load of monthly file

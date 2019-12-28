@@ -1,6 +1,7 @@
 ---
 Type: "AWS::S3::Bucket"
 Properties:
+  BucketName: importer-${self:custom.environment}-mysqlbackup
   LifecycleConfiguration:
     Rules:
       - Prefix: backups
@@ -11,4 +12,4 @@ Properties:
     IgnorePublicAcls: true
     BlockPublicPolicy: true
     RestrictPublicBuckets: true
-DeletionPolicy: Retain    # Keep our backups even if someone removes the stack!
+DeletionPolicy: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.deletion_policy}

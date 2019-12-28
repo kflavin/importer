@@ -10,112 +10,51 @@ plugins:
 custom:
   gitDescription: ${git:branch}:${git:sha1}
   environment: ${opt:stage, self:provider.stage}
-  version: ${opt:version, 'na'}
-  sshKey: ${env:aws_key}
-  awsRegion: ${env:aws_region}
-  awsImageId: ${env:aws_image_id}
-  awsDbBackupInstanceType: ${env:aws_db_backup_instance_type}
-  awsRxNormInstanceType: ${env:aws_rxnorm_instance_type}
-  awsWeeklyInstanceType: ${env:aws_weekly_instance_type}
-  awsMonthlyInstanceType: ${env:aws_monthly_instance_type}
-  awsSecurityGroups: ${env:aws_security_groups}
-  awsInstanceProfile: {Ref: Ec2InstanceProfile}
-  awsSubnets: ${env:aws_subnets}
-  npiMaxInstances: 1
-  weeklyImportTimeout: ${env:weekly_import_timeout}
-  monthlyImportTimeout: ${env:monthly_import_timeout}
-  snsTopicArn: ${env:aws_sns_topic_arn}
-  vpcId: ${env:aws_vpc_id}
-  dbHost: ${env:db_host}
-  dbPort: 3306
-  dbUser: ${env:db_user}
-  dbPassword: ${env:db_password}
-  dbSchema: ${env:db_schema}
-  npiTableName: ${env:npi_table_name}
-  npiLogTableName: ${env:npi_log_table_name}
-  rxnormTableName: ${env:rxnorm_table_name}
-  rxnormSynonymsTableName: ${env:rxnorm_synonyms_table_name}
   pythonRequirements:
     dockerizePip: false
     slim: true
-  enabled:
-    dev: false
-    prod: true
   scripts:
     hooks:
       'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
   exportGitVariables: false
+  schedule:
+    products: ${file(./serverless/products/schedule.yml)}
+    npi: ${file(./serverless/npi/schedule.yml)}
+    mysql_backup: ${file(./serverless/mysql_backup/schedule.yml)}
 
 provider:
   name: aws
+  description: Lambda functions for loading data
   stackTags:
-    version: ${self:custom.version}
     gitDescription: ${self:custom.gitDescription}
-  region: ${self:custom.awsRegion}
   runtime: python3.6
+  timeout: 30
   environment:
     environment: ${self:custom.environment}
-    aws_key: ${env:aws_key}
-    aws_region: ${env:aws_region}
-    aws_image_id: ${env:aws_image_id}
-    aws_security_groups: ${self:custom.awsSecurityGroups}
-    aws_vpc_id: ${self:custom.vpcId}
-    aws_subnets: ${self:custom.awsSubnets}
-    aws_instance_profile: ${self:custom.awsInstanceProfile}
+    aws_key: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_key}
+    aws_region: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_region}
+    aws_image_id: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_image_id}
+    aws_security_groups: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_security_groups}
+    aws_vpc_id: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_vpc_id}
+    aws_subnets: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_subnets}
+    aws_sns_topic_arn: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_sns_topic_arn}
+    aws_instance_profile: {Ref: Ec2InstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
     aws_db_backup_s3_bucket: {Ref: DbBackupBucket}
-    aws_sns_topic_arn: ${self:custom.snsTopicArn}
     terminate_on_completion: "true"
   iamRoleStatements: ${file(resources/iam.yml)}
 
+# The Lambda functions.
+# NPI has separate download/load functions.
+# Products uses the RxNorm dataset.
 functions:
-  # Importer weekly file (weekly|monthly periods not really necessary anymore)
-  npi_weekly:
-    handler: lambdas/npi/importer_weekly.handler
-    environment:
-      aws_instance_type: ${self:custom.awsWeeklyInstanceType}
-      npi_max_instances: ${self:custom.npiMaxInstances}
-      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
-      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
-      npi_table_name: ${self:custom.npiTableName}
-      npi_log_table_name: ${self:custom.npiLogTableName}
-    timeout: 15
-  # Importer monthly file (weekly|monthly periods not really necessary anymore)
-  npi_monthly:
-    handler: lambdas/npi/importer_monthly.handler
-    environment:
-      aws_instance_type: ${self:custom.awsMonthlyInstanceType}
-      npi_max_instances: ${self:custom.npiMaxInstances}
-      monthly_import_timeout: ${self:custom.monthlyImportTimeout}
-      weekly_import_timeout: ${self:custom.weeklyImportTimeout}
-      npi_table_name: ${self:custom.npiTableName}
-      npi_log_table_name: ${self:custom.npiLogTableName}
-    timeout: 15
-  # This downloads the new NPI files (happens in Lambda, not EC2)
-  npi_downloader:
-    handler: lambdas/npi/downloader.handler
-    environment:
-      npi_log_table_name: ${self:custom.npiLogTableName}
-    timeout: 120
-    events:
-      - schedule: cron(0 17,23 ? * * *)
-  # This does file download as well as the import for RXNORM
-  rxnorm:
-    handler: lambdas/products/import_rxnorm.handler
-    environment:
-      aws_instance_type: ${self:custom.awsRxNormInstanceType}
-      table_name: ${self:custom.rxnormTableName}
-      synonyms_table_name: ${self:custom.rxnormSynonymsTableName}
-    timeout: 15
-  db_backup:
-    handler: lambdas/db_backup/backup.handler
-    environment:
-      aws_instance_type: ${self:custom.awsDbBackupInstanceType}
-      table_name: "db_backup"
-      use_replica: 0 # This can be manually toggled to "1" in prod to use the replica server.  Host parameter must be set in SSM.
-    timeout: 15
+  npi_loader: ${file(serverless/npi/loader.yml)}
+  npi_downloader: ${file(serverless/npi/downloader.yml)}
+  products: ${file(serverless/products/loader.yml)}
+  mysql_backup: ${file(serverless/mysql_backup/loader.yml)}
 
 resources:
+  Description: Lambda functions for loading data
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
@@ -127,12 +66,11 @@ resources:
       Value: {Ref: Ec2InstanceProfile}
   Resources:
     ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
-    DbBackupBucket: ${file(resources/s3_db_bucket.yml)}
+    DbBackupBucket: ${file(resources/s3_mysql_bucket.yml)}
     Ec2Role: ${file(resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
 
 package:
-  # Stuff we don't want to upload with the lambdas.
   exclude:
     - ./**
     - '!importer/**'

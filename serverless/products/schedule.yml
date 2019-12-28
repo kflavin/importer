@@ -1,0 +1,13 @@
+---
+edge:
+  enabled: false
+  rate: rate(9999 days)
+rc:
+  enabled: false
+  rate: cron(0 14 ? * * *)
+stage:
+  enabled: false
+  rate: cron(0 1 ? * * *)
+prod:
+  enabled: false
+  rate: cron(0 6 6-27 * ? *)
