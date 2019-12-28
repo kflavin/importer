@@ -28,7 +28,6 @@ provider:
   description: Lambda functions for loading data
   stackTags:
     gitDescription: ${self:custom.gitDescription}
-    version: 0.12.0
   runtime: python3.6
   timeout: 30
   environment:
