@@ -15,7 +15,7 @@ custom:
     slim: true
   scripts:
     hooks:
-      'before:package:initialize': bumpversion patch
+      #'before:package:initialize': bumpversion patch
       'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
   exportGitVariables: false
   schedule:
