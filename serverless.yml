@@ -15,6 +15,7 @@ custom:
     slim: true
   scripts:
     hooks:
+      #'before:package:initialize': bumpversion patch
       'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
   exportGitVariables: false
   schedule:
@@ -27,6 +28,7 @@ provider:
   description: Lambda functions for loading data
   stackTags:
     gitDescription: ${self:custom.gitDescription}
+    version: 0.12.4     # updated by bumpversion, don't change it manually
   runtime: python3.6
   timeout: 30
   environment:

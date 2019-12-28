@@ -28,8 +28,11 @@ class CleanCommand(distutils.cmd.Command):
 
 
 setup(name='importer',
-      version='0.12.0',
+      version='0.12.4',
       description='Importer',
+      url="https://github.com/rxvantage/data-importer",
+      maintainer="Kyle F",
+      maintainer_email="kyle@rxvantage.com",
       scripts=['./runner-import.py',],
       #packages=['importer.downloaders', 'importer.loaders', 'importer.sql', 'importer.loggers', 'importer.commands'],
       packages=find_packages(exclude=("lambda",)),
@@ -41,6 +44,7 @@ setup(name='importer',
       install_requires=[
         "boto3==1.7.45",
         "botocore==1.10.45",
+        "bump2version==0.5.11",
         "click==6.7",
         "docutils==0.14",
         "jmespath==0.9.3",
