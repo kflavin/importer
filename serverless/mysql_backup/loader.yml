@@ -7,8 +7,8 @@ environment:
   use_replica: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.use_replica}
 vpc:
   securityGroupIds:
-    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.instance_type}
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_security_groups}
   subnetIds:
-    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
-    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
-    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}
