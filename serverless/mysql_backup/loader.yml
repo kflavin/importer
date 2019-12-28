@@ -5,3 +5,10 @@ environment:
   instance_type: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.instance_type}
   backup_table_name: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.backup_table_name}
   use_replica: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.use_replica}
+vpc:
+  securityGroupIds:
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.instance_type}
+  subnetIds:
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}

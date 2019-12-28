@@ -10,3 +10,10 @@ events:
       enabled: ${self:custom.schedule.npi.downloader.${self:custom.environment}.enabled}
       name: ${self:custom.environment}-npi-downloader
       description: Triggers NPI file download
+vpc:
+  securityGroupIds:
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.instance_type}
+  subnetIds:
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}

@@ -9,6 +9,13 @@ environment:
   monthly_instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.monthly_instance_type}
   timeout_weekly: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
   timeout_monthly: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_monthly}
+vpc:
+  securityGroupIds:
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.instance_type}
+  subnetIds:
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
+    - ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}
 events:
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.weekly.rate}
