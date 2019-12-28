@@ -12,7 +12,7 @@ loader:
       rate: cron(0 15 ? * * *)
     monthly:
       rate: cron(0 16 ? * * *)
-  stage:
+  staging:
     enabled: false
     weekly:
       rate: cron(0 2 ? * * *)
@@ -31,7 +31,7 @@ downloader:
   rc:
     enabled: false
     rate: cron(0 17,23 ? * * *)
-  stage:
+  staging:
     enabled: false
     rate: cron(0 17,23 ? * * *)
   prod:

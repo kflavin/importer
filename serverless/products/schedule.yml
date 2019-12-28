@@ -5,7 +5,7 @@ edge:
 rc:
   enabled: false
   rate: cron(0 14 ? * * *)
-stage:
+staging:
   enabled: false
   rate: cron(0 1 ? * * *)
 prod:

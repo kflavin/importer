@@ -5,7 +5,7 @@ edge:
 rc:
   enabled: false
   rate: rate(9999 days)
-stage:
+staging:
   enabled: false
   rate: rate(9999 days)
 prod:
