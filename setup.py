@@ -28,7 +28,7 @@ class CleanCommand(distutils.cmd.Command):
 
 
 setup(name='importer',
-      version='0.11.0',
+      version='0.12.0',
       description='Importer',
       scripts=['./runner-import.py',],
       #packages=['importer.downloaders', 'importer.loaders', 'importer.sql', 'importer.loggers', 'importer.commands'],
