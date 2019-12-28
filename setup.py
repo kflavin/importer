@@ -28,7 +28,7 @@ class CleanCommand(distutils.cmd.Command):
 
 
 setup(name='importer',
-      version='0.12.3',
+      version='0.12.4',
       description='Importer',
       url="https://github.com/rxvantage/data-importer",
       maintainer="Kyle F",
