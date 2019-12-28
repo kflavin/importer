@@ -41,6 +41,7 @@ setup(name='importer',
       install_requires=[
         "boto3==1.7.45",
         "botocore==1.10.45",
+        "bump2version==0.5.11",
         "click==6.7",
         "docutils==0.14",
         "jmespath==0.9.3",
