@@ -9,9 +9,9 @@ loader:
   rc:
     enabled: false
     weekly:
-      rate: rate(9999 days)
+      rate: cron(0 15 ? * * *)
     monthly:
-      rate: rate(9999 days)
+      rate: cron(0 16 ? * * *)
   stage:
     enabled: false
     weekly:

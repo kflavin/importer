@@ -1,5 +1,6 @@
 ---
 handler: lambdas/npi/loader.handler
+description: Loads NPI files
 environment:
 #    aws_instance_type: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_image_id}
   npi_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_table_name}
@@ -15,7 +16,7 @@ events:
       input:
         debug: false
         period: weekly
-      name: npi-${self:custom.environment}-loader-monthly
+      name: ${self:custom.environment}-npi-loader-monthly
       description: Triggers NPI load of weekly file
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.monthly.rate}
@@ -23,5 +24,5 @@ events:
       input:
         debug: false
         period: monthly
-      name: npi-${self:custom.environment}-loader-weekly
+      name: ${self:custom.environment}-npi-loader-weekly
       description: Triggers NPI load of monthly file

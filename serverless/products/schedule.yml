@@ -4,7 +4,7 @@ edge:
   rate: rate(9999 days)
 rc:
   enabled: false
-  rate: rate(9999 days)
+  rate: cron(0 14 ? * * *)
 stage:
   enabled: false
   rate: cron(0 1 ? * * *)

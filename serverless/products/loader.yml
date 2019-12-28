@@ -1,5 +1,6 @@
 ---
 handler: lambdas/products/loader.handler
+description: Loads RxNorm product data
 environment:
   aws_instance_type: ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.instance_type}
   table_name: ${file(./serverless/products/serverless.env.yml):${self:custom.environment}.products_table_name}
@@ -8,5 +9,5 @@ events:
   - schedule:
       rate: ${self:custom.schedule.products.${self:custom.environment}.rate}
       enabled: ${self:custom.schedule.products.${self:custom.environment}.enabled}
-      name: products-${self:custom.environment}-loader
+      name: ${self:custom.environment}-products-loader
       description: Triggers RxNorm Product loader

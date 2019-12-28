@@ -24,6 +24,7 @@ custom:
 
 provider:
   name: aws
+  description: Lambda functions for loading data
   stackTags:
     gitDescription: ${self:custom.gitDescription}
   runtime: python3.6
@@ -53,6 +54,7 @@ functions:
   mysql_backup: ${file(serverless/mysql_backup/loader.yml)}
 
 resources:
+  Description: Lambda functions for loading data
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
@@ -64,7 +66,7 @@ resources:
       Value: {Ref: Ec2InstanceProfile}
   Resources:
     ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
-    DbBackupBucket: ${file(resources/s3_db_bucket.yml)}
+    DbBackupBucket: ${file(resources/s3_mysql_bucket.yml)}
     Ec2Role: ${file(resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
 

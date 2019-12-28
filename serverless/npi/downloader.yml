@@ -1,5 +1,6 @@
 ---
 handler: lambdas/npi/downloader.handler
+description: Downloads NPI files
 environment:
   npi_log_table_name: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.npi_log_table_name}
 timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.downloader_timeout}
@@ -7,8 +8,5 @@ events:
   - schedule:
       rate: ${self:custom.schedule.npi.downloader.${self:custom.environment}.rate}
       enabled: ${self:custom.schedule.npi.downloader.${self:custom.environment}.enabled}
-#      input:
-#        debug: false
-#        period: weekly
-#        instance_type: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.weekly_instance_type}
-#        timeout: ${file(./serverless/npi/serverless.env.yml):${self:custom.environment}.timeout_weekly}
+      name: ${self:custom.environment}-npi-downloader
+      description: Triggers NPI file download

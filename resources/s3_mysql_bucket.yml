@@ -1,6 +1,7 @@
 ---
 Type: "AWS::S3::Bucket"
 Properties:
+  BucketName: importer-${self:custom.environment}-mysqlbackup
   LifecycleConfiguration:
     Rules:
       - Prefix: backups
