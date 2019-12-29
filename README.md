@@ -8,10 +8,10 @@ This repo is used to dynamically launch EC2 instances for data loading.  There a
 It currently loads the following data:
 
 * The `npis` table
-* The RxNorm product data
-* Database backups
+* The `products` and `product_synonyms` tables
+* Database backups (WIP)
 
-Each gets its own AWS Lambda function.  See instructions at the end of this document for how to add new lambdas.
+Each gets its own AWS Lambda function (or set of functions).  See instructions at the end of this document for how to add new lambdas.
 
 ## Installation and Usage
 
@@ -19,8 +19,10 @@ Each gets its own AWS Lambda function.  See instructions at the end of this docu
 
 To deploy the Lambda functions, you need the following:
 
-* python3
+* python 3.6.0
 * serverless framework
+* AWS access (keys should be configured)
+
 ```bash
 npm install serverless -g
 ```
@@ -28,25 +30,18 @@ npm install serverless -g
 
 #### Building and Deploying the Lambda functions
 
-Each environment corresponds to a [Cloudformation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).  Existing stacks are `rc`, `stage`, and `prod`.
+Each environment corresponds to a [Cloudformation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false).  Existing stacks are `rc`, `staging`, and `prod`.
 
 ```bash
 # Install dependencies
 npm install
 
-# Copy the environment file
-cp env.template .env.rc
-cp env.template .env.stage
+# Copy the environment file, and fill out appropriate values
+cp env.template .env.staging
 cp env.template .env.prod
 
-# fill in the appropriate values
-vim .env.rc
-vim .env.stage
-vim .env.prod
-
 # Deploy the stack
-./setup.sh rc
-./setup.sh stage
+./setup.sh staging
 ./setup.sh prod
 ```
 
@@ -56,7 +51,7 @@ This repo also contains the NPI importer script.  It is built and deployed throu
 
 ```bash
 python setup.py sdist
-./bin/stage_runner_to_s3.sh rc
+./bin/stage_runner_to_s3.sh staging
 ```
 
 #### Destroy a stack
@@ -64,16 +59,26 @@ python setup.py sdist
 This will delete all components, _including the S3 bucket_ and any staged files!:
 
 ```bash
-./teardown.sh rc
-./teardown.sh stage
+./teardown.sh staging
 ./teardown.sh prod
 ```
 
 #### Usage
 
-The Lambda functions are cron'd, but can also be run manually in [AWS](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions).  To run, configure an empty test event (event isn't used, all parameters are passed through the environment).
+The Lambda functions are cron'd, but can also be run manually in [AWS](https://console.aws.amazon.com/lambda/home?region=us-east-1#/functions).  
 
-_Note that the cloudwatch events used to trigger the functions are created manually, outside of the Cloudformation stack._
+Configure an event, for example:
+
+```json
+{
+  "period": "weekly",
+  "debug": true
+}
+```
+
+Input parameters for the various functions can be seen under `serverless/`.
+
+_Note that the Cloudwatch events used to trigger the functions are created manually, outside of the Cloudformation stack._
 
 ## Overview
 
@@ -81,7 +86,7 @@ _Note that the cloudwatch events used to trigger the functions are created manua
 
 The directory structure is laid out as follows:
 
-```bash
+```
 bin
 └── ...Helper Scripts...
 dist
@@ -94,8 +99,10 @@ packer
 └── ...EC2 AMI...
 resources
 └── ...AWS resources...
+serverless
+└── ...function schedules and configuration variables...
 ├── runner-import.py              # Runner for the NPI importer
-├── serverless-template.yml       # Controls Lamba deployment and AWS resources
+├── serverless.yml                # Controls Lamba deployment and AWS resources
 └── setup.py                      # Build the python importer
 ```
 
@@ -107,11 +114,13 @@ The lambdas live under `lamdbas/npi/`
 
 See: https://cloudcraft.co/view/a49965c0-e2ef-4819-99c1-03722a3ce26e?key=JROwMt9RjsrSxSYUovuIqw
 
-#### RxNorm Importer
+#### Products Importer
 
-The RxNORM data is loaded using the [Talend loader](https://github.com/rxvantage/data-importer-talend).  The Talend loader is a jar built in Talend, and kept in a separate repo.  It must be staged to the S3 script bucket manually, with the name `RxNorm_Loader.zip`.
+The Products data is loaded using the [Talend loader](https://github.com/rxvantage/data-importer-talend).  It uses the RxNorm data set.  
 
-The lambdas live under `lambdas/product/`
+The Talend loader is a jar built in Talend, and kept in a separate repo.  It must be staged to the S3 script bucket manually, with the name `RxNorm_Loader.zip`.
+
+The lambdas live under `lambdas/products/`
 
 #### Database backup
 
@@ -123,10 +132,11 @@ The lambdas live under `lambdas/db_backup/`
 
 You can add a new lambda with a few steps.  The lambdas are responsible for launching an EC2 with any necessary environment variables.  The userdata scripts are responsible for doing your work, terminating the instance, and sending any notifications.
 
-1. Create a new folder under `lambdas` and add a handler (Python function).   This is responsible for launching the EC2 with your custom userdata script.  You can copy from an existing folder, like `lambdas/db_backup/`
+1. Create a new folder under `lambdas` and add a handler (Python function).   This is responsible for launching the EC2 with your custom userdata script.  You can copy from an existing folder, like `lambdas/mysql_backup/`
 1. Add a new "body" userdata script under `lambdas/resources/userdata/`.  This is shell code which should perform your task.
    * The `start.sh` and `finish.sh` scripts should be concatenated around your "body" script to ensure the EC2 is terminated properly.  This is done inside the lambda.
 1. Add the handler (function) name to `serverless.yaml`.
+1. Add any needed non-secret configuration data under the `serverless/` directory
 1. Deploy: `./setup.sh <env>`
 
 The `start.sh` and `finish.sh` are used as wrappers around your body data script.  They ensure your EC2 is terminated, and
@@ -135,6 +145,5 @@ alerts are sent to SNS (if desired).  They also handle setting up environment va
 ## Dependencies
 
 * The lambdas have a dependency on the sql resources in the importer, under `importer/sql/`
-* The importer script has a dependency on AWS for cloudwatch logging
 * AWS subnets and security groups need to be created ahead of time
 
