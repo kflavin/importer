@@ -6,8 +6,8 @@ rc:
   enabled: false
   rate: cron(0 14 ? * * *)
 staging:
-  enabled: false
+  enabled: true
   rate: cron(0 1 ? * * *)
 prod:
-  enabled: false
+  enabled: true
   rate: cron(0 6 6-27 * ? *)
