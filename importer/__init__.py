@@ -1,5 +1,5 @@
 import os
-__version = "0.12.5"
+__version = "0.12.6"
 
 weekly_prefix = "npi-in/weekly"
 monthly_prefix = "npi-in/monthly"
