@@ -29,6 +29,7 @@ provider:
   stackTags:
     gitDescription: ${self:custom.gitDescription}
     version: 0.12.5     # updated by bumpversion, don't change it manually
+    deployedAt: ${opt:time, 'No deploy time given.  Please deploy using setup.sh'}
   runtime: python3.6
   timeout: 30
   environment:

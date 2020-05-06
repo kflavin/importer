@@ -23,7 +23,7 @@ echo "Deploying to $STAGE using $ENV_FILE"
 
 source $ENV_FILE
 
-sls deploy --stage=$STAGE
+sls deploy --stage=$STAGE --time="$(date '+%Y-%m-%d %H:%M:%S')"
 
 # Load parameters into SSM
 bin/set_ssm_params.sh $STAGE

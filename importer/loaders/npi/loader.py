@@ -245,6 +245,8 @@ class NpiLoader(object):
 
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
+        # Remove type "0" data.  These are deactivated NPI's.
+        df = df[df['Entity Type Code'] != 0.0]
         logger.debug(f"Total records: {len(df)}")
 
         # Reformat dates to be MySQL friendly
