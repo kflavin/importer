@@ -11,7 +11,7 @@ fi
 
 # Partition the disk.  Initially I tried to stream the dump directly into S3, but it wasn't working; the MySQL
 # connection kept dropping.  This seems to be more reliable.
-fdisk /dev/nvme1n1 <<EOF
+fdisk /dev/nvme0n1 <<EOF
 n
 p
 1
