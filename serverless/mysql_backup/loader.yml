@@ -1,5 +1,5 @@
 ---
-handler: lambdas/db_backup/backup.handler
+handler: lambdas/mysql_backup/backup.handler
 description: MYSQL backups
 environment:
   instance_type: ${file(./serverless/mysql_backup/serverless.env.yml):${self:custom.environment}.instance_type}
