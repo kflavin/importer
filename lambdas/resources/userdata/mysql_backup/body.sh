@@ -9,9 +9,11 @@ if [[ "{use_replica}" -eq "1" ]]; then
     export loader_db_host=$(aws ssm get-parameters --names "/importer/{environment}/db_host_replica" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
 fi
 
+DISK= /dev/nvme0n1
+
 # Partition the disk.  Initially I tried to stream the dump directly into S3, but it wasn't working; the MySQL
 # connection kept dropping.  This seems to be more reliable.
-fdisk /dev/nvme0n1 <<EOF
+fdisk $DISK <<EOF
 n
 p
 1
@@ -24,9 +26,9 @@ EOF
 # Sleep for a few seconds to ensure the partition is available.
 sleep 5
 
-mkfs -t ext4 /dev/nvme1n1p1
+mkfs -t ext4 $DISK
 mkdir /data
-mount /dev/nvme1n1p1 /data
+mount $DISK /data
 
 ## Increased packet size helps with the disconnects.  Changed in RDS as well to match the value listed here.
 mysqldump -h "$loader_db_host" \
