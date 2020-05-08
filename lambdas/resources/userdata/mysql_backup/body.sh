@@ -40,7 +40,7 @@ mysqldump -h "$loader_db_host" \
 gzip /data/dump.sql
 
 # Encrypt and upload
-aws s3 cp --sse aws:kms /data/dump.sql.gz s3://{backup_bucket_name}/backups/$(date --iso-8601=seconds).sql.gz
+aws s3 cp --sse aws:kms /data/dump.sql.gz s3://{backup_bucket_name}/{environment}/$loader_db_host-$(date --iso-8601=seconds).sql.gz
 
 size=$(ls -lh /data/dump.sql.gz  | awk '{{print $5}}')
 

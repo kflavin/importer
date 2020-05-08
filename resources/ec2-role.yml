@@ -65,6 +65,15 @@ Properties:
               - "s3:PutObject"
               - "s3:ListMultipartUploadParts"
             Resource:
+              - "Fn::Join":
+                  - ""
+                  - - "arn:aws:s3:::"
+                    - ${self:provider.environment.aws_db_backup_s3_bucket}
+              - "Fn::Join":
+                  - ""
+                  - - "arn:aws:s3:::"
+                    - ${self:provider.environment.aws_db_backup_s3_bucket}
+                    - "/*"
               - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
               - "Fn::Join":
                   - ""

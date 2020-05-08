@@ -15,7 +15,7 @@ def handler(event, context):
     region = os.environ.get('aws_region')
     key_name = os.environ.get('aws_key')
     image_id = os.environ.get('aws_image_id')
-    instance_type = os.environ.get('aws_instance_type')
+    instance_type = os.environ.get('instance_type')
     security_groups = os.environ.get('aws_security_groups').split(",")
     subnet_id = os.environ.get('aws_subnets').split(",")[0]  # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
