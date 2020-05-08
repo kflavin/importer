@@ -9,5 +9,5 @@ staging:
   enabled: false
   rate: rate(9999 days)
 prod:
-  enabled: false
-  rate: rate(9999 days)
+  enabled: true
+  rate: cron(0 9 ? * SAT *)
