@@ -12,3 +12,9 @@ vpc:
     - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
     - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
     - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}
+events:
+  - schedule:
+      rate: ${self:custom.schedule.mysql_backup.${self:custom.environment}.rate}
+      enabled: ${self:custom.schedule.mysql_backup.${self:custom.environment}.enabled}
+      name: ${self:custom.environment}-mysql_backup-loader
+      description: Triggers MySQL Backups
