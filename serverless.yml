@@ -1,6 +1,6 @@
 service: importer
 
-frameworkVersion: ">=1.9.0 <2.0.0"
+frameworkVersion: ">=2.0.0 <3.0.0"
 
 plugins:
   - serverless-python-requirements
@@ -30,7 +30,7 @@ provider:
     gitDescription: ${self:custom.gitDescription}
     version: 0.12.11     # updated by bumpversion, don't change it manually
     deployedAt: ${opt:time, 'No deploy time given.  Please deploy using setup.sh'}
-  runtime: python3.6
+  runtime: python3.7
   timeout: 30
   environment:
     environment: ${self:custom.environment}

@@ -1,3 +1,10 @@
-# Only used by the Lambda functions.  The importer build uses setup.py
+# Dependencies for the Lambda functions.  The importer build uses setup.py
+# to find its requirements.
+#
+# Multiple requirements files are used in this repo because some dependencies
+# only work in certain environments.  For example, selenium is needed
+# to scrape Javascript sites, but it can't be install inside of a 
+# Lambda function, it needs to go in an EC2.  This is also why we're not
+# using pipenv since pipenv can't manage multiple Pipfiles.
 mysql-connector==2.2.9
 beautifulsoup4==4.6.0
