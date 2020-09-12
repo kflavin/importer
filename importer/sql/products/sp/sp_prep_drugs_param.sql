@@ -26,6 +26,7 @@ BEGIN
     SET @DRUG_CATEGORY_ID = 1;
     SET @VACCINE_CATEGORY_ID = 8;
     SET @maxlen_generic_name = 884;
+    SET @maxlen_brand_name = 140;
 
     SET @@SESSION.group_concat_max_len = 4096;
 
@@ -59,10 +60,11 @@ BEGIN
       FROM (
        SELECT `RXCUI`, `STR` FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='BN' AND STR NOT LIKE '%,%'  # find brand names, generic names their RXCUI
       ) t1 JOIN stage_rxnrel t2 ON t1.RXCUI = t2.RXCUI1 WHERE RELA='has_tradename'
-    ) t2 ON t3.RXCUI = t2.GenericRXCUI WHERE SAB='RXNORM' AND TTY='IN' GROUP BY BrandRXCUI
+    ) t2 ON t3.RXCUI = t2.GenericRXCUI WHERE SAB='RXNORM' AND TTY='IN' AND LENGTH(t2.BrandName) <= @maxlen_brand_name
+    GROUP BY BrandRXCUI
     UNION
     SELECT DISTINCT STR as Name, STR as GenericName, RXCUI, 'RXNORM', @DRUG_CATEGORY_ID, 1, @APPROVER_ID, @CREATOR_ID, @DELETER_ID, @UPDATER_ID, NOW(), NOW()
-    FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%';
+    FROM stage_rxnconso WHERE SAB='RXNORM' and TTY='IN' and STR not like '%,%' AND LENGTH(STR) <= @maxlen_brand_name;
     
     SELECT 'INSERT INTO tmp_products2';
     # Create a copy of this table to use with the synonyms
