@@ -12,6 +12,6 @@ aws ssm put-parameter --name "/importer/${STAGE}/stage_db_schema" --type "Secure
 # Must set use_replica=1 on the lambda environment variable
 if [[ ! -z ${db_host_replica+x} ]]; then
     echo "Set replica"
-    aws ssm put-parameter --name "/importer/${STAGE}/db_host_replica" --type "SecureString" --value "${db_host_replica}" --overwrite
+    AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/db_host_replica" --type "SecureString" --value "${db_host_replica}" --overwrite
 fi
 
