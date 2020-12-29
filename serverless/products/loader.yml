@@ -11,7 +11,6 @@ vpc:
   subnetIds:
     - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
     - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
-    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_3}
 events:
   - schedule:
       rate: ${self:custom.schedule.products.${self:custom.environment}.rate}
