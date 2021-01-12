@@ -1,6 +1,0 @@
----
-Type: "AWS::EC2::NatGateway"
-DependsOn: ElasticIP
-Properties: 
-  AllocationId: {"Fn::GetAtt": ["ElasticIP","AllocationId"]}
-  SubnetId: { "Fn::Select" : [ "0", { "Fn::Split": [",", "${env:aws_subnets}"]}] }

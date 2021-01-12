@@ -19,9 +19,9 @@ custom:
       'deploy:finalize': bash bin/stage_all_files.sh ${self:custom.environment}
   exportGitVariables: false
   schedule:
-    products: ${file(./serverless/products/schedule.yml)}
-    npi: ${file(./serverless/npi/schedule.yml)}
-    mysql_backup: ${file(./serverless/mysql_backup/schedule.yml)}
+    products: ${file(./serverless/products/schedule.env.yml)}
+    npi: ${file(./serverless/npi/schedule.env.yml)}
+    mysql_backup: ${file(./serverless/mysql_backup/schedule.env.yml)}
 
 provider:
   name: aws
@@ -46,7 +46,7 @@ provider:
     #aws_db_backup_s3_bucket: {Ref: DbBackupBucket}
     aws_db_backup_s3_bucket: "rxv-backups"
     terminate_on_completion: "true"
-  iamRoleStatements: ${file(resources/iam.yml)}
+  iamRoleStatements: ${file(serverless/resources/iam.yml)}
 
 # The Lambda functions.
 # NPI has separate download/load functions.
@@ -69,10 +69,10 @@ resources:
     Ec2InstanceProfile:
       Value: {Ref: Ec2InstanceProfile}
   Resources:
-    ScriptBucket: ${file(resources/s3_npi_bucket.yml)}
-    DbBackupBucket: ${file(resources/s3_mysql_bucket.yml)}
-    Ec2Role: ${file(resources/ec2-role.yml)}
-    Ec2InstanceProfile: ${file(resources/ec2-instance_profile.yml)}
+    ScriptBucket: ${file(serverless/resources/s3_npi_bucket.yml)}
+    DbBackupBucket: ${file(serverless/resources/s3_mysql_bucket.yml)}
+    Ec2Role: ${file(serverless/resources/ec2-role.yml)}
+    Ec2InstanceProfile: ${file(serverless/resources/ec2-instance_profile.yml)}
 
 package:
   exclude:
