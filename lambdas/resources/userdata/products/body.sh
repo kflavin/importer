@@ -22,14 +22,18 @@ timeout {timeout}m runner-import.py products download all # >> /root/jobs/logs/d
 timeout {timeout}m bash RxNorm_Loader_run.sh --context_param contextName="{environment}" # 2>&1 | tee -a $LOG_FILE
 
 # How many new product records were loaded?
-products_count=$(mysql -D $loader_db_schema \
-      -e "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())" \
-      -B -s -N)
+products_count=$(psql -A -t -q \
+      -h "$loader_db_host" \
+      -U "$loader_db_user" \
+      -d "$loader_db" \
+      -c "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())")
 
       # How many new synonym records were loaded?
-synonyms_count=$(mysql -D $loader_db_schema \
-      -e "select count(*) from {synonyms_table_name} where DATE(created_at)=DATE(NOW())" \
-      -B -s -N)
+synonyms_count=$(psql -A -t -q \
+      -h "$loader_db_host" \
+      -U "$loader_db_user" \
+      -d "$loader_db" \
+      -c "select count(*) from {synonyms_table_name} where DATE(created_at)=DATE(NOW())")
 
 # message gets picked up by finish.sh
 export message="$products_count new products, $synonyms_count new synonyms."

@@ -41,7 +41,8 @@ def handler(event, context):
     key_name = os.environ.get('aws_key')
     image_id = os.environ.get('aws_image_id')
     security_groups = os.environ.get('aws_security_groups').split(",")
-    subnet_id = os.environ.get('aws_subnets').split(",")[0]   # Just use the first subnet
+    subnet_id = os.environ.get('aws_subnets').split(",")[
+        0]   # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('npi_table_name')
     log_table_name = os.environ.get('npi_log_table_name')
@@ -51,20 +52,23 @@ def handler(event, context):
     terminate_on_completion = os.environ.get("terminate_on_completion")
 
     ec2 = EC2Helper(region, period)
-    rds = DBHelper(region)
+    db = DBHelper(region)
 
     print(f"instance_type: {instance_type}, initialize: {init_flag}, debug: {debug_flag}, bucket: {bucket_name}, "
           f"prefix: {bucket_prefix}, table: {table_name}")
 
-    if not rds.files_ready(log_table_name, period, environment, 1):
-        print(f"No files in {bucket_name}/{bucket_prefix} are ready for import.")
+    if not db.files_ready(log_table_name, period, environment, 1):
+        print(
+            f"No files in {bucket_name}/{bucket_prefix} are ready for import.")
         return False
 
     active_imports = ec2.active_imports(table_name, environment)
-    print(f"Current number of tasks are {active_imports}, max instances are {max_concurrent_instances}")
+    print(
+        f"Current number of tasks are {active_imports}, max instances are {max_concurrent_instances}")
 
     if active_imports >= max_concurrent_instances:
-        print(f"SKIPPING, there is already an import running for table {table_name}.")
+        print(
+            f"SKIPPING, there is already an import running for table {table_name}.")
         return False
 
     # Configure userdata script.  This is what will run on the EC2.
@@ -90,18 +94,20 @@ def handler(event, context):
     user_data = f"{user_data_head}\n{user_data_body}\n{user_data_finish}"
 
     # Run the instance
-    instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile, 
-                        security_groups, context.function_name, table_name, environment)
+    instance = ec2.run(key_name, image_id, instance_type, subnet_id, user_data, instance_profile,
+                       security_groups, context.function_name, table_name, environment)
 
+    db.close()
     print(f"Instance: {instance}")
     return True
 
 
 if __name__ == '__main__':
     print("Testing import from the CLI")
+
     class Object(object):
         pass
 
     o = Object()
-    o.function_name="importer ec2 from cli"
-    handler(None, o)
+    o.function_name = "importer ec2 from cli"
+    handler({"period": "w"}, o)

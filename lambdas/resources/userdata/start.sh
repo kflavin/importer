@@ -95,16 +95,10 @@ export loader_db_user=$(aws ssm get-parameters --names "/importer/{environment}/
 export loader_db_password=$(aws ssm get-parameters --names "/importer/{environment}/db_password" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
 
 # Setup .my.cnf file for any queries.
-cat <<EOF > ~/.my.cnf
-[mysqldump]
-user=$loader_db_user
-password="$loader_db_password"
-
-[mysql]
-user=$loader_db_user
-password="$loader_db_password"
-host=$loader_db_host
+cat <<EOF > ~/.pgpass
+$loader_db_host:*:*:$loader_db_user:$loader_db_password
 EOF
+chmod 600 ~/.pgpass
 
 set -x
 

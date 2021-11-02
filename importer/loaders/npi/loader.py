@@ -1,9 +1,15 @@
 import logging
-import csv, sys, subprocess, time, itertools, textwrap, datetime
+import csv
+import sys
+import subprocess
+import time
+import itertools
+import textwrap
+import datetime
 from collections import OrderedDict
 from zipfile import ZipFile
-import mysql.connector as connector
-from mysql.connector.constants import ClientFlag
+import psycopg2
+import psycopg2.extras
 
 from importer.sql.npi import (INSERT_QUERY, UPDATE_QUERY,
                               INSERT_LARGE_QUERY, GET_FILES, GET_MONTHLY_FILES, MARK_AS_IMPORTED)
@@ -55,35 +61,39 @@ class NpiLoader(object):
         self.cursor = ""
         self.debug = ""
         self.warnings = warnings
-        self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
+        # OrderedDict where key is file to load, and value is id in the import log
+        self.files = OrderedDict()
 
         # Controls amount of print output.
         self.print_insert_every = print_insert_every
         self.print_update_every = print_update_every
 
-    def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
+    def connect(self, user, host, password, database, debug=False, dictionary=False, buffered=False):
         self.debug = debug
 
-        config = {
-            'user': user,
-            'password': password,
-            'host': host,
-            'database': database,
-            'get_warnings': self.warnings
-        }
+        # self.cnx = connector.connect(**config)
+        # self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
-        # Needed for LOAD DATA INFILE LOCAL
-        if clientFlags:
-            config['client_flags'] = [ClientFlag.LOCAL_FILES]
+        connection_string = f'dbname={database} host={host} user={user} password={password}'
+        logger.debug(f"Connecting to database: {database}, host: {host}")
+        self.cnx = psycopg2.connect(connection_string)
+        self.cursor = self.cnx.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
-        self.cnx = connector.connect(**config)
-        self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
+    def __sanitize(self, key, value):
+      if key in ['npi', 'entity_type_code', 'replacement_npi', 'provider_other_last_name_type_code']:
+        if value:
+          return int(float(key))
+        else:
+          return None
+
 
     def __clean_field(self, field):
         """
         Sanitize NPI data
         """
-        field_clean = ' '.join(field.split())   # replace multiple whitespace characters with one space
+        field_clean = ' '.join(
+            field.split())   # replace multiple whitespace characters with one space
         field_clean = field_clean.replace("(", "")
         field_clean = field_clean.replace(")", "")
         field_clean = field_clean.replace(".", "")
@@ -121,10 +131,12 @@ class NpiLoader(object):
                 # cursor.execute(sql, (arg1, arg2))
                 # Deadlock error here when too many processes run at once.  Implement back off timer.
                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
+                print("query")
+                print(query)
                 self.cursor.executemany(query, data)
                 self.cnx.commit()
                 break
-            except connector.errors.InternalError as e:
+            except psycopg2.Error as e:
                 # print(self.cursor._last_executed)
                 # print(self.cursor.statement)
                 logger.warning("Rolling back...")
@@ -156,11 +168,13 @@ class NpiLoader(object):
         if period.lower() == "weekly":
             p = "w"
             limit = limit
-            q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
+            q = GET_FILES.format(table_name=table_name,
+                                 period=p, environment=environment, limit=limit)
         else:
             p = "m"
             # We only want to load one monthly file at a time.  Pick the most recent one.
-            q = GET_MONTHLY_FILES.format(table_name=table_name, period=p, environment=environment)
+            q = GET_MONTHLY_FILES.format(
+                table_name=table_name, period=p, environment=environment)
 
         logger.debug(q.replace('\n', ' ').replace('\r', ''))
         self.cursor.execute(q)
@@ -176,7 +190,8 @@ class NpiLoader(object):
             if downloaded_file:
                 self.files[downloaded_file] = row['id']
 
-        files_reversed = OrderedDict(reversed(list(self.files.items())))   # we receive in desc order, so reverse for processing
+        # we receive in desc order, so reverse for processing
+        files_reversed = OrderedDict(reversed(list(self.files.items())))
         return files_reversed
 
     def unzip(self, infile, path):
@@ -212,17 +227,20 @@ class NpiLoader(object):
         try:
             zip.extract(csv_file, path)
         except NotImplementedError as e:
-            logger.warning("Python does not support Type 9 compression, trying system unzip...")
-            
+            logger.warning(
+                "Python does not support Type 9 compression, trying system unzip...")
+
             if not subprocess.run(["which", "unzip"]).returncode:
-                out = subprocess.run(["unzip", infile, csv_file, "-d", path], stdout=subprocess.PIPE)
+                out = subprocess.run(
+                    ["unzip", infile, csv_file, "-d", path], stdout=subprocess.PIPE)
                 if out.returncode:
                     logger.error("Can't unzip this file.  Local unzip failed.")
                     raise
             else:
-                logger.error("Can't unzip this file.  Type 9 compression not supported, and no local unzip.")
+                logger.error(
+                    "Can't unzip this file.  Type 9 compression not supported, and no local unzip.")
                 raise
-        
+
         return f"{path}/{csv_file}"
 
     def preprocess(self, infile, outfile=None):
@@ -241,7 +259,8 @@ class NpiLoader(object):
         # col_df = col_df[col_df.columns.drop(col_df.filter(regex='Provider License Number').columns)]
         # col_df = col_df[col_df.columns.drop(col_df.filter(regex='Other Provider').columns)]
         # df = pd.read_csv(infile, usecols=col_df.columns, dtype=self.__get_dtypes(), low_memory=False)
-        df = pd.read_csv(infile, usecols=self.__get_columns(), dtype=self.__get_dtypes(), low_memory=False)
+        df = pd.read_csv(infile, usecols=self.__get_columns(),
+                         dtype=self.__get_dtypes(), low_memory=False)
 
         # Remove type 2 data (stored as float, b/c of NaN values - pandas can't use int type for column with NaN values)
         df = df[df['Entity Type Code'] != 2.0]
@@ -250,11 +269,15 @@ class NpiLoader(object):
         logger.debug(f"Total records: {len(df)}")
 
         # Reformat dates to be MySQL friendly
-        df['Provider Enumeration Date'] = df['Provider Enumeration Date'].apply(convert_date)
+        df['Provider Enumeration Date'] = df['Provider Enumeration Date'].apply(
+            convert_date)
         df['Last Update Date'] = df['Last Update Date'].apply(convert_date)
-        df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(convert_date)
-        df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
-        df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(convert_date)
+        df['NPI Deactivation Date'] = df['NPI Deactivation Date'].apply(
+            convert_date)
+        df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(
+            convert_date)
+        df['NPI Reactivation Date'] = df['NPI Reactivation Date'].apply(
+            convert_date)
 
         # Only keep the first 5 digits of US zip codes
         logger.info("Truncate zip codes")
@@ -270,7 +293,7 @@ class NpiLoader(object):
         # Drop/clean columns.
         # df = df[df.columns.drop(df.filter(regex='Other Provider').columns)]
         df.columns = [self.__clean_field(col) for col in df.columns]
-        
+
         # regex=re.compile("^other provider", re.IGNORECASE)
         # df.filter(regex='Test').columns
 
@@ -287,30 +310,32 @@ class NpiLoader(object):
         on_dupe_values = ""
 
         for column in columns:
-            cols += "`{}`, ".format(column)
+            cols += "\"{}\", ".format(column)
             values += "%({})s, ".format(column)
-            on_dupe_values += "{} = VALUES({}), ".format(column, column)
+            on_dupe_values += "{} = excluded.{}, ".format(column, column)
 
         cols = cols.rstrip().rstrip(",")
         values = values.rstrip().rstrip(",")
         on_dupe_values = on_dupe_values.rstrip().rstrip(",")
 
-        query = INSERT_QUERY.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
+        query = INSERT_QUERY.format(
+            table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
         return query
 
     def build_update_query(self, table_name):
         """
         Construct the NPI UPDATE query.  Used to preserve data when an NPI has been deactivated.
         """
-        query = UPDATE_QUERY.format(table_name=table_name, 
-            npi_deactivation_date="%(npi_deactivation_date)s", 
-            npi_reactivation_date="%(npi_reactivation_date)s", 
-            last_update_date="%(last_update_date)s", 
-            provider_enumeration_date="%(provider_enumeration_date)s", 
-            npi="%(npi)s")
+        query = UPDATE_QUERY.format(table_name=table_name,
+                                    npi_deactivation_date="%(npi_deactivation_date)s",
+                                    npi_reactivation_date="%(npi_reactivation_date)s",
+                                    last_update_date="%(last_update_date)s",
+                                    provider_enumeration_date="%(provider_enumeration_date)s",
+                                    npi="%(npi)s")
         return query
 
-    # Deprecated
+    # @deprecated
+    # Not used.
     def load_large_file(self, table_name, infile):
         """
         Load large files (such as the monthly zip).  Return the number of rows inserted.
@@ -335,7 +360,8 @@ class NpiLoader(object):
         either throttle arg is set to 0, throttling will be disabled.
         """
         reader = csv.DictReader(open(infile, 'r'))
-        insert_q = self.build_insert_query(self.__clean_fields(reader.fieldnames), table_name)
+        insert_q = self.build_insert_query(
+            self.__clean_fields(reader.fieldnames), table_name)
         update_q = self.build_update_query(table_name)
         # columnNames = reader.fieldnames
 
@@ -360,10 +386,13 @@ class NpiLoader(object):
             # These four date fields require some additional scrubbing once they're loaded back from
             # file, so they don't try to submit empty dates as empty strings, "".  We need them to go
             # into the database as NULL's instead.
-            row['provider_enumeration_date'] = self.__nullify(row['provider_enumeration_date'])
+            row['provider_enumeration_date'] = self.__nullify(
+                row['provider_enumeration_date'])
             row['last_update_date'] = self.__nullify(row['last_update_date'])
-            row['npi_deactivation_date'] = self.__nullify(row['npi_deactivation_date'])
-            row['npi_reactivation_date'] = self.__nullify(row['npi_reactivation_date'])
+            row['npi_deactivation_date'] = self.__nullify(
+                row['npi_deactivation_date'])
+            row['npi_reactivation_date'] = self.__nullify(
+                row['npi_reactivation_date'])
 
             if row.get('npi_deactivation_date') and \
                not row.get('npi_reactivation_date') and \
@@ -376,16 +405,21 @@ class NpiLoader(object):
                     update_batch = []
                     update_row_count = 0
                     if update_batch_count % self.print_update_every == 0:
-                        logger.info("UPDATE batch {}".format(update_batch_count))
+                        logger.info("UPDATE batch {}".format(
+                            update_batch_count))
                     update_batch_count += 1
 
                 # data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
                 # data = OrderedDict((('npi_deactivation_date', row.get('npi_deactivation_date')), ('npi', row.get('npi'))))
                 data = OrderedDict((
-                    ('npi_deactivation_date', self.__nullify(row.get('npi_deactivation_date', ""))),
-                    ('npi_reactivation_date', self.__nullify(row.get('npi_reactivation_date', ""))), 
-                    ('last_update_date', self.__nullify(row.get('last_update_date', ""))),
-                    ('provider_enumeration_date', self.__nullify(row.get('provider_enumeration_date', ""))),
+                    ('npi_deactivation_date', self.__nullify(
+                        row.get('npi_deactivation_date', ""))),
+                    ('npi_reactivation_date', self.__nullify(
+                        row.get('npi_reactivation_date', ""))),
+                    ('last_update_date', self.__nullify(
+                        row.get('last_update_date', ""))),
+                    ('provider_enumeration_date', self.__nullify(
+                        row.get('provider_enumeration_date', ""))),
                     ('npi', row.get('npi'))
                 ))
                 update_batch.append(data)
@@ -398,10 +432,12 @@ class NpiLoader(object):
                     insert_batch = []
                     insert_row_count = 0
                     if insert_batch_count % self.print_insert_every == 0:
-                        logger.info("INSERT batch {}, rows inserted {}".format(insert_batch_count, rows_inserted))
+                        logger.info("INSERT batch {}, rows inserted {}".format(
+                            insert_batch_count, rows_inserted))
                     insert_batch_count += 1
 
-                data = OrderedDict((self.__clean_field(key), value) for key, value in row.items())
+                data = OrderedDict((self.__clean_field(key), self.__sanitize(key, value))
+                                   for key, value in row.items())
                 insert_batch.append(data)
                 insert_row_count += 1
 
@@ -425,18 +461,22 @@ class NpiLoader(object):
             total_rows_deactivated += rows_updated
 
         logger.debug("INSERTED {} batches of {}, for a total of {} records.".format(insert_batch_count,
-                                                                        batch_size, total_rows_inserted))
+                                                                                    batch_size, total_rows_inserted))
         logger.debug("UPDATED {} batches of {}, for a total of {} records".format(update_batch_count,
-                                                                      batch_size, total_rows_deactivated))
+                                                                                  batch_size, total_rows_deactivated))
 
         return total_rows_inserted, total_rows_deactivated
 
+    # @deprecated
+    # Unused.
     def disable_checks(self):
         """
         Temporarily disable DB checks while loading large data sets
         """
         self.cursor.execute(DISABLE, multi=True)
 
+    # @deprecated
+    # Unused.
     def enable_checks(self):
         self.cursor.execute(ENABLE, multi=True)
 

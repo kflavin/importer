@@ -3,7 +3,7 @@ import distutils
 import shutil
 import glob
 import os
- 
+
 
 class CleanCommand(distutils.cmd.Command):
     user_options = []
@@ -48,9 +48,8 @@ setup(name='importer',
         "click==6.7",
         "docutils==0.14",
         "jmespath==0.9.3",
-        "mysql-connector==2.2.9",
-        "mysqlclient==1.3.12",
         "pandas==0.23.3",
+        "psycopg2-binary==2.9.1",
         "python-dateutil==2.7.3",
         "s3transfer==0.1.13",
         "six==1.11.0",

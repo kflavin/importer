@@ -1,7 +1,10 @@
-import time, itertools, datetime, logging
+import time
+import itertools
+import datetime
+import logging
 from collections import OrderedDict
-import mysql.connector as connector
-from mysql.connector.constants import ClientFlag
+import psycopg2
+import psycopg2.extras
 from pprint import pformat
 import csv
 import pandas as pd
@@ -9,6 +12,7 @@ import pandas as pd
 from importer.sql import (COPY_TABLE_DDL, COPY_TABLE_DATA_DML)
 
 logger = logging.getLogger(__name__)
+
 
 def convert_date(x):
     if not str(x) == "nan":
@@ -22,6 +26,7 @@ def convert_date(x):
     else:
         return x
 
+
 def convert_date_time(x):
     if not str(x) == "nan":
         try:
@@ -31,41 +36,39 @@ def convert_date_time(x):
     else:
         return x
 
+
 class BaseLoader(object):
 
-    def __init__(self, warnings=True, batch_size=1000, throttle_size=10_000, throttle_time=3):
+    def __init__(self, batch_size=1000, throttle_size=10_000, throttle_time=3):
         self.cnx = ""
         self.cursor = ""
         self.debug = ""
-        self.warnings = warnings
-        self.files = OrderedDict()  # OrderedDict where key is file to load, and value is id in the import log
-        self.column_type_overrides = {}  # Optional dict for functions to transform select columns {'id': int}
-        self.all_columns_xform = [] # Optional list of functions to transform all columns.  Run after type overrides.
+        # OrderedDict where key is file to load, and value is id in the import log
+        self.files = OrderedDict()
+        # Optional dict for functions to transform select columns {'id': int}
+        self.column_type_overrides = {}
+        # Optional list of functions to transform all columns.  Run after type overrides.
+        self.all_columns_xform = []
         self.batch_size = batch_size
         self.throttle_size = throttle_size
         self.throttle_time = throttle_time
         self.time = False
         self.max_debug_chars = 1500
 
-    def connect(self, user, host, password, database, clientFlags=False, debug=False, dictionary=False, buffered=False):
+    def connect(self, user, host, password, database, debug=False, dictionary=False, buffered=False):
         self.debug = debug
 
-        config = {
-            'user': user,
-            'password': password,
-            'host': host,
-            'database': database,
-            'get_warnings': self.warnings
-        }
+        # self.cnx = connector.connect(**config)
+        # self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
-        # Needed for LOAD DATA INFILE LOCAL
-        if clientFlags:
-            config['client_flags'] = [ClientFlag.LOCAL_FILES]
+        connection_string = f'dbname={database} host={host} user={user} password={password}'
+        logger.debug(f"Connecting to database: {database}, host: {host}")
+        self.cnx = psycopg2.connect(connection_string)
+        self.cursor = self.cnx.cursor(
+            cursor_factory=psycopg2.extras.RealDictCursor)
 
-        logger.debug(f"Connecting to database: {config}")
-        self.cnx = connector.connect(**config)
-        self.cursor = self.cnx.cursor(dictionary=dictionary, buffered=buffered)
-
+    # @deprecated
+    # Used by old product delta functions.
     def get_cursor(self, dictionary=False, buffered=False):
         return self.cnx.cursor(dictionary=dictionary, buffered=buffered)
 
@@ -96,12 +99,13 @@ class BaseLoader(object):
             columns.append(self._clean_field(field))
 
         return columns
-    
+
     def _clean_field(self, field):
         """
         Sanitize data
         """
-        field_clean = ' '.join(field.split())   # replace multiple whitespace characters with one space
+        field_clean = ' '.join(
+            field.split())   # replace multiple whitespace characters with one space
         field_clean = field_clean.replace("(", "")
         field_clean = field_clean.replace(")", "")
         field_clean = field_clean.replace(".", "")
@@ -187,7 +191,7 @@ class BaseLoader(object):
                 if self.time:
                     logger.info("Start query.")
                     logger.info(query)
-                
+
                 # cursor.execute(sql, (arg1, arg2))
                 # Deadlock error here when too many processes run at once.  Implement back off timer.
                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
@@ -197,9 +201,9 @@ class BaseLoader(object):
                 if self.time:
                     logger.info("Query completed.")
 
-                if self.cursor.fetchwarnings():
-                    for warning in self.cursor.fetchwarnings():
-                        logger.warn(warning)
+                # if self.cursor.fetchwarnings():
+                #     for warning in self.cursor.fetchwarnings():
+                #         logger.warn(warning)
                 break
             except connector.errors.InterfaceError as e:
                 logger.error(query)
@@ -220,7 +224,7 @@ class BaseLoader(object):
                 logger.warn("Note: this will cause entire batch to fail!")
                 self.cnx.rollback()
                 break
-            
+
             count += 1
 
         return self.cursor.rowcount
@@ -239,7 +243,8 @@ class BaseLoader(object):
         i = 0
         for row in rows:
             if row_count > self.batch_size - 1:
-                logger.debug(f"row_count={row_count} batch_size={self.batch_size} and batch={len(batch)}")
+                logger.debug(
+                    f"row_count={row_count} batch_size={self.batch_size} and batch={len(batch)}")
                 # Yield the previous batch
                 yield batch
 
@@ -256,7 +261,8 @@ class BaseLoader(object):
 
             # Put in a sleep timer to throttle how hard we hit the database
             if self.throttle_time and self.throttle_size and (throttle_count > self.throttle_size - 1):
-                logger.info(f"Sleeping for {self.throttle_time} seconds... row: {i}")
+                logger.info(
+                    f"Sleeping for {self.throttle_time} seconds... row: {i}")
                 time.sleep(int(self.throttle_time))
                 throttle_count = 0
             elif self.throttle_time and self.throttle_size:
@@ -295,14 +301,14 @@ class BaseLoader(object):
             values += "%({})s, ".format(column)
             on_dupe_values += "{} = VALUES({}), ".format(column, column)
 
-        # Remove trailing whitespace and commas
         cols = cols.rstrip().rstrip(",")
         values = values.rstrip().rstrip(",")
         on_dupe_values = on_dupe_values.rstrip().rstrip(",")
 
         # Values are only inserted if they exist in the query.  For example, if no INSERT ON DUPLICATE UPDATE statement
         #  is present, then 'on_dupe_values' will be skipped.
-        query = query.format(table_name=table_name, cols=cols, values=values, on_dupe_values=on_dupe_values)
+        query = query.format(table_name=table_name, cols=cols,
+                             values=values, on_dupe_values=on_dupe_values)
         return query
 
     def csv_loader(self, query, table_name, infile, ctx):
@@ -317,7 +323,8 @@ class BaseLoader(object):
         reader = csv.DictReader(open(infile, 'r'))
         # insert_q = self.build_insert_query(query, self._clean_fields(reader.fieldnames), table_name)
         logger.debug(query)
-        self.row_loader(query, reader.fieldnames, reader, table_name, batch_size, throttle_size, throttle_time)
+        self.row_loader(query, reader.fieldnames, reader,
+                        table_name, batch_size, throttle_size, throttle_time)
 
     def row_loader(self, query, columns, rows, table_name, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
@@ -341,7 +348,7 @@ class BaseLoader(object):
             if row_count > batch_size - 1:
                 logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
-                
+
                 logger.debug(str(batch)[:self.max_debug_chars])
 
                 batch = []
@@ -362,7 +369,8 @@ class BaseLoader(object):
                         value = self.column_type_overrides[key](value)
                     except Exception as e:
                         logger.debug(e)
-                        logger.debug(f"Could not set value for {key}, default to None")
+                        logger.debug(
+                            f"Could not set value for {key}, default to None")
                         value = None
                 else:
                     # If no value is defined, use null.
@@ -387,7 +395,8 @@ class BaseLoader(object):
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
+                logger.info(
+                    f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:
@@ -399,10 +408,8 @@ class BaseLoader(object):
             logger.debug(batch)
             logger.info("Submitting INSERT final batch {}".format(batch_count))
             total_rows_modified += self._submit_batch(insert_q, batch)
-        
+
         return total_rows_modified
-
-
 
     def load_file(self, query, table_name, infile, batch_size=1000, throttle_size=10_000, throttle_time=3):
         """
@@ -412,10 +419,11 @@ class BaseLoader(object):
         throttling will sleep throttle_time seconds for every throttle_size rows.  Throttle_size should be >= to batch_size.  If
         either throttle arg is set to 0, throttling will be disabled.
         """
-        logger.info("Importing from {}, batch size = {} throttle size={} throttle time={}"\
-                .format(infile, batch_size, throttle_size, throttle_time))
+        logger.info("Importing from {}, batch size = {} throttle size={} throttle time={}"
+                    .format(infile, batch_size, throttle_size, throttle_time))
         reader = csv.DictReader(open(infile, 'r'))
-        insert_q = self.build_insert_query(query, self._clean_fields(reader.fieldnames), table_name)
+        insert_q = self.build_insert_query(
+            query, self._clean_fields(reader.fieldnames), table_name)
         logger.debug(insert_q)
         # columnNames = reader.fieldnames
 
@@ -431,7 +439,7 @@ class BaseLoader(object):
             if row_count >= batch_size - 1:
                 logger.info("Submitting INSERT batch {}".format(batch_count))
                 total_rows_modified += self._submit_batch(insert_q, batch)
-                
+
                 logger.debug(str(batch)[:self.max_debug_chars])
 
                 batch = []
@@ -449,7 +457,8 @@ class BaseLoader(object):
                         value = self.column_type_overrides[key](value)
                     except Exception as e:
                         logger.debug(e)
-                        logger.debug(f"Could not set value for {key}, default to None")
+                        logger.debug(
+                            f"Could not set value for {key}, default to None")
                         value = None
                     # value = self._clean_values(key, value)
                 else:
@@ -462,7 +471,8 @@ class BaseLoader(object):
 
             # Put in a sleep timer to throttle how hard we hit the database
             if throttle_time and throttle_size and (throttle_count >= throttle_size - 1):
-                logger.info(f"Sleeping for {throttle_time} seconds... row: {i}")
+                logger.info(
+                    f"Sleeping for {throttle_time} seconds... row: {i}")
                 time.sleep(int(throttle_time))
                 throttle_count = 0
             elif throttle_time and throttle_size:
@@ -474,7 +484,7 @@ class BaseLoader(object):
             logger.debug(batch)
             logger.info("Submitting INSERT batch {}".format(batch_count))
             total_rows_modified += self._submit_batch(insert_q, batch)
-        
+
         return total_rows_modified
 
     def preprocess(self, infile, outfile=None, encoding="utf-8", sep=None, column_xforms=None, drop_columns=None):
@@ -496,11 +506,10 @@ class BaseLoader(object):
         logger.info("Transforming and cleaning column names.")
 
         if drop_columns:
-            cols_to_drop = [ col.strip() for col in drop_columns.split(",") ]
+            cols_to_drop = [col.strip() for col in drop_columns.split(",")]
             print(df.columns)
             df.drop(columns=cols_to_drop, inplace=True)
             print(df.columns)
-
 
         logger.debug(f"Columns: {df.columns}")
         if column_xforms:
@@ -508,7 +517,7 @@ class BaseLoader(object):
 
         logger.debug(f"Columns after xforms: {df.columns}")
 
-        df.columns = [ self._clean_field(col) for col in df.columns]
+        df.columns = [self._clean_field(col) for col in df.columns]
         logger.debug(f"Columns after cleaning: {df.columns}")
 
         df.to_csv(outfile, sep=',', quoting=1, index=False, encoding="utf-8")
@@ -525,7 +534,7 @@ class BaseLoader(object):
         query_len = len(queries)
         commit = False
 
-        for i,query in enumerate(queries):
+        for i, query in enumerate(queries):
             q = query.format(**format_args)
 
             if i >= query_len - 1:
@@ -539,7 +548,8 @@ class BaseLoader(object):
         """
         logger.info(f"Creating {dest_table_name} from {source_table_name}")
         try:
-            self._submit_single_q(COPY_TABLE_DDL.format(new_table_name=dest_table_name, old_table_name=source_table_name))
+            self._submit_single_q(COPY_TABLE_DDL.format(
+                new_table_name=dest_table_name, old_table_name=source_table_name))
         except connector.errors.ProgrammingError as e:
             logger.error(f"Table {dest_table_name} already exists.  Exiting.")
             return
@@ -548,11 +558,12 @@ class BaseLoader(object):
             raise
 
         try:
-            q = COPY_TABLE_DATA_DML.format(new_table_name=dest_table_name, old_table_name=source_table_name)
-            self._submit_single_q(COPY_TABLE_DATA_DML.format(new_table_name=dest_table_name, old_table_name=source_table_name))
+            q = COPY_TABLE_DATA_DML.format(
+                new_table_name=dest_table_name, old_table_name=source_table_name)
+            self._submit_single_q(COPY_TABLE_DATA_DML.format(
+                new_table_name=dest_table_name, old_table_name=source_table_name))
         except Exception as e:
             logger.error("Failed inserting data")
             raise e
 
         # print(self._submit_single_q("checksum table xfrm_product, staging_product")
-

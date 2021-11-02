@@ -23,14 +23,18 @@ timeout {timeout}m runner-import.py {debug_flag} npi full {init_flag} \
                     --limit {limit}
 
 # How many new records were loaded?
-created=$(mysql -D $loader_db_schema \
-      -e "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())" \
-      -B -s -N)
+created=$(psql -A -t -q \
+      -h "$loader_db_host" \
+      -U "$loader_db_user" \
+      -d "$loader_db" \
+      -c "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())")
 
 # How many new records were loaded?
-updated=$(mysql -D $loader_db_schema \
-      -e "select count(*) from {table_name} where DATE(updated_at)=DATE(NOW())" \
-      -B -s -N)
+updated=$(psql -A -t -q \
+      -h "$loader_db_host" \
+      -U "$loader_db_user" \
+      -d "$loader_db" \
+      -c "select count(*) from {table_name} where DATE(updated_at)=DATE(NOW())")
 
 # message gets picked up by finish.sh
 export message="$created created, $updated updated."

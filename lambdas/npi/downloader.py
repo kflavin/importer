@@ -9,7 +9,8 @@ from lambdas.helpers.db import DBHelper
 from lambdas.npi import download_url, base_url
 from importer import weekly_prefix, monthly_prefix, deactivated_prefix
 
-max_links = 10  # If we find more zip files than this, exit.  The NPPES site may have changed.
+# If we find more zip files than this, exit.  The NPPES site may have changed.
+max_links = 10
 
 
 def handler(event, context):
@@ -23,12 +24,14 @@ def handler(event, context):
 
     # Enumerate the zip files on the page.  If a file is not passed as a param, then
     # crawl the page for zip files.
-    urls = [event.get('file_url')] if event.get('file_url', '') else find_zip_urls()
+    urls = [event.get('file_url')] if event.get(
+        'file_url', '') else find_zip_urls()
     bucket = os.environ.get('aws_s3_bucket')
 
     # Add each file into bucket
     for url in urls:
-        url_to_s3(region, url, bucket, table_name, environment) # download the file
+        url_to_s3(region, url, bucket, table_name,
+                  environment)  # download the file
 
     print("Done!")
 
@@ -42,7 +45,7 @@ def url_to_s3(region, url, bucket, table_name, environment):
     period = ""
     client = boto3.client('s3')
 
-    rds = DBHelper(region)
+    db = DBHelper(region)
 
     if "weekly" in fileName.lower():
         key = f"{weekly_prefix}/{fileName}"
@@ -58,7 +61,8 @@ def url_to_s3(region, url, bucket, table_name, environment):
     if not exists(bucket, key):
         print(f"Uploading {bucket}/{key}")
         client.upload_fileobj(zippedFile, bucket, key)
-        if not rds.add_to_db(url, table_name, p, environment):  # add the new entry to the database
+        # add the new entry to the database
+        if not db.add_to_db(url, table_name, p, environment):
             print(f"Failed to add {url}")
     else:
         print(f"Skipping {bucket}/{key}, already exists.")
@@ -72,6 +76,7 @@ def url_to_s3(region, url, bucket, table_name, environment):
 #     body = obj.get()['Body']
 #     s3_upload = boto3.client('s3')
 #     s3_upload.upload_fileobj(body, os.environ.get('aws_s3_bucket'), event.get('outfile'))
+
 
 def exists(bucket, key):
     """
@@ -88,7 +93,7 @@ def exists(bucket, key):
         else:
             print("Unknown error.")
             raise
-    
+
     return True
 
 
@@ -104,7 +109,8 @@ def find_zip_urls():
     print(f"Found {len(links)} links")
     # Sanity check to ensure the page hasn't changed to something unexpected.
     if len(links) > max_links:
-        print("Number of links exceeds MAX of {max_links}, exit and check site for changes.")
+        print(
+            "Number of links exceeds MAX of {max_links}, exit and check site for changes.")
         return urls
 
     for l in links:
@@ -120,6 +126,7 @@ def find_zip_urls():
 
     return urls
 
+
 if __name__ == "__main__":
     """
     Test from the CLI
@@ -132,4 +139,3 @@ if __name__ == "__main__":
 
     for link in links:
         print(link)
-

@@ -23,32 +23,32 @@ INSERT_PLAIN_Q = """
 """
 
 DELETE_Q = """
-  DELETE from `{table_name}` 
+  DELETE from "{table_name}"
   WHERE ( {where_clause} );
 """
 
 COPY_TABLE_DDL = """
-    CREATE TABLE `{new_table_name}` LIKE `{old_table_name}`
+    CREATE TABLE "{new_table_name}" ( LIKE "{old_table_name} )"
 """
 
 COPY_TABLE_DATA_DML = """
-    INSERT `{new_table_name}` SELECT * FROM `{old_table_name}`
+    INSERT "{new_table_name}" SELECT * FROM "{old_table_name}"
 """
 
 CREATE_TABLE_DDL = """
-    CREATE TABLE `{table_name}`
+    CREATE TABLE "{table_name}"
 """
 
 DROP_TABLE_DDL = """
-   DROP TABLE `{table_name}`
+   DROP TABLE "{table_name}"
 """
 
 DROP_TABLE_IFE_DDL = """
-   DROP TABLE IF EXISTS `{table_name}`
+   DROP TABLE IF EXISTS "{table_name}"
 """
 
 RENAME_TABLE_DDL = """
-   RENAME TABLE `{old_table_name}` TO `{new_table_name}`
+   RENAME TABLE "{old_table_name}" TO "{new_table_name}"
 """
 
 CREATE_TABLE_LIKE_DDL = """

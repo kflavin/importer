@@ -1,5 +1,5 @@
 import os
-import mysql.connector as connector
+import psycopg2
 from pprint import pprint
 import boto3
 import sys
@@ -13,38 +13,51 @@ class DBHelper(object):
 
         if config:
             self.config = config
-        else:   
-            self.config = {
-                'user': ssm.get_parameter(Name=f'/importer/{environment}/db_user', WithDecryption=True)['Parameter']['Value'],
-                'password': ssm.get_parameter(Name=f'/importer/{environment}/db_password', WithDecryption=True)['Parameter']['Value'],
-                'host': ssm.get_parameter(Name=f'/importer/{environment}/db_host')['Parameter']['Value'],
-                'database': ssm.get_parameter(Name=f'/importer/{environment}/db_schema', WithDecryption=True)['Parameter']['Value']
-            }
+            user = config['db_user']
+            password = config['db_password']
+            host = config['db_host']
+            database = config['db_name']
+        else:
+            user = ssm.get_parameter(
+                Name=f'/importer/{environment}/db_user', WithDecryption=True)['Parameter']['Value']
+            password = ssm.get_parameter(
+                Name=f'/importer/{environment}/db_password', WithDecryption=True)['Parameter']['Value']
+            self.host = ssm.get_parameter(
+                Name=f'/importer/{environment}/db_host')['Parameter']['Value']
+            self.database = ssm.get_parameter(
+                Name=f'/importer/{environment}/db_schema', WithDecryption=True)['Parameter']['Value']
+
+        self.connection_string = f'dbname={self.database} host={self.host} user={user} password={password}'
+        self.cnx = psycopg2.connect(self.connection_string)
+        self.cursor = self.cnx.cursor()
+
+    def close(self):
+        self.cursor.close()
+        self.cnx.close()
 
     def files_ready(self, table_name, period, environment, limit):
-        print(f"Connecting to host: {self.config.get('host')} db: {self.config.get('database')} table: ${table_name}, environment: {environment} limit: {limit}")
+        print(
+            f"Connecting to host: {self.host} db: {self.database} table: ${table_name}, environment: {environment} limit: {limit}")
 
         p = "m" if period.lower() == "monthly" else "w"
 
-        cnx = connector.connect(**self.config)
-        cursor = cnx.cursor(buffered=True)
-        q = GET_FILES.format(table_name=table_name, period=p, environment=environment, limit=limit)
+        q = GET_FILES.format(table_name=table_name, period=p,
+                             environment=environment, limit=limit)
         print(q.replace('\n', ' ').replace('\r', ''))
-        cursor.execute(q)
-        
+        self.cursor.execute(q)
+
         # If there are any files to import, return true
-        if cursor.rowcount > 0:
+        if self.cursor.rowcount > 0:
             return True
-        
+
         return False
 
     def add_to_db(self, url, table_name, p, environment):
-        print("Connecting to DB")
-        cnx = connector.connect(**self.config)
-        cursor = cnx.cursor()
+        print("Add URL to DB")
         cols = "url, period, environment"
         values = "%(url)s, %(period)s, %(environment)s"
-        query = INSERT_NEW_FILE.format(table_name=table_name, cols=cols, values=values)
+        query = INSERT_NEW_FILE.format(
+            table_name=table_name, cols=cols, values=values)
 
         data = {
             "url": url,
@@ -53,30 +66,23 @@ class DBHelper(object):
         }
 
         try:
-            cursor.execute(query, data)
-            cnx.commit()
-        except connector.IntegrityError as e:
+            self.cursor.execute(query, data)
+            self.cnx.commit()
+        except psycopg2.Error as e:
             print(e)
             print("Integrity error, may have duplicate key, won't insert.")
-            cursor.close()
-            cnx.close()
             return False
         except Exception as e:
             print(e)
             return False
 
-        cursor.close()
-        cnx.close()
         return True
 
 
 # Test from the CLI
 if __name__ == "__main__":
-    print("Add to db")
-    # add_to_db("myurl", "npi_import_log")
-    # imports_ready("npi_import_log", "weekly", 1)
-    table_name = os.environ.get('npi_log_table_name')
-    region = os.environ.get('aws_region')
+    table_name = os.environ.get('npi_log_table_name', 'npi_import_logs')
+    region = os.environ.get('aws_region', 'us-east-1')
     environment = os.environ.get('environment', "dev")
     url = "http://test-url"
     p = 'w'
@@ -84,5 +90,6 @@ if __name__ == "__main__":
         print("Must provide npi_log_table_name, aws_region in ENV")
         sys.exit(0)
 
-    rds = DBHelper(region)
-    print(rds.add_to_db(url, table_name, p, environment))
+    db = DBHelper(region)
+    print(db.add_to_db(url, table_name, p, environment))
+    db.close()
