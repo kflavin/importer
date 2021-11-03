@@ -80,13 +80,19 @@ class NpiLoader(object):
         self.cursor = self.cnx.cursor(
             cursor_factory=psycopg2.extras.RealDictCursor)
 
-    def __sanitize(self, key, value):
-      if key in ['npi', 'entity_type_code', 'replacement_npi', 'provider_other_last_name_type_code']:
-        if value:
-          return int(float(key))
-        else:
-          return None
-
+    # pandas will convert certain values to floats, but Postgres expects them to be inserted as integers.
+    # MySQL was less strict about this.
+    def __set_value_type(self, key, value):
+        if key in ['npi', 'entity_type_code', 'replacement_npi', 'provider_other_last_name_type_code']:
+            if value:
+                try:
+                    return int(float(value))
+                except:
+                    logger.error('Failed to convert value')
+                    logger.error(f'${key}=${value}')
+                    raise
+            else:
+                return None
 
     def __clean_field(self, field):
         """
@@ -436,7 +442,7 @@ class NpiLoader(object):
                             insert_batch_count, rows_inserted))
                     insert_batch_count += 1
 
-                data = OrderedDict((self.__clean_field(key), self.__sanitize(key, value))
+                data = OrderedDict((self.__clean_field(key), self.__set_value_type(key, value))
                                    for key, value in row.items())
                 insert_batch.append(data)
                 insert_row_count += 1

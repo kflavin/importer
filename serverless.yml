@@ -11,7 +11,7 @@ custom:
   gitDescription: ${git:branch}:${git:sha1}
   environment: ${opt:stage, self:provider.stage}
   pythonRequirements:
-    dockerizePip: false
+    dockerizePip: non-linux
     slim: true
   scripts:
     hooks:
