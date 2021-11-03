@@ -88,8 +88,8 @@ export start=$(date +%s)
 
 # Get database values
 export loader_db_host=$(aws ssm get-parameters --names "/importer/{environment}/db_host" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-export loader_db_schema=$(aws ssm get-parameters --names "/importer/{environment}/db_schema" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
-export loader_stage_db_schema=$(aws ssm get-parameters --names "/importer/{environment}/stage_db_schema" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
+export loader_db_name=$(aws ssm get-parameters --names "/importer/{environment}/db_name" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
+export loader_stage_db_name=$(aws ssm get-parameters --names "/importer/{environment}/stage_db_name" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
 set +x   # don't print secrets
 export loader_db_user=$(aws ssm get-parameters --names "/importer/{environment}/db_user" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)
 export loader_db_password=$(aws ssm get-parameters --names "/importer/{environment}/db_password" --region "${{aws_region:-us-east-1}}" --with-decryption --query Parameters[0].Value --output text)

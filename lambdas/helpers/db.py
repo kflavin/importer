@@ -25,7 +25,7 @@ class DBHelper(object):
             self.host = ssm.get_parameter(
                 Name=f'/importer/{environment}/db_host')['Parameter']['Value']
             self.database = ssm.get_parameter(
-                Name=f'/importer/{environment}/db_schema', WithDecryption=True)['Parameter']['Value']
+                Name=f'/importer/{environment}/db_name', WithDecryption=True)['Parameter']['Value']
 
         self.connection_string = f'dbname={self.database} host={self.host} user={user} password={password}'
         self.cnx = psycopg2.connect(self.connection_string)

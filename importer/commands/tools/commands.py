@@ -64,7 +64,7 @@ def load(ctx, infile, table_name):
         'user': os.environ.get('loader_db_user'),
         'password': os.environ.get('loader_db_password'),
         'host': os.environ.get('loader_db_host'),
-        'database': os.environ.get('loader_db_schema'),
+        'database': os.environ.get('loader_db_name'),
         'debug': debug
     }
 
@@ -129,7 +129,7 @@ def invalid_chars(ctx, infile, encoding, show_errors, out_encoding):
                 count += 1
             lineno += 1
 
-    
+
     # This will only show the first bad character in a line
     if show_errors:
         with open(infile, mode='r', encoding=out_encoding) as f:
@@ -187,7 +187,7 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
     else:
         print("Loading CSV file...")
         df = pd.read_csv(infile, encoding=encoding, sep=separator)
-    
+
     count = 0
     for column in df.columns:
         #print(df[column].dtype)
@@ -207,7 +207,7 @@ def create_table(ctx, infile, table_name, col_spacing, varchar_factor, sql, enco
             validVals = [i for i in df[column].dropna()]
             if validVals:
                 maxVal = max(validVals)
-            
+
             if is_float_dtype(df[column]):
                 # Pandas stores numerical columns with null values as floats.  We
                 # need to do some extra work to determine if the column is an int
@@ -349,7 +349,7 @@ def check_encoding(ctx, table_name, encoding, column, count_only):
 #     loader = DeltaBaseLoader(warnings=ctx.obj['warnings'])
 #     loader.connect(**ctx.obj['db_credentials'])
 #     loader.delta_table(sql, left_table_name, right_table_name, ctx.obj['batch_size'], ctx.obj['throttle_size'], ctx.obj['throttle_time'])
-        
+
 
 tools.add_command(invalid_chars)
 tools.add_command(x2c)

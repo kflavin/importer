@@ -10,7 +10,7 @@ args = {
     'user': os.environ.get('loader_db_user'),
     'password': os.environ.get('loader_db_password'),
     'host': os.environ.get('loader_db_host'),
-    'database': os.environ.get('loader_db_schema')
+    'database': os.environ.get('loader_db_name')
 }
 
 # We don't want to use these for the file loading, just fetching files from S3.
@@ -19,9 +19,11 @@ extra_args = {
     'buffered': True         # so we can get row counts without reading every row
 }
 
+
 @click.group()
 def npi():
     pass
+
 
 @click.command()
 @click.option('--url-prefix', '-u', required=True, type=click.STRING, help="URL directory that contains weekly or monthly files to fetch")
@@ -37,7 +39,9 @@ def fetch(url_prefix, table_name, period, output_dir, limit, environment):
     logger.info(f"Fetch '{period}' files from {table_name}")
     npi_loader = NpiLoader()
     npi_loader.connect(**{**args, **extra_args})
-    npi_loader.fetch(url_prefix, table_name, period, environment, output_dir, limit)
+    npi_loader.fetch(url_prefix, table_name, period,
+                     environment, output_dir, limit)
+
 
 @click.command()
 @click.option('--infile', '-f', required=True, type=click.STRING, help="CSV file with NPI data")
@@ -68,7 +72,8 @@ def load(ctx, infile, import_table_name, table_name, period, large_file, initial
     logger.info("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"
                 .format(infile, batch_size, throttle_size, throttle_time))
     npi_loader.connect(**args)
-    npi_loader.load_file(table_name, infile, batch_size, throttle_size, throttle_time, initialize)
+    npi_loader.load_file(table_name, infile, batch_size,
+                         throttle_size, throttle_time, initialize)
 
     try:
         rows = npi_loader.mark_imported(id, import_table_name)
@@ -77,7 +82,8 @@ def load(ctx, infile, import_table_name, table_name, period, large_file, initial
         logger.info(f"Failed to update record in database.")
 
     npi_loader.close()
-    logger.info("Rows updated: {}, Rows deactivated: {}".format(rows[0], rows[1]))
+    logger.info(
+        "Rows updated: {}, Rows deactivated: {}".format(rows[0], rows[1]))
 
 
 @click.command()
@@ -91,6 +97,7 @@ def npi_preprocess(infile, outfile):
     csv_file = npi_loader.preprocess(infile, outfile)
     logger.info(csv_file)
 
+
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
 @click.option('--unzip-path', '-u', required=True, type=click.STRING, help="Directory to extract to")
@@ -98,6 +105,7 @@ def npi_unzip(infile, unzip_path):
     npi_loader = NpiLoader()
     csv_file = npi_loader.unzip(infile, unzip_path)
     logger.info(csv_file)
+
 
 @click.command()
 @click.option('--infile', '-i', required=True, type=click.STRING, help="File to unzip")
@@ -115,7 +123,7 @@ def npi_unzip(infile, unzip_path):
 def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_table_name, period, workspace, limit, large_file, initialize):
     """
     Local version of the "full" load.
-    
+
     It will perform all the steps of the full load, except it does not fetch the data from s3 or update the log table metadata.  Primarily
     used to initialize the table, or for testing.
     """
@@ -127,7 +135,9 @@ def full_local(ctx, infile, unzip_path, outfile, batch_size, table_name, import_
     logger.info(f"Preprocessing {csv_file}")
     npi_loader.preprocess(csv_file, outfile)
     logger.info(f"Loading cleaned file {outfile}")
-    ctx.invoke(load, infile=outfile, batch_size=batch_size, table_name=table_name, period=period, large_file=large_file, initialize=initialize)
+    ctx.invoke(load, infile=outfile, batch_size=batch_size, table_name=table_name,
+               period=period, large_file=large_file, initialize=initialize)
+
 
 @click.command()
 @click.option('--url-prefix', '-u', required=True, type=click.STRING, help="URL directory that contains weekly or monthly files to fetch")
@@ -162,7 +172,8 @@ def full(ctx, url_prefix, table_name, import_table_name, period, workspace, limi
     # Fetch files listed in import log
     npi_fetcher = NpiLoader()
     npi_fetcher.connect(**{**args, **extra_args})
-    files = npi_fetcher.fetch(url_prefix, import_table_name, period, environment, workspace, limit)
+    files = npi_fetcher.fetch(
+        url_prefix, import_table_name, period, environment, workspace, limit)
     npi_fetcher.close()
 
     # Load the files
@@ -185,7 +196,7 @@ def full(ctx, url_prefix, table_name, import_table_name, period, workspace, limi
         except Exception:
             logger.error("Error preprocessing file")
             raise
-        
+
         try:
             logger.info("NPI loader importing from {}, batch size = {} throttle size={} throttle time={}"
                         .format(cleaned_file, batch_size, throttle_size, throttle_time))
@@ -206,7 +217,8 @@ def full(ctx, url_prefix, table_name, import_table_name, period, workspace, limi
             raise
 
     npi_loader.close()
-    logger.info("Rows updated: {}, Rows deactivated: {}".format(rows[0], rows[1]))
+    logger.info(
+        "Rows updated: {}, Rows deactivated: {}".format(rows[0], rows[1]))
 
 
 npi.add_command(load)

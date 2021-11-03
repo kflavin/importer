@@ -37,7 +37,7 @@ mysqldump -h "$loader_db_host" \
           --single-transaction=TRUE \
           --skip-triggers \
           --set-gtid-purged=OFF \
-          "$loader_db_schema" > /data/dump.sql
+          "$loader_db_name" > /data/dump.sql
 
 gzip /data/dump.sql
 

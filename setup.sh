@@ -29,4 +29,4 @@ sls deploy --stage=$STAGE --time="$(date '+%Y-%m-%d %H:%M:%S')"
 # Load parameters into SSM
 bin/set_ssm_params.sh $STAGE
 
-echo "Configured to deploy to: ${db_host}, schema: ${db_schema}"
+echo "Configured to deploy to: ${db_host}, db name: ${db_name}"

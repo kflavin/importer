@@ -26,14 +26,14 @@ timeout {timeout}m runner-import.py {debug_flag} npi full {init_flag} \
 created=$(psql -A -t -q \
       -h "$loader_db_host" \
       -U "$loader_db_user" \
-      -d "$loader_db" \
+      -d "$loader_db_name" \
       -c "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())")
 
 # How many new records were loaded?
 updated=$(psql -A -t -q \
       -h "$loader_db_host" \
       -U "$loader_db_user" \
-      -d "$loader_db" \
+      -d "$loader_db_name" \
       -c "select count(*) from {table_name} where DATE(updated_at)=DATE(NOW())")
 
 # message gets picked up by finish.sh
