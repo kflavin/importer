@@ -57,7 +57,8 @@ export loader_db_host=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRO
 export loader_db_user=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/db_user" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
 export loader_db_password=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/db_password" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
 export loader_db_name=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/db_name" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
-export loader_stage_db_name=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/stage_db_name" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
+export loader_db_schema=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/db_schema" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
+export loader_stage_db_schema=$(aws ssm get-parameters --names "/importer/$LOADER_ENVIRONMENT/stage_db_schema" --region "$REGION" --with-decryption --query Parameters[0].Value --output text)
 cd /home/ec2-user/jobs/RxNorm_Loader
 
 ## Load stage tables, and call SP

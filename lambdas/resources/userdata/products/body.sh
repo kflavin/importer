@@ -25,14 +25,14 @@ timeout {timeout}m bash RxNorm_Loader_run.sh --context_param contextName="{envir
 products_count=$(psql -A -t -q \
       -h "$loader_db_host" \
       -U "$loader_db_user" \
-      -d "$loader_db" \
+      -d "$loader_db_name" \
       -c "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())")
 
       # How many new synonym records were loaded?
 synonyms_count=$(psql -A -t -q \
       -h "$loader_db_host" \
       -U "$loader_db_user" \
-      -d "$loader_db" \
+      -d "$loader_db_name" \
       -c "select count(*) from {synonyms_table_name} where DATE(created_at)=DATE(NOW())")
 
 # message gets picked up by finish.sh

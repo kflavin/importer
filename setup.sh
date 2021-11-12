@@ -13,10 +13,10 @@ STAGE=$(echo ${1:-dev} | tr '[:upper:]' '[:lower:]')
 
 set +e
 git diff-index --quiet HEAD
-if [[ $? -ne 0 && $STAGE != 'dev' ]]; then
-    echo "Git working directory is dirty.  Please checkout a clean branch before deploying."
-    exit 1
-fi
+#if [[ $? -ne 0 && $STAGE != 'dev' ]]; then
+#    echo "Git working directory is dirty.  Please checkout a clean branch before deploying."
+#    exit 1
+#fi
 set -e
 
 ENV_FILE=.env.${STAGE}

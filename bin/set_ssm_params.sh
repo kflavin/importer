@@ -6,7 +6,8 @@ AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/db_host" --type "S
 AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/db_user" --type "SecureString" --value "${db_user}" --overwrite
 AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/db_password" --type "SecureString" --value "${db_password}" --overwrite
 AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/db_name" --type "SecureString" --value "${db_name}" --overwrite
-AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/stage_db_name" --type "SecureString" --value "${stage_db_name}" --overwrite
+AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/db_schema" --type "SecureString" --value "${db_schema}" --overwrite
+AWS_PAGER="" aws ssm put-parameter --name "/importer/${STAGE}/stage_db_schema" --type "SecureString" --value "${stage_db_schema}" --overwrite
 
 
 # Must set use_replica=1 on the lambda environment variable

@@ -30,7 +30,7 @@ npm install serverless -g
 
 - You should have your AWS creds file configured. If you are using profiles, be sure to set your profile name in your environment file.
 
-#### Building and Deploying the Lambda functions
+#### Initial Setup
 
 Each environment corresponds to a [Cloudformation stack](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks?filteringText=&filteringStatus=active&viewNested=true&hideStacks=false). Existing stacks are `rc`, `staging`, and `prod`.
 
@@ -41,11 +41,28 @@ npm install
 # Copy the environment file, and fill out appropriate values
 cp env.template .env.staging
 cp env.template .env.prod
+```
 
-# Deploy the stack
-./setup.sh staging
+#### Deploy
+
+```
+# Environment can be passed.  Defaults to "dev"
+./setup.sh
+./setup.sh master
 ./setup.sh prod
 ```
+
+#### Deploy RxNorm Loader
+The RxNorm Loader is built with Talend.  Unfortunately, Talend Open Source does not
+allow you to build from the command line.  Use the [Talend](https://github.com/rxvantage/data-importer-talend) repo to check out
+the code locally and build the project in Talend.  Copy the resulting zip (ie: RxNorm_Loader_0.1.zip) to the `talend/dist` folder.
+You can then deploy directly to the environment's S3 bucket.
+```
+# setup.sh needs to be run first
+./bin/stage_rxnorm_loader_to_s3.sh
+```
+
+This file does not need to be redeployed unless it is changed, or if the stack is destroyed.
 
 #### Building and Deploying the NPI import script
 
@@ -61,7 +78,9 @@ python setup.py sdist
 This will delete all components, _including the S3 bucket_ and any staged files!:
 
 ```bash
-./teardown.sh staging
+# Environment can be passed.  Defaults to "dev"
+./teardown.sh
+./teardown.sh master
 ./teardown.sh prod
 ```
 

@@ -22,7 +22,7 @@ events:
       input:
         debug: false
         period: weekly
-      name: ${self:custom.environment}-npi-loader-monthly
+      name: ${self:custom.environment}-npi-loader-weekly
       description: Triggers NPI load of weekly file
   - schedule:
       rate: ${self:custom.schedule.npi.loader.${self:custom.environment}.monthly.rate}
@@ -30,5 +30,5 @@ events:
       input:
         debug: false
         period: monthly
-      name: ${self:custom.environment}-npi-loader-weekly
+      name: ${self:custom.environment}-npi-loader-monthly
       description: Triggers NPI load of monthly file

@@ -71,10 +71,12 @@ class DBHelper(object):
         except psycopg2.Error as e:
             print(e)
             print("Integrity error, may have duplicate key, won't insert.")
-            return False
+            # return False
+            raise
         except Exception as e:
             print(e)
-            return False
+            # return False
+            raise
 
         return True
 
