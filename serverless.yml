@@ -21,7 +21,7 @@ custom:
   schedule:
     products: ${file(./serverless/products/schedule.env.yml)}
     npi: ${file(./serverless/npi/schedule.env.yml)}
-    mysql_backup: ${file(./serverless/mysql_backup/schedule.env.yml)}
+    #mysql_backup: ${file(./serverless/mysql_backup/schedule.env.yml)}
 
 provider:
   name: aws
@@ -55,22 +55,25 @@ functions:
   npi_loader: ${file(serverless/npi/loader.yml)}
   npi_downloader: ${file(serverless/npi/downloader.yml)}
   products: ${file(serverless/products/loader.yml)}
-  mysql_backup: ${file(serverless/mysql_backup/loader.yml)}
+  # This function will need to be replaced, because we want to save the production bucket
+  # with all of the backups (the old bucket shouldn't be removed, so we can't cleanup
+  # the old prod stack entirely)
+  #mysql_backup: ${file(serverless/mysql_backup/loader.yml)}
 
 resources:
   Description: Lambda functions for loading data
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
-    DbBackupBucket:
-      Value: {Ref: DbBackupBucket}
+    #DbBackupBucket:
+    #  Value: {Ref: DbBackupBucket}
     Ec2Role:
       Value: {Ref: Ec2Role}
     Ec2InstanceProfile:
       Value: {Ref: Ec2InstanceProfile}
   Resources:
     ScriptBucket: ${file(serverless/resources/s3_npi_bucket.yml)}
-    DbBackupBucket: ${file(serverless/resources/s3_mysql_bucket.yml)}
+    #DbBackupBucket: ${file(serverless/resources/s3_mysql_bucket.yml)}
     Ec2Role: ${file(serverless/resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(serverless/resources/ec2-instance_profile.yml)}
 

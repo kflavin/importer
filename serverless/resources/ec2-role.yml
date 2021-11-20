@@ -1,23 +1,23 @@
 ---
 Type: "AWS::IAM::Role"
 Properties:
-  AssumeRolePolicyDocument: 
+  AssumeRolePolicyDocument:
         Version: "2012-10-17"
-        Statement: 
-          - 
+        Statement:
+          -
             Effect: "Allow"
-            Principal: 
-              Service: 
+            Principal:
+              Service:
                 - "ec2.amazonaws.com"
-            Action: 
+            Action:
               - "sts:AssumeRole"
   Path: "/"
-  Policies: 
-    - 
+  Policies:
+    -
       PolicyName: "ec2-importer2"
-      PolicyDocument: 
+      PolicyDocument:
         Version: "2012-10-17"
-        Statement: 
+        Statement:
           # EC2
           - Effect: Allow
             Action: "ec2:*"
@@ -60,29 +60,30 @@ Properties:
                   -
                     - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
                     - "/*"
-          - Effect: Allow
-            Action:
-              - "s3:PutObject"
-              - "s3:ListMultipartUploadParts"
-            Resource:
-              - "Fn::Join":
-                  - ""
-                  - - "arn:aws:s3:::"
-                    - ${self:provider.environment.aws_db_backup_s3_bucket}
-              - "Fn::Join":
-                  - ""
-                  - - "arn:aws:s3:::"
-                    - ${self:provider.environment.aws_db_backup_s3_bucket}
-                    - "/*"
-              - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-              - "Fn::Join":
-                  - ""
-                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-                    - "/backups/*"
-              - "Fn::Join":
-                  - ""
-                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-                    - "/backups"
+          # # Add back when backups are working again
+          # - Effect: Allow
+          #   Action:
+          #     - "s3:PutObject"
+          #     - "s3:ListMultipartUploadParts"
+          #   Resource:
+          #     - "Fn::Join":
+          #         - ""
+          #         - - "arn:aws:s3:::"
+          #           - ${self:provider.environment.aws_db_backup_s3_bucket}
+          #     - "Fn::Join":
+          #         - ""
+          #         - - "arn:aws:s3:::"
+          #           - ${self:provider.environment.aws_db_backup_s3_bucket}
+          #           - "/*"
+          #     - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+          #     - "Fn::Join":
+          #         - ""
+          #         - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+          #           - "/backups/*"
+          #     - "Fn::Join":
+          #         - ""
+          #         - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+          #           - "/backups"
           - Effect: Allow
             Action:
               - "sns:Publish"
@@ -106,4 +107,4 @@ Properties:
               - "ssm:Get*"
               - "ssm:List*"
             Resource: "arn:aws:ssm:*:*:parameter/importer/*"
-          
+
