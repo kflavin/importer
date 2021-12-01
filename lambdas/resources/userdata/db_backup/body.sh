@@ -30,14 +30,7 @@ mkfs -t ext4 $DISK
 mkdir /data
 mount $DISK /data
 
-## Increased packet size helps with the disconnects.  Changed in RDS as well to match the value listed here.
-mysqldump -h "$loader_db_host" \
-          --max-allowed-packet=1073741824 \
-          --net-buffer-length=32704 \
-          --single-transaction=TRUE \
-          --skip-triggers \
-          --set-gtid-purged=OFF \
-          "$loader_db_name" > /data/dump.sql
+pg_dump "postgresql://$loader_db_user:$loader_db_password@$loader_db_host/$loader_db_name" > /data/dump.sql
 
 gzip /data/dump.sql
 

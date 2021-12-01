@@ -1,0 +1,19 @@
+---
+handler: lambdas/db_backup/backup.handler
+description: DB backups
+environment:
+  instance_type: ${file(./serverless/db_backup/serverless.env.yml):${self:custom.environment}.instance_type}
+  backup_table_name: ${file(./serverless/db_backup/serverless.env.yml):${self:custom.environment}.backup_table_name}
+  use_replica: ${file(./serverless/db_backup/serverless.env.yml):${self:custom.environment}.use_replica}
+vpc:
+  securityGroupIds:
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_security_groups}
+  subnetIds:
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_1}
+    - ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_lambda_subnet_2}
+events:
+  - schedule:
+      rate: ${self:custom.schedule.db_backup.${self:custom.environment}.rate}
+      enabled: ${self:custom.schedule.db_backup.${self:custom.environment}.enabled}
+      name: ${self:custom.environment}-db_backup-loader
+      description: Triggers DB Backups
