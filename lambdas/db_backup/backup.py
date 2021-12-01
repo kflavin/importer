@@ -17,8 +17,7 @@ def handler(event, context):
     image_id = os.environ.get('aws_image_id')
     instance_type = os.environ.get('instance_type')
     security_groups = os.environ.get('aws_security_groups').split(",")
-    subnet_id = os.environ.get('aws_subnets').split(",")[
-        0]  # Just use the first subnet
+    subnet_id = os.environ.get('aws_subnets').split(",")[0]  # Just use the first subnet
     instance_profile = os.environ.get('aws_instance_profile')
     table_name = os.environ.get('table_name')
     bucket_name = os.environ.get("aws_s3_bucket")
@@ -32,8 +31,7 @@ def handler(event, context):
     active_imports = ec2.active_imports("db_backup", environment)
     print(f"Current number of tasks are {active_imports}, max instances are 1")
     if active_imports > 0:
-        print(
-            f"SKIPPING, there is already an import running for table {table_name}.")
+        print(f"SKIPPING, there is already an import running for table {table_name}.")
         return False
 
     user_data_head = user_data_head_tmpl.format(environment=environment,
