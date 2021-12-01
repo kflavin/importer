@@ -93,6 +93,7 @@ class NpiLoader(object):
                     raise
             else:
                 return None
+        return value
 
     def __clean_field(self, field):
         """
@@ -137,14 +138,13 @@ class NpiLoader(object):
                 # cursor.execute(sql, (arg1, arg2))
                 # Deadlock error here when too many processes run at once.  Implement back off timer.
                 # mysql.connector.errors.InternalError: 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
-                print("query")
-                print(query)
+                logger.debug(query)
                 self.cursor.executemany(query, data)
                 self.cnx.commit()
                 break
             except psycopg2.Error as e:
-                # print(self.cursor._last_executed)
-                # print(self.cursor.statement)
+                print("Last executed query")
+                print(self.cursor.query)
                 logger.warning("Rolling back...")
                 self.cnx.rollback()
                 count += 1
