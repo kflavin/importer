@@ -60,30 +60,29 @@ Properties:
                   -
                     - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
                     - "/*"
-          # # Add back when backups are working again
-          # - Effect: Allow
-          #   Action:
-          #     - "s3:PutObject"
-          #     - "s3:ListMultipartUploadParts"
-          #   Resource:
-          #     - "Fn::Join":
-          #         - ""
-          #         - - "arn:aws:s3:::"
-          #           - ${self:provider.environment.aws_db_backup_s3_bucket}
-          #     - "Fn::Join":
-          #         - ""
-          #         - - "arn:aws:s3:::"
-          #           - ${self:provider.environment.aws_db_backup_s3_bucket}
-          #           - "/*"
-          #     - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-          #     - "Fn::Join":
-          #         - ""
-          #         - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-          #           - "/backups/*"
-          #     - "Fn::Join":
-          #         - ""
-          #         - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-          #           - "/backups"
+          - Effect: Allow
+            Action:
+              - "s3:PutObject"
+              - "s3:ListMultipartUploadParts"
+            Resource:
+              - "Fn::Join":
+                  - ""
+                  - - "arn:aws:s3:::"
+                    - ${self:provider.environment.aws_db_backup_s3_bucket}
+              - "Fn::Join":
+                  - ""
+                  - - "arn:aws:s3:::"
+                    - ${self:provider.environment.aws_db_backup_s3_bucket}
+                    - "/*"
+              - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+              - "Fn::Join":
+                  - ""
+                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+                    - "/backups/*"
+              - "Fn::Join":
+                  - ""
+                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
+                    - "/backups"
           - Effect: Allow
             Action:
               - "sns:Publish"

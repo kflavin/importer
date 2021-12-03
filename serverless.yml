@@ -25,7 +25,6 @@ custom:
 
 provider:
   name: aws
-  description: Lambda functions for loading data
   stackTags:
     gitDescription: ${self:custom.gitDescription}
     version: 0.14.0     # updated by bumpversion, don't change it manually
@@ -43,7 +42,7 @@ provider:
     aws_sns_topic_arn: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_sns_topic_arn}
     aws_instance_profile: {Ref: Ec2InstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
-    #aws_db_backup_s3_bucket: {Ref: DbBackupBucket}
+    # aws_db_backup_s3_bucket: {Ref: DbBackupBucket}
     aws_db_backup_s3_bucket: "rxv-backups"
     terminate_on_completion: "true"
   iamRoleStatements: ${file(serverless/resources/iam.yml)}
@@ -65,8 +64,8 @@ resources:
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
-    #DbBackupBucket:
-    #  Value: {Ref: DbBackupBucket}
+    DbBackupBucket:
+      Value: {Ref: DbBackupBucket}
     Ec2Role:
       Value: {Ref: Ec2Role}
     Ec2InstanceProfile:
