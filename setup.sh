@@ -22,7 +22,7 @@ set -e
 ENV_FILE=.env.${STAGE}
 echo "Deploying to $STAGE using $ENV_FILE"
 
-source $ENV_FILE
+test -f $ENV_FILE && source $ENV_FILE
 
 sls deploy --stage=$STAGE --time="$(date '+%Y-%m-%d %H:%M:%S')"
 
