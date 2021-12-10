@@ -13,6 +13,7 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
     slim: true
+    pythonBin: python3
   scripts:
     hooks:
       #'before:package:initialize': bumpversion patch
