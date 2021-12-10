@@ -1,0 +1,49 @@
+
+---
+name: ci
+
+on:
+  push:
+    branches:
+      - master
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  TZ: America/Los_Angeles
+
+concurrency:
+  group: data-importer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      db_user: ${{ secrets.DB_USER }}
+      db_password: ${{ secrets.DB_PASSWORD }}
+      db_host: ${{ secrets.DB_HOST }}
+      db_name: ${{ secrets.DB_NAME }}
+      db_schema: ${{ secrets.DB_SCHEMA }}
+      stage_db_schema: ${{ secrets.STAGE_DB_SCHEM }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Install Serverless
+        run: npm install -g serverless@2.67.0
+      - name: Install Dependencies
+        run: npm install
+      - name: Install Serverless
+        run: |
+          BRANCH=$(echo $GITHUB_REF | sed 's#refs/heads/##')
+          if [[ "$BRANCH" == "master" ]]; then
+            ./setup.sh master
+          elif [[ "$BRANCH" == "prod" ]]; then
+            ./setup.sh prod
+          else
+            echo "Unrecognized branch."
+          fi
