@@ -42,7 +42,6 @@ provider:
     aws_sns_topic_arn: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_sns_topic_arn}
     aws_instance_profile: {Ref: Ec2InstanceProfile}
     aws_s3_bucket: {Ref: ScriptBucket}
-    # aws_db_backup_s3_bucket: {Ref: DbBackupBucket}
     aws_db_backup_s3_bucket: "rxv-backups"
     terminate_on_completion: "true"
   iamRoleStatements: ${file(serverless/resources/iam.yml)}
@@ -64,15 +63,12 @@ resources:
   Outputs:
     ScriptBucket:
       Value: {Ref: ScriptBucket}
-    DbBackupBucket:
-      Value: {Ref: DbBackupBucket}
     Ec2Role:
       Value: {Ref: Ec2Role}
     Ec2InstanceProfile:
       Value: {Ref: Ec2InstanceProfile}
   Resources:
     ScriptBucket: ${file(serverless/resources/s3_npi_bucket.yml)}
-    DbBackupBucket: ${file(serverless/resources/s3_db_bucket.yml)}
     Ec2Role: ${file(serverless/resources/ec2-role.yml)}
     Ec2InstanceProfile: ${file(serverless/resources/ec2-instance_profile.yml)}
 

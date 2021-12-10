@@ -143,6 +143,7 @@ class NpiLoader(object):
                 self.cnx.commit()
                 break
             except psycopg2.Error as e:
+                logger.error(e)
                 print("Last executed query")
                 print(self.cursor.query)
                 logger.warning("Rolling back...")

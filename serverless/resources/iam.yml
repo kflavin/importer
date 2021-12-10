@@ -42,15 +42,6 @@
             - {"Fn::GetAtt": ["ScriptBucket","Arn"]}
             - "/*"
   - Effect: Allow
-    Action:
-      - "s3:PutObject"
-    Resource:
-      - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-      - "Fn::Join":
-          - ""
-          - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-            - "/backups/*"
-  - Effect: Allow
     Action: "s3:ListBucket"
     Resource: "arn:aws:s3:::rxv-product-data"
   - Effect: Allow

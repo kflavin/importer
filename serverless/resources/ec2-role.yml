@@ -74,15 +74,6 @@ Properties:
                   - - "arn:aws:s3:::"
                     - ${self:provider.environment.aws_db_backup_s3_bucket}
                     - "/*"
-              - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-              - "Fn::Join":
-                  - ""
-                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-                    - "/backups/*"
-              - "Fn::Join":
-                  - ""
-                  - - {"Fn::GetAtt": ["DbBackupBucket","Arn"]}
-                    - "/backups"
           - Effect: Allow
             Action:
               - "sns:Publish"
