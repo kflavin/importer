@@ -26,7 +26,7 @@ products_count=$(psql -A -t -q \
       -h "$loader_db_host" \
       -U "$loader_db_user" \
       -d "$loader_db_name" \
-      -c "select count(*) from {table_name} where DATE(created_at)=DATE(NOW())")
+      -c "select count(*) from {table_name} where source='RXNORM' and DATE(created_at)=DATE(NOW())")
 
       # How many new synonym records were loaded?
 synonyms_count=$(psql -A -t -q \
