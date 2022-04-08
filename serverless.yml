@@ -32,6 +32,8 @@ provider:
     deployedAt: ${opt:time, 'No deploy time given.  Please deploy using setup.sh'}
   runtime: python3.7
   timeout: 30
+  deploymentBucket:
+    blockPublicAccess: true
   environment:
     environment: ${self:custom.environment}
     aws_key: ${file(./serverless/serverless.env.yml):${self:custom.environment}.aws_key}

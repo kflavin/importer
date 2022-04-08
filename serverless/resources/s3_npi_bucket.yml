@@ -1,6 +1,15 @@
 ---
 Type: "AWS::S3::Bucket"
 Properties:
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    IgnorePublicAcls: true
+    BlockPublicPolicy: true
+    RestrictPublicBuckets: true
+  BucketEncryption:
+    ServerSideEncryptionConfiguration:
+      - ServerSideEncryptionByDefault:
+          SSEAlgorithm: AES256
   LifecycleConfiguration:
     Rules:
       - Prefix: npi-in/weekly

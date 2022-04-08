@@ -12,4 +12,9 @@ Properties:
     IgnorePublicAcls: true
     BlockPublicPolicy: true
     RestrictPublicBuckets: true
+  BucketEncryption:
+    ServerSideEncryptionConfiguration:
+      - ServerSideEncryptionByDefault:
+          SSEAlgorithm: AES256
 DeletionPolicy: ${file(./serverless/db_backup/serverless.env.yml):${self:custom.environment}.deletion_policy}
+
