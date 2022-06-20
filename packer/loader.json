@@ -48,7 +48,7 @@
             "sudo amazon-linux-extras install postgresql13",
             "sudo yum install -y google-chrome-stable",
             "sudo yum install -y java",
-            "wget -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/96.0.4664.45/chromedriver_linux64.zip",
+            "wget -O /tmp/chromedriver_linux64.zip https://chromedriver.storage.googleapis.com/102.0.5005.61/chromedriver_linux64.zip",
             "sudo unzip -d /usr/bin /tmp/chromedriver_linux64.zip",
             "sudo chmod +x /usr/bin/chromedriver"
         ]
